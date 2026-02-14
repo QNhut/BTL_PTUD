@@ -1,0 +1,117 @@
+package gui;
+
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import javax.swing.*;
+
+import exception.MenuBarPanel;
+
+public class Main_GUI extends JFrame implements ActionListener {
+
+	private JPanel pHeader;
+	private JPanel pMainHeader;
+	private JPanel pLogo;
+	private JPanel pDangXuat;
+
+	private JLabel lblLogo;
+	private JLabel lblNhanVienTK;
+	private JButton btnDangXuat;
+
+	private MenuBarPanel menuBarPanel;
+
+	private JPanel contentPanel;
+	private CardLayout cardLayout;
+
+	public Main_GUI() {
+
+		setTitle("Quản lý cửa hàng tiện lợi");
+		setSize(1450, 900);
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setLocationRelativeTo(null);
+		setLayout(new BorderLayout());
+
+		// ===== HEADER =====
+		pHeader = new JPanel(new BorderLayout());
+		pHeader.setPreferredSize(new Dimension(270, 0));
+		pHeader.setBackground(Color.PINK);
+		add(pHeader, BorderLayout.WEST);
+
+		pMainHeader = new JPanel(new BorderLayout());
+		pMainHeader.setPreferredSize(new Dimension(0, 90));
+		pMainHeader.setBackground(new Color(141, 141, 141));
+		pHeader.add(pMainHeader, BorderLayout.NORTH);
+
+		pLogo = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		pLogo.setOpaque(false);
+		lblLogo = new JLabel("LOGO");
+		lblLogo.setForeground(Color.WHITE);
+		lblLogo.setFont(new Font("Segoe UI", Font.BOLD, 20));
+		pLogo.add(lblLogo);
+		pMainHeader.add(pLogo, BorderLayout.WEST);
+
+		// ===== MENU BÊN TRÁI =====
+		menuBarPanel = new MenuBarPanel(this);
+		pHeader.add(menuBarPanel, BorderLayout.CENTER);
+
+		pDangXuat = new JPanel();
+		pDangXuat.setLayout(new BoxLayout(pDangXuat, BoxLayout.Y_AXIS));
+		pDangXuat.setPreferredSize(new Dimension(0, 70));
+		pDangXuat.setOpaque(false);
+
+		lblNhanVienTK = new JLabel("Nhân viên");
+		lblNhanVienTK.setForeground(Color.WHITE);
+		lblNhanVienTK.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+		btnDangXuat = new JButton("Đăng xuất");
+		btnDangXuat.setAlignmentX(Component.CENTER_ALIGNMENT);
+		btnDangXuat.addActionListener(this);
+
+		pDangXuat.add(lblNhanVienTK);
+		pDangXuat.add(Box.createVerticalStrut(30));
+		pDangXuat.add(btnDangXuat);
+		pHeader.add(pDangXuat, BorderLayout.SOUTH);
+
+		// ===== CONTENT =====
+		cardLayout = new CardLayout();
+		contentPanel = new JPanel(cardLayout);
+		contentPanel.setBackground(Color.WHITE);
+		add(contentPanel, BorderLayout.CENTER);
+
+		contentPanel.add(createEmptyPage("TrangChu"), "TrangChu");
+		contentPanel.add(createEmptyPage("DanhSachSanPham"), "DanhSachSanPham");
+		contentPanel.add(createEmptyPage("SanPham"), "SanPham");
+		contentPanel.add(createEmptyPage("NhapHang"), "NhapHang");
+
+		cardLayout.show(contentPanel, "TrangChu");
+	}
+
+	private JPanel createEmptyPage(String name) {
+		JPanel p = new JPanel(new GridBagLayout());
+		JLabel lbl = new JLabel("PAGE: " + name);
+		lbl.setFont(new Font("Segoe UI", Font.BOLD, 30));
+		p.add(lbl);
+		return p;
+	}
+
+	public void showPage(String pageName) {
+		cardLayout.show(contentPanel, pageName);
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		if (e.getSource() == btnDangXuat) {
+			int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc chắn muốn đăng xuất?", "Xác nhận",
+					JOptionPane.YES_NO_OPTION);
+			if (confirm == JOptionPane.YES_OPTION) {
+				dispose();
+			}
+		}
+	}
+
+	public static void main(String[] args) {
+		SwingUtilities.invokeLater(() -> {
+			new Main_GUI().setVisible(true);
+		});
+	}
+}

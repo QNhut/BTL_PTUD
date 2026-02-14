@@ -1,0 +1,60 @@
+package exception;
+
+import javax.swing.*;
+import java.awt.*;
+
+public class MenuButton extends JPanel {
+
+    private JButton mainButton;
+    private JPopupMenu subMenu;
+    private MenuActionListener listener;
+
+    public MenuButton(String title) {
+        setLayout(new BorderLayout());
+        setBackground(Color.WHITE);
+
+        mainButton = new JButton(title);
+        mainButton.setFocusPainted(false);
+        mainButton.setHorizontalAlignment(SwingConstants.LEFT);
+        mainButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
+
+        add(mainButton, BorderLayout.CENTER);
+
+        subMenu = new JPopupMenu();
+
+        mainButton.addActionListener(e -> {
+            if (subMenu.getComponentCount() > 0) {
+                subMenu.show(mainButton, mainButton.getWidth(), 0);
+            }
+        });
+    }
+
+    public void addSubMenu(String title, String pageName) {
+        JMenuItem item = new JMenuItem(title);
+        item.addActionListener(e -> {
+            if (listener != null)
+                listener.onClick(this, pageName);
+        });
+        subMenu.add(item);
+    }
+
+    public JButton getMainButton() {
+        return mainButton;
+    }
+
+    public void setSelected(boolean selected) {
+        if (selected) {
+            setBackground(Color.LIGHT_GRAY);
+        } else {
+            setBackground(Color.WHITE);
+        }
+    }
+
+    public void setMenuActionListener(MenuActionListener listener) {
+        this.listener = listener;
+    }
+
+    public interface MenuActionListener {
+        void onClick(MenuButton parent, String page);
+    }
+}

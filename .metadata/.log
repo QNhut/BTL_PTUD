@@ -255,3 +255,116 @@ Binding(COMMAND+W,
 
 !ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 17:07:02.863
 !MESSAGE [Info] Completion handler is refreshed for the document: file:///Users/quocnhut/Documents/Code/Workspace/JAVA/PTUD/BTL_PTUD/src/entity/HoaDon.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 19:29:58.934
+!MESSAGE [Info] Document is null for editor: TaiKhoan.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 19:29:58.940
+!MESSAGE [Info] Completion handler is refreshed for the document: file:///Users/quocnhut/Documents/Code/Workspace/JAVA/PTUD/BTL_PTUD/src/entity/TaiKhoan.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 19:30:06.999
+!MESSAGE [Info] Document is null for editor: PhieuNhap.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 19:30:07.000
+!MESSAGE [Info] Completion handler is refreshed for the document: file:///Users/quocnhut/Documents/Code/Workspace/JAVA/PTUD/BTL_PTUD/src/entity/PhieuNhap.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 19:30:08.546
+!MESSAGE [Info] Document is null for editor: ChiTietPhieuNhap.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 19:30:08.547
+!MESSAGE [Info] Completion handler is refreshed for the document: file:///Users/quocnhut/Documents/Code/Workspace/JAVA/PTUD/BTL_PTUD/src/entity/ChiTietPhieuNhap.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 19:30:12.301
+!MESSAGE [Info] Document is null for editor: ChiTietHoaDon.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 19:30:12.302
+!MESSAGE [Info] Completion handler is refreshed for the document: file:///Users/quocnhut/Documents/Code/Workspace/JAVA/PTUD/BTL_PTUD/src/entity/ChiTietHoaDon.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 19:30:14.192
+!MESSAGE [Info] Document is null for editor: SanPham.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 19:30:14.194
+!MESSAGE [Info] Completion handler is refreshed for the document: file:///Users/quocnhut/Documents/Code/Workspace/JAVA/PTUD/BTL_PTUD/src/entity/SanPham.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 19:30:16.200
+!MESSAGE [Info] Document is null for editor: NhanVien.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 19:30:16.200
+!MESSAGE [Info] Completion handler is refreshed for the document: file:///Users/quocnhut/Documents/Code/Workspace/JAVA/PTUD/BTL_PTUD/src/entity/NhanVien.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 19:42:22.938
+!MESSAGE [Info] Document is null for editor: SidebarPanel.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 19:42:22.940
+!MESSAGE [Info] Completion handler is refreshed for the document: file:///Users/quocnhut/Documents/Code/Workspace/JAVA/PTUD/BTL_PTUD/src/exception/SidebarPanel.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 19:42:23.024
+!MESSAGE [Info] Document is null for editor: SidebarItem.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 19:42:23.025
+!MESSAGE [Info] Completion handler is refreshed for the document: file:///Users/quocnhut/Documents/Code/Workspace/JAVA/PTUD/BTL_PTUD/src/exception/SidebarItem.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 20:55:12.686
+!MESSAGE [Info] Document is null for editor: MenuButton.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 20:55:12.688
+!MESSAGE [Info] Completion handler is refreshed for the document: file:///Users/quocnhut/Documents/Code/Workspace/JAVA/PTUD/BTL_PTUD/src/exception/MenuButton.java
+
+!ENTRY org.eclipse.jdt.ui 4 0 2026-02-14 20:58:07.525
+!MESSAGE OperationCanceledException computing hover information in Main_GUI.java at offset 2338
+!STACK 0
+org.eclipse.core.runtime.OperationCanceledException
+	at org.eclipse.jdt.internal.core.AbstractClassFile.getClassFileContent(AbstractClassFile.java:239)
+	at org.eclipse.jdt.internal.core.ClassFile.getJarBinaryTypeInfo(ClassFile.java:225)
+	at org.eclipse.jdt.internal.core.ClassFile.getBinaryTypeInfo(ClassFile.java:186)
+	at org.eclipse.jdt.internal.core.ClassFile.buildStructure(ClassFile.java:78)
+	at org.eclipse.jdt.internal.core.Openable.generateInfos(Openable.java:246)
+	at org.eclipse.jdt.internal.core.SourceRefElement.generateInfos(SourceRefElement.java:127)
+	at org.eclipse.jdt.internal.core.JavaElement.openWhenClosed(JavaElement.java:569)
+	at org.eclipse.jdt.internal.core.BinaryType.getElementInfo(BinaryType.java:292)
+	at org.eclipse.jdt.internal.core.JavaElement.getElementInfo(JavaElement.java:278)
+	at org.eclipse.jdt.internal.core.BinaryType.getElementInfo(BinaryType.java:1142)
+	at org.eclipse.jdt.internal.core.BinaryType.getFlags(BinaryType.java:357)
+	at org.eclipse.jdt.internal.core.SearchableEnvironmentRequestor.acceptType(SearchableEnvironmentRequestor.java:127)
+	at org.eclipse.jdt.internal.core.NameLookup.seekTypesInBinaryPackage(NameLookup.java:1510)
+	at org.eclipse.jdt.internal.core.NameLookup.seekTypes(NameLookup.java:1442)
+	at org.eclipse.jdt.internal.core.NameLookup.seekTypes(NameLookup.java:1348)
+	at org.eclipse.jdt.internal.core.NameLookup.findAllTypes(NameLookup.java:422)
+	at org.eclipse.jdt.internal.core.NameLookup.seekTypes(NameLookup.java:1418)
+	at org.eclipse.jdt.internal.core.NameLookup.seekTypes(NameLookup.java:1348)
+	at org.eclipse.jdt.internal.core.SearchableEnvironment.findTypes(SearchableEnvironment.java:964)
+	at org.eclipse.jdt.internal.core.SearchableEnvironment.findTypes(SearchableEnvironment.java:766)
+	at org.eclipse.jdt.internal.core.SearchableEnvironment.findTypes(SearchableEnvironment.java:592)
+	at org.eclipse.jdt.internal.core.SearchableEnvironment.findTypes(SearchableEnvironment.java:571)
+	at org.eclipse.jdt.internal.codeassist.SelectionEngine.select(SelectionEngine.java:1048)
+	at org.eclipse.jdt.internal.core.Openable.codeSelect(Openable.java:167)
+	at org.eclipse.jdt.internal.core.CompilationUnit.codeSelect(CompilationUnit.java:471)
+	at org.eclipse.jdt.internal.core.CompilationUnit.codeSelect(CompilationUnit.java:461)
+	at org.eclipse.jdt.internal.ui.text.java.hover.AbstractJavaEditorTextHover.getJavaElementsAt(AbstractJavaEditorTextHover.java:122)
+	at org.eclipse.jdt.internal.ui.text.java.hover.JavadocHover.lambda$0(JavadocHover.java:713)
+	at org.eclipse.jdt.internal.core.JavaModelManager.cacheZipFiles(JavaModelManager.java:5694)
+	at org.eclipse.jdt.internal.core.JavaModelManager.callReadOnly(JavaModelManager.java:5683)
+	at org.eclipse.jdt.core.JavaCore.callReadOnly(JavaCore.java:6150)
+	at org.eclipse.jdt.internal.ui.text.java.hover.JavadocHover.internalGetHoverInfo(JavadocHover.java:713)
+	at org.eclipse.jdt.internal.ui.text.java.hover.JavadocHover.getHoverInfo2(JavadocHover.java:709)
+	at org.eclipse.jdt.internal.ui.text.java.hover.BestMatchHover.getHoverInfo2(BestMatchHover.java:163)
+	at org.eclipse.jdt.internal.ui.text.java.hover.BestMatchHover.getHoverInfo2(BestMatchHover.java:130)
+	at org.eclipse.jdt.internal.ui.text.java.hover.JavaEditorTextHoverProxy.getHoverInfo2(JavaEditorTextHoverProxy.java:89)
+	at org.eclipse.jface.text.TextViewerHoverManager$1.run(TextViewerHoverManager.java:155)
+	Suppressed: java.lang.Throwable: Source line 81 :
+-----
+		pDangXuat.add(Box.createVerticalStrut(30));
+		pDangXuat.add(btnDangXuat);
+		pHeader.add(pDangXuat, BorderLayout.SOUTH);
+
+		// ===== CONTENT =====
+		cardLayout = new CardLayout();
+		contentPanel = new JPanel(cardLayout);
+		contentPanel.setBackground(Color.WHITE);
+		add(contentPanel, BorderLayout.CENTER);
+
+		contentPanel.add(|ne, "TrangChu");
+-----
+		at org.eclipse.jdt.internal.ui.util.SelectionUtil.logException(SelectionUtil.java:150)
+		at org.eclipse.jdt.internal.ui.text.java.hover.AbstractJavaEditorTextHover.getJavaElementsAt(AbstractJavaEditorTextHover.java:124)
+		... 10 more

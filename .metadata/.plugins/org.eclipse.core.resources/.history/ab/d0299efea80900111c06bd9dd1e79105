@@ -1,0 +1,62 @@
+package exception;
+
+import javax.swing.*;
+import java.awt.*;
+import java.util.ArrayList;
+import gui.Main_GUI;
+
+public class MenuBarPanel extends JPanel {
+
+    private ArrayList<MenuButton> menuButtons = new ArrayList<>();
+    private Main_GUI mainFrame;
+
+    public MenuBarPanel(Main_GUI mainFrame) {
+        this.mainFrame = mainFrame;
+
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        setBackground(Color.WHITE);
+
+        MenuButton trangChu = createMenu("Trang chủ");
+        trangChu.getMainButton().addActionListener(e -> {
+            selectOnly(trangChu);
+            mainFrame.showPage("TrangChu");
+        });
+
+        MenuButton sanPham = createMenu("Sản phẩm");
+        sanPham.addSubMenu("Danh sách", "DanhSachSanPham");
+        sanPham.addSubMenu("Nhập hàng", "NhapHang");
+
+        sanPham.getMainButton().addActionListener(e -> {
+            selectOnly(sanPham);
+            mainFrame.showPage("SanPham");
+        });
+
+        addMenu(trangChu);
+        addMenu(sanPham);
+
+        selectOnly(trangChu);
+    }
+
+    private MenuButton createMenu(String title) {
+        MenuButton btn = new MenuButton(title);
+        btn.setMenuActionListener(this::onSubMenuClick);
+        return btn;
+    }
+
+    private void addMenu(MenuButton btn) {
+        menuButtons.add(btn);
+        btn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        add(btn);
+    }
+
+    private void selectOnly(MenuButton selected) {
+        for (MenuButton mb : menuButtons) {
+            mb.setSelected(mb == selected);
+        }
+    }
+
+    private void onSubMenuClick(MenuButton parent, String page) {
+        selectOnly(parent);
+        mainFrame.showPage(page);
+    }
+}

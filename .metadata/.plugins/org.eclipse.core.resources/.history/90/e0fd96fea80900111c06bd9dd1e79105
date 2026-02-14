@@ -1,0 +1,85 @@
+package gui;
+
+import java.awt.*;
+import javax.swing.*;
+
+import exception.MenuBarPanel;
+
+
+
+public class Main_GUI extends JFrame {
+
+    private JPanel pContent;
+    private CardLayout cardLayout;
+    private MenuBarPanel menuBarPanel;
+
+    private JLabel lblTenNV;
+    private JButton btnDangXuat;
+
+    public Main_GUI() {
+        initUI();
+    }
+
+    private void initUI() {
+        setTitle("Quản lý cửa hàng");
+        setSize(1200, 700);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
+
+        // ===== SIDEBAR =====
+        JPanel sidebar = new JPanel();
+        sidebar.setLayout(new BorderLayout());
+        sidebar.setPreferredSize(new Dimension(220, 0));
+        sidebar.setBackground(Color.WHITE);
+
+        // ===== TOP (Logo) =====
+        JLabel lblLogo = new JLabel("LOGO", SwingConstants.CENTER);
+        lblLogo.setFont(new Font("Arial", Font.BOLD, 22));
+        lblLogo.setPreferredSize(new Dimension(200, 80));
+        sidebar.add(lblLogo, BorderLayout.NORTH);
+
+        // ===== CENTER (Menu) =====
+        menuBarPanel = new MenuBarPanel(this);
+        sidebar.add(menuBarPanel, BorderLayout.CENTER);
+
+        // ===== BOTTOM (User info) =====
+        JPanel pBottom = new JPanel();
+        pBottom.setLayout(new BoxLayout(pBottom, BoxLayout.Y_AXIS));
+        pBottom.setBackground(Color.WHITE);
+
+        lblTenNV = new JLabel("Nhân viên: Nguyễn Văn A");
+        lblTenNV.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        btnDangXuat = new JButton("Đăng xuất");
+        btnDangXuat.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        pBottom.add(lblTenNV);
+        pBottom.add(Box.createVerticalStrut(10));
+        pBottom.add(btnDangXuat);
+        pBottom.add(Box.createVerticalStrut(20));
+
+        sidebar.add(pBottom, BorderLayout.SOUTH);
+
+        add(sidebar, BorderLayout.WEST);
+
+        // ===== CONTENT =====
+        cardLayout = new CardLayout();
+        pContent = new JPanel(cardLayout);
+
+        pContent.add(new JLabel("Trang Chủ", SwingConstants.CENTER), "TrangChu");
+        pContent.add(new JLabel("Sản Phẩm", SwingConstants.CENTER), "SanPham");
+        pContent.add(new JLabel("Danh Sách Sản Phẩm", SwingConstants.CENTER), "DanhSachSanPham");
+        pContent.add(new JLabel("Nhập Hàng", SwingConstants.CENTER), "NhapHang");
+
+        add(pContent, BorderLayout.CENTER);
+    }
+
+    public void showPage(String name) {
+        cardLayout.show(pContent, name);
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new Main_GUI().setVisible(true));
+    }
+}

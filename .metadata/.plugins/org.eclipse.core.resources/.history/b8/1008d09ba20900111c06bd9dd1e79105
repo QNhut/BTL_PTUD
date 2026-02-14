@@ -1,0 +1,85 @@
+package exception;
+
+import javax.swing.*;
+import java.awt.*;
+import java.util.ArrayList;
+
+public class SidebarPanel extends JPanel {
+
+    private ArrayList<SidebarItem> items = new ArrayList<>();
+
+    public SidebarPanel() {
+
+        setPreferredSize(new Dimension(260, 0));
+        setBackground(new Color(33, 168, 124));
+        setLayout(new BorderLayout());
+
+        // ===== TOP CONTAINER =====
+        JPanel topPanel = new JPanel();
+        topPanel.setOpaque(false);
+        topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
+        topPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        JLabel lblTitle = new JLabel("PharmaMart");
+        lblTitle.setForeground(Color.WHITE);
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
+
+        JLabel lblSub = new JLabel("Quản lý thuốc");
+        lblSub.setForeground(new Color(220, 255, 240));
+        lblSub.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+
+        topPanel.add(lblTitle);
+        topPanel.add(Box.createVerticalStrut(5));
+        topPanel.add(lblSub);
+        topPanel.add(Box.createVerticalStrut(30));
+
+        // ===== MENU ITEMS =====
+        addItem(topPanel, "Tổng quan", true);
+        addItem(topPanel, "Tạo hoá đơn", false);
+        addItem(topPanel, "Quản lý sản phẩm", false);
+        addItem(topPanel, "Quản lý tồn kho", false);
+        addItem(topPanel, "Quản lý nhà cung cấp", false);
+        addItem(topPanel, "Quản lý khách hàng", false);
+        addItem(topPanel, "Thống kê", false);
+        addItem(topPanel, "Cài đặt", false);
+
+        add(topPanel, BorderLayout.CENTER);
+
+        // ===== FOOTER =====
+        JPanel bottomPanel = new JPanel();
+        bottomPanel.setOpaque(false);
+        bottomPanel.setLayout(new BoxLayout(bottomPanel, BoxLayout.Y_AXIS));
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        JPanel userBox = new JPanel();
+        userBox.setBackground(new Color(60, 185, 150));
+        userBox.setLayout(new BoxLayout(userBox, BoxLayout.Y_AXIS));
+        userBox.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+
+        JLabel lblUser = new JLabel("Nguyễn Văn A");
+        lblUser.setForeground(Color.WHITE);
+        lblUser.setFont(new Font("Segoe UI", Font.BOLD, 14));
+
+        JLabel lblRole = new JLabel("Nhân viên bán hàng");
+        lblRole.setForeground(new Color(220, 255, 240));
+        lblRole.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+
+        userBox.add(lblUser);
+        userBox.add(lblRole);
+
+        SidebarItem logout = new SidebarItem("Đăng xuất", false);
+
+        bottomPanel.add(userBox);
+        bottomPanel.add(Box.createVerticalStrut(15));
+        bottomPanel.add(logout);
+
+        add(bottomPanel, BorderLayout.SOUTH);
+    }
+
+    private void addItem(JPanel parent, String title, boolean active) {
+        SidebarItem item = new SidebarItem(title, active);
+        items.add(item);
+        parent.add(item);
+        parent.add(Box.createVerticalStrut(10));
+    }
+}
