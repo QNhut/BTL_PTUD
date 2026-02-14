@@ -1,0 +1,16 @@
+package entity;
+
+public class NhanVien {
+	private String maNhanVien;
+	private String tenNhanVien;
+	private String soDienThoai;
+	private String cCCD;
+	private String diaChi;
+	private String gioiTinh;
+	private String chucVu;
+	private String caLam;
+	private String trangThai;
+	private String hinhAnh;
+	
+	
+}
