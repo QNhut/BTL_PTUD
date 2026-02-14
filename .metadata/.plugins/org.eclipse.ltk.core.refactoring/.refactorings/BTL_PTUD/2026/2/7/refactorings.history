@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename package &apos;ui&apos; to &apos;gui&apos;&#x0A;- Original project: &apos;BTL_PTUD&apos;&#x0A;- Original element: &apos;BTL_PTUD/src/ui&apos;&#x0A;- Renamed element: &apos;BTL_PTUD/src/gui&apos;&#x0A;- Update references to refactored element&#x0A;- Update textual occurrences in comments and strings" description="Rename package &apos;ui&apos;" flags="589830" hierarchical="false" id="org.eclipse.jdt.ui.rename.package" input="/src&lt;ui" name="gui" qualified="false" references="true" stamp="1771057519631" textual="false" version="1.0"/>
+</session>

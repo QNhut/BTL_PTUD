@@ -1,0 +1,65 @@
+!SESSION 2026-02-14 15:01:47.850 -----------------------------------------------
+eclipse.buildId=4.34.0.20241128-0756
+java.version=23.0.2
+java.vendor=Eclipse Adoptium
+BootLoader constants: OS=macosx, ARCH=x86_64, WS=cocoa, NL=en_VN
+Framework arguments:  -product org.eclipse.epp.package.java.product -keyring /Users/quocnhut/.eclipse_keyring
+Command-line arguments:  -os macosx -ws cocoa -arch x86_64 -product org.eclipse.epp.package.java.product -keyring /Users/quocnhut/.eclipse_keyring
+
+!ENTRY ch.qos.logback.classic 1 0 2026-02-14 15:01:53.517
+!MESSAGE Activated before the state location was initialized. Retry after the state location is initialized.
+
+!ENTRY ch.qos.logback.classic 1 0 2026-02-14 15:02:18.002
+!MESSAGE Logback config file: /Users/quocnhut/Documents/Code/Workspace/JAVA/PTUD/.metadata/.plugins/org.eclipse.m2e.logback/logback.2.7.0.20241001-1350.xml
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 15:02:27.475
+!MESSAGE [Info] Starting language server with binary lsp agent.
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 15:02:27.492
+!MESSAGE [Info] Found native binary in fragment bundle: com.microsoft.copilot.eclipse.core.agent.macosx.x64
+
+!ENTRY com.microsoft.copilot.eclipse 4 0 2026-02-14 15:02:32.753
+!MESSAGE [Error] Timed out waiting for login shell environment variables
+!STACK 0
+java.util.concurrent.TimeoutException
+	at java.base/java.util.concurrent.FutureTask.get(FutureTask.java:204)
+	at com.microsoft.copilot.eclipse.core.lsp.LsStreamConnectionProvider.getEnvironmentVariables(LsStreamConnectionProvider.java:347)
+	at com.microsoft.copilot.eclipse.core.lsp.LsStreamConnectionProvider.getLoginShellEnvironment(LsStreamConnectionProvider.java:302)
+	at com.microsoft.copilot.eclipse.core.lsp.LsStreamConnectionProvider.createProcessBuilder(LsStreamConnectionProvider.java:69)
+	at org.eclipse.lsp4e.server.ProcessStreamConnectionProvider.start(ProcessStreamConnectionProvider.java:57)
+	at com.microsoft.copilot.eclipse.core.lsp.LsStreamConnectionProvider.startBinaryLspAgent(LsStreamConnectionProvider.java:76)
+	at com.microsoft.copilot.eclipse.core.lsp.LsStreamConnectionProvider.start(LsStreamConnectionProvider.java:59)
+	at org.eclipse.lsp4e.LanguageServerWrapper.lambda$0(LanguageServerWrapper.java:296)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1812)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.exec(CompletableFuture.java:1804)
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:507)
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1460)
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:2036)
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:189)
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 15:02:33.808
+!MESSAGE [Info] Lsp agent started successfully.
+
+!ENTRY org.eclipse.lsp4e 1 0 2026-02-14 15:02:44.965
+!MESSAGE [Info]	[lsp] GitHub Copilot Language Server 1.381.0 initialized
+
+!ENTRY org.eclipse.lsp4e 1 0 2026-02-14 15:02:45.535
+!MESSAGE [Info]	[certificates] Removed 4 expired certificates
+
+!ENTRY org.eclipse.lsp4e 1 0 2026-02-14 15:02:45.581
+!MESSAGE [Info]	[default] Policy watcher started for GitHub Copilot Plugin
+
+!ENTRY org.eclipse.lsp4e 1 0 2026-02-14 15:02:46.857
+!MESSAGE [Info]	[CopilotMCP] MCP state changed from false to true
+
+!ENTRY org.eclipse.lsp4e 1 0 2026-02-14 15:02:48.937
+!MESSAGE [Info]	[copilotModels] Filtering out model with only /responses endpoint: gpt-5.2-codex
+
+!ENTRY org.eclipse.lsp4e 1 0 2026-02-14 15:02:48.938
+!MESSAGE [Info]	[copilotModels] Filtering out model with only /responses endpoint: gpt-5.1-codex-max
+
+!ENTRY org.eclipse.lsp4e 1 0 2026-02-14 15:02:48.939
+!MESSAGE [Info]	[copilotModels] Filtering out model with only /responses endpoint: gpt-5.1-codex-mini
+
+!ENTRY org.eclipse.lsp4e 1 0 2026-02-14 15:02:48.941
+!MESSAGE [Info]	[copilotModels] Filtering out model with only /responses endpoint: gpt-5.1-codex
