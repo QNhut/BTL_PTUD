@@ -231,3 +231,27 @@ Binding(COMMAND+W,
 
 !ENTRY org.eclipse.lsp4e 1 0 2026-02-14 16:08:46.180
 !MESSAGE [Info]	[streamChoices] solution 0 returned. finish reason: [null]
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 16:27:19.859
+!MESSAGE [Info] Document is null for editor: NhaCungCap.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 16:27:19.864
+!MESSAGE [Info] Completion handler is refreshed for the document: file:///Users/quocnhut/Documents/Code/Workspace/JAVA/PTUD/BTL_PTUD/src/entity/NhaCungCap.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 16:27:20.417
+!MESSAGE [Info] Document is null for editor: LoaiSanPham.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 16:27:20.418
+!MESSAGE [Info] Completion handler is refreshed for the document: file:///Users/quocnhut/Documents/Code/Workspace/JAVA/PTUD/BTL_PTUD/src/entity/LoaiSanPham.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 17:04:29.586
+!MESSAGE [Info] Document is null for editor: KhachHang.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 17:04:29.588
+!MESSAGE [Info] Completion handler is refreshed for the document: file:///Users/quocnhut/Documents/Code/Workspace/JAVA/PTUD/BTL_PTUD/src/entity/KhachHang.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 17:07:02.861
+!MESSAGE [Info] Document is null for editor: HoaDon.java
+
+!ENTRY com.microsoft.copilot.eclipse 1 0 2026-02-14 17:07:02.863
+!MESSAGE [Info] Completion handler is refreshed for the document: file:///Users/quocnhut/Documents/Code/Workspace/JAVA/PTUD/BTL_PTUD/src/entity/HoaDon.java

@@ -1,0 +1,13 @@
+package entity;
+
+import java.time.LocalDate;
+
+public class HoaDon {
+	private String maHD;
+	private LocalDate ngayLap;
+	private double tongTien;
+	private int diemTichLuy;
+	private String pTTT;
+	private NhanVien nhanVien;
+	
+}
