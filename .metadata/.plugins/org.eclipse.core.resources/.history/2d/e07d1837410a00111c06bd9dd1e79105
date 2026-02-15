@@ -1,0 +1,109 @@
+package gui;
+
+import javax.swing.*;
+import java.awt.*;
+import java.util.ArrayList;
+
+public class MenuButton extends JPanel {
+
+    private JButton mainButton;
+    private JPanel subMenuPanel;
+    private java.util.List<JButton> subButtons = new ArrayList<>();
+    private boolean expanded = false;
+    private boolean mainSelected = false;
+
+    private String mainPageName;
+
+    private static final Color MAIN_COLOR = new Color(45, 156, 131);
+    private static final Color SUB_COLOR = new Color(45, 156, 131);
+    private static final Color SUB_SELECTED = new Color(255, 87, 34);
+
+    private MenuSelectionListener listener;
+
+    public MenuButton(String text, String pageName) {
+        this.mainPageName = pageName;
+
+        setLayout(new BorderLayout());
+        setBackground(MAIN_COLOR);
+
+        mainButton = createButton(text, MAIN_COLOR);
+        add(mainButton, BorderLayout.NORTH);
+
+        subMenuPanel = new JPanel();
+        subMenuPanel.setLayout(new BoxLayout(subMenuPanel, BoxLayout.Y_AXIS));
+        subMenuPanel.setBackground(MAIN_COLOR);
+        subMenuPanel.setVisible(false);
+
+        add(subMenuPanel, BorderLayout.CENTER);
+
+        mainButton.addActionListener(e -> {
+            if (!subButtons.isEmpty()) {
+                toggleMenu();
+            } else if (listener != null && mainPageName != null) {
+
+                setMainSelected(true);   // đổi màu cha
+                listener.onMenuSelected(this, mainPageName);
+            }
+        });
+    }
+
+    private JButton createButton(String text, Color bg) {
+        JButton btn = new JButton(text);
+        btn.setFocusPainted(false);
+        btn.setBackground(bg);
+        btn.setForeground(Color.WHITE);
+        btn.setHorizontalAlignment(SwingConstants.LEFT);
+        btn.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 10));
+        return btn;
+    }
+
+    public void addSubMenu(String text, String pageName) {
+        JButton subBtn = createButton("  • " + text, SUB_COLOR);
+
+        subBtn.addActionListener(e -> {
+            resetSubMenuColor();
+            subBtn.setBackground(SUB_SELECTED);
+
+            if (listener != null) {
+                listener.onMenuSelected(this, pageName);
+            }
+        });
+
+        subButtons.add(subBtn);
+        subMenuPanel.add(subBtn);
+    }
+
+    private void toggleMenu() {
+        expanded = !expanded;
+        subMenuPanel.setVisible(expanded);
+        revalidate();
+        repaint();
+    }
+
+    public void collapse() {
+        expanded = false;
+        subMenuPanel.setVisible(false);
+    }
+
+    public void resetSubMenuColor() {
+        for (JButton btn : subButtons) {
+            btn.setBackground(SUB_COLOR);
+        }
+    }
+
+    public void setMainSelected(boolean selected) {
+        this.mainSelected = selected;
+
+        if (subButtons.isEmpty()) { // chỉ menu không có submenu
+            mainButton.setBackground(selected ? SUB_SELECTED : MAIN_COLOR);
+        }
+    }
+
+    public void setMenuSelectionListener(MenuSelectionListener listener) {
+        this.listener = listener;
+    }
+
+    public interface MenuSelectionListener {
+        void onMenuSelected(MenuButton source, String page);
+    }
+}

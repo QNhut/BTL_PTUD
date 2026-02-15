@@ -1,0 +1,132 @@
+package exception;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.ArrayList;
+
+public class MenuButton extends JPanel {
+
+	private JButton mainButton;
+	private JPanel subPanel;
+	private boolean expanded = false;
+	private boolean selected = false;
+	private MenuActionListener listener;
+
+	private ArrayList<JButton> subButtons = new ArrayList<>();
+
+	private static final Color MAIN_NORMAL = new Color(36, 170, 140);
+	private static final Color MAIN_SELECTED = new Color(255, 80, 40);
+	private static final Color SUB_NORMAL = new Color(36, 170, 140);
+	private static final Color SUB_HOVER = new Color(30, 150, 120);
+
+	public MenuButton(String text, String iconPath) {
+
+		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+		setBackground(MAIN_NORMAL);
+		setAlignmentX(Component.LEFT_ALIGNMENT);
+
+		// ===== MAIN BUTTON =====
+		mainButton = new JButton(text);
+		mainButton.setHorizontalAlignment(SwingConstants.LEFT);
+		mainButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
+		mainButton.setFocusPainted(false);
+		mainButton.setBackground(MAIN_NORMAL);
+		mainButton.setForeground(Color.WHITE);
+		mainButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 10));
+		mainButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		mainButton.setOpaque(true);
+		mainButton.setContentAreaFilled(true);
+
+		add(mainButton);
+
+		// ===== SUB PANEL =====
+		subPanel = new JPanel();
+		subPanel.setLayout(new BoxLayout(subPanel, BoxLayout.Y_AXIS));
+		subPanel.setBackground(MAIN_NORMAL);
+		subPanel.setVisible(false);
+
+		add(subPanel);
+
+		// CLICK MENU CHA
+		mainButton.addActionListener(e -> {
+			toggleMenu();
+
+			if (listener != null) {
+				listener.onMenuSelected(this, null);
+			}
+		});
+	}
+
+	private void toggleMenu() {
+		expanded = !expanded;
+		subPanel.setVisible(expanded);
+		revalidate();
+		repaint();
+	}
+
+	public void collapse() {
+		expanded = false;
+		subPanel.setVisible(false);
+	}
+
+	public void addSubMenu(String title, String pageName) {
+
+		JButton subBtn = new JButton("•  " + title);
+		subBtn.setHorizontalAlignment(SwingConstants.LEFT);
+		subBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+		subBtn.setFocusPainted(false);
+		subBtn.setBackground(SUB_NORMAL);
+		subBtn.setForeground(Color.WHITE);
+		subBtn.setBorder(BorderFactory.createEmptyBorder(8, 40, 8, 10));
+		subBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		subBtn.setOpaque(true);
+		subBtn.setContentAreaFilled(true);
+
+		subBtn.addActionListener(e -> {
+
+			// Reset tất cả submenu về màu thường
+			for (JButton btn : subButtons) {
+				btn.setBackground(SUB_NORMAL);
+			}
+
+			// Tô màu submenu đang chọn
+			subBtn.setBackground(MAIN_SELECTED);
+
+			// Báo về MenuBarPanel để tô màu cha
+			if (listener != null) {
+				listener.onMenuSelected(this, pageName);
+			}
+		});
+
+		subButtons.add(subBtn);
+		subPanel.add(subBtn);
+	}
+
+	public void setMenuActionListener(MenuActionListener listener) {
+		this.listener = listener;
+	}
+
+	public void setSelected(boolean selected) {
+		this.selected = selected;
+
+		if (selected) {
+			mainButton.setBackground(MAIN_SELECTED);
+		} else {
+			mainButton.setBackground(MAIN_NORMAL);
+
+			// Reset submenu khi bỏ chọn
+			for (JButton btn : subButtons) {
+				btn.setBackground(SUB_NORMAL);
+			}
+		}
+	}
+
+	public JButton getMainButton() {
+		return mainButton;
+	}
+
+	public interface MenuActionListener {
+		void onMenuSelected(MenuButton source, String pageName);
+	}
+}

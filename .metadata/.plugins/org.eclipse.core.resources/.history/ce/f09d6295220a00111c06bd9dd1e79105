@@ -1,0 +1,68 @@
+package exception;
+
+import javax.swing.*;
+import java.awt.*;
+import java.util.ArrayList;
+import gui.Main_GUI;
+
+public class MenuBarPanel extends JPanel {
+
+    private ArrayList<MenuButton> menuButtons = new ArrayList<>();
+    private Main_GUI mainFrame;
+
+    public MenuBarPanel(Main_GUI mainFrame) {
+        this.mainFrame = mainFrame;
+
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        setBackground(new Color(36, 170, 140));
+        setPreferredSize(new Dimension(270, 0));
+
+        // ===== MENU =====
+
+        MenuButton trangChu = createMenu("Trang chủ");
+        trangChu.addSubMenu("Tổng quan", "TrangChu");
+
+        MenuButton sanPham = createMenu("Sản phẩm");
+        sanPham.addSubMenu("Danh sách", "DanhSachSanPham");
+        sanPham.addSubMenu("Nhập hàng", "NhapHang");
+
+        MenuButton thongKe = createMenu("Thống kê");
+        thongKe.addSubMenu("Theo khách hàng", "TheoKhachHang");
+        thongKe.addSubMenu("Theo ngày", "TheoNgay");
+
+        addMenu(trangChu);
+        addMenu(sanPham);
+        addMenu(thongKe);
+
+        add(Box.createVerticalGlue()); 
+    }
+
+    private MenuButton createMenu(String title) {
+        MenuButton btn = new MenuButton(title, null);
+        btn.setMenuActionListener(this::onMenuSelected);
+        return btn;
+    }
+
+    private void addMenu(MenuButton btn) {
+        menuButtons.add(btn);
+        btn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        add(btn);
+    }
+
+    // 🔥 Xử lý khi click submenu
+    private void onMenuSelected(MenuButton source, String page) {
+
+        // Collapse menu khác và reset màu submenu
+        for (MenuButton mb : menuButtons) {
+            if (mb != source) {
+                mb.collapse();
+                mb.resetSubMenuColor();
+            }
+        }
+
+        // Chuyển trang
+        if (page != null) {
+            mainFrame.showPage(page);
+        }
+    }
+}

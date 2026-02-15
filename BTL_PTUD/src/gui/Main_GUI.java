@@ -33,7 +33,7 @@ public class Main_GUI extends JFrame implements ActionListener {
 
 		// ===== HEADER =====
 		pHeader = new JPanel(new BorderLayout());
-		pHeader.setPreferredSize(new Dimension(270, 0));
+		pHeader.setPreferredSize(new Dimension(300, 0));
 		pHeader.setBackground(Color.PINK);
 		add(pHeader, BorderLayout.WEST);
 
@@ -78,15 +78,44 @@ public class Main_GUI extends JFrame implements ActionListener {
 		contentPanel.setBackground(Color.WHITE);
 		add(contentPanel, BorderLayout.CENTER);
 
-		contentPanel.add(createEmptyPage("TrangChu"), "TrangChu");
-		contentPanel.add(createEmptyPage("DanhSachSanPham"), "DanhSachSanPham");
-		contentPanel.add(createEmptyPage("SanPham"), "SanPham");
-		contentPanel.add(createEmptyPage("NhapHang"), "NhapHang");
-		contentPanel.add(createEmptyPage("ThongKe"), "ThongKe");
-		contentPanel.add(createEmptyPage("TheoKhachHang"), "TheoKhachHang");
-		contentPanel.add(createEmptyPage("TheoNgay"), "TheoNgay");
+//		Trang chủ
+		contentPanel.add(createEmptyPage("ThongKeBanHang"), "ThongKeBanHang");
+		contentPanel.add(createEmptyPage("BaoCaoDoanhThu"), "BaoCaoDoanhThu");
+		contentPanel.add(createEmptyPage("TraCuuGiaoDich"), "TraCuuGiaoDich");
+		
+//		Bán hàng và giao dịch
+		
+		contentPanel.add(createEmptyPage("LapHoaDon"), "LapHoaDon");
+		contentPanel.add(createEmptyPage("TraCuuHoaDon"), "TraCuuHoaDon");
+		contentPanel.add(createEmptyPage("DoiHang"), "DoiHang");
+		contentPanel.add(createEmptyPage("TraHang"), "TraHang");
+		
+//		Sản phẩm
+		contentPanel.add(createEmptyPage("ThemSanPham"), "ThemSanPham");
+		contentPanel.add(createEmptyPage("CapNhatSanPham"), "CapNhatSanPham");
+		contentPanel.add(createEmptyPage("TraCuuSanPham"), "TraCuuSanPham");
+		
+//		Khách hàng
+		contentPanel.add(createEmptyPage("ThemKhachHang"), "ThemKhachHang");
+		contentPanel.add(createEmptyPage("CapNhatKhachHang"), "CapNhatKhachHang");
+		contentPanel.add(createEmptyPage("TraCuuKhachHang"), "TraCuuKhachHang");
+		
+//		Nhân viên
+		contentPanel.add(createEmptyPage("ThemNhanVien"), "ThemNhanVien");
+		contentPanel.add(createEmptyPage("CapNhatNhanVien"), "CapNhatNhanVien");
+		contentPanel.add(createEmptyPage("TraCuuNhanVien"), "TraCuuNhanVien");
+		
+//		Nhập kho
+		contentPanel.add(createEmptyPage("TaoPhieuNhap"), "TaoPhieuNhap");
+		contentPanel.add(createEmptyPage("ThemNCC"), "ThemNCC");
+		contentPanel.add(createEmptyPage("CapNhatNCC"), "CapNhatNCC");
+		contentPanel.add(createEmptyPage("TraCuuNCC"), "TraCuuNCC");
+		
+//		Cài đặt
+		contentPanel.add(createEmptyPage("CaiDat"), "CaiDat");
 
-		cardLayout.show(contentPanel, "TrangChu");
+
+		cardLayout.show(contentPanel, "ThongKeBanHang");
 	}
 
 	private JPanel createEmptyPage(String name) {

@@ -1,0 +1,183 @@
+package exception;
+
+import javax.swing.*;
+import java.awt.*;
+import java.util.ArrayList;
+
+public class MenuButton extends JPanel {
+
+    private JButton mainButton;
+    private JPanel subPanel;
+    private boolean expanded = false;
+    private MenuActionListener listener;
+    private String mainPageName;
+
+    private ArrayList<JButton> subButtons = new ArrayList<>();
+
+    private static final Color MAIN_COLOR = new Color(36, 170, 140);
+    private static final Color SUB_NORMAL = new Color(36, 170, 140);
+    private static final Color SUB_SELECTED = new Color(255, 80, 40);
+
+    private JLabel arrowLabel; // CHỈ tạo khi có submenu
+
+    public MenuButton(String text, String iconPath) {
+        this(text, iconPath, null);
+    }
+
+    public MenuButton(String text, String iconPath, String pageName) {
+
+        this.mainPageName = pageName;
+
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        setBackground(MAIN_COLOR);
+        setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // ===== MAIN BUTTON =====
+        mainButton = new JButton();
+        mainButton.setLayout(new BorderLayout());
+        mainButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
+        mainButton.setFocusPainted(false);
+        mainButton.setBackground(MAIN_COLOR);
+        mainButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        mainButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        mainButton.setOpaque(true);
+        mainButton.setContentAreaFilled(true);
+        mainButton.setBorderPainted(false);
+
+        // ===== ICON TRÁI =====
+        JLabel leftIcon = new JLabel(loadIcon(iconPath, 30, 30));
+        leftIcon.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 20));
+
+        // ===== TEXT =====
+        JLabel textLabel = new JLabel(text);
+        textLabel.setForeground(Color.WHITE);
+        textLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+
+        mainButton.add(leftIcon, BorderLayout.WEST);
+        mainButton.add(textLabel, BorderLayout.CENTER);
+
+        add(mainButton);
+
+        // ===== SUB PANEL =====
+        subPanel = new JPanel();
+        subPanel.setLayout(new BoxLayout(subPanel, BoxLayout.Y_AXIS));
+        subPanel.setBackground(MAIN_COLOR);
+        subPanel.setVisible(false);
+
+        add(subPanel);
+
+        // ===== SỰ KIỆN =====
+        mainButton.addActionListener(e -> {
+
+            if (!subButtons.isEmpty()) {
+                toggleMenu();
+            }
+            else if (listener != null && mainPageName != null) {
+
+                setMainSelected(true);
+                listener.onMenuSelected(this, mainPageName);
+            }
+        });
+    }
+
+    // ===== LOAD ICON =====
+    private ImageIcon loadIcon(String path, int w, int h) {
+
+        ImageIcon icon = new ImageIcon(path);
+
+        if (icon.getIconWidth() > 0) {
+            Image img = icon.getImage().getScaledInstance(w, h, Image.SCALE_SMOOTH);
+            return new ImageIcon(img);
+        } else {
+            System.out.println("Không tìm thấy icon: " + path);
+        }
+
+        return null;
+    }
+
+    // ===== TOGGLE MENU =====
+    private void toggleMenu() {
+        expanded = !expanded;
+        subPanel.setVisible(expanded);
+
+        if (arrowLabel != null) {
+            if (expanded) {
+                arrowLabel.setIcon(loadIcon("data/img/icons/arrow-up.png", 16, 16));
+            } else {
+                arrowLabel.setIcon(loadIcon("data/img/icons/arrow-down.png", 16, 16));
+            }
+        }
+
+        revalidate();
+        repaint();
+    }
+
+    public void collapse() {
+        expanded = false;
+        subPanel.setVisible(false);
+
+        if (arrowLabel != null) {
+            arrowLabel.setIcon(loadIcon("data/img/icons/arrow-down.png", 16, 16));
+        }
+    }
+
+    // ===== ADD SUB MENU =====
+    public void addSubMenu(String title, String pageName) {
+
+        // Nếu đây là submenu đầu tiên → thêm mũi tên
+        if (subButtons.isEmpty()) {
+
+            arrowLabel = new JLabel(loadIcon("data/img/icons/arrow-down.png", 16, 16));
+            mainButton.add(arrowLabel, BorderLayout.EAST);
+
+            mainButton.revalidate();
+            mainButton.repaint();
+        }
+
+        JButton subBtn = new JButton("•  " + title);
+        subBtn.setHorizontalAlignment(SwingConstants.LEFT);
+        subBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        subBtn.setFocusPainted(false);
+        subBtn.setBackground(SUB_NORMAL);
+        subBtn.setForeground(Color.WHITE);
+        subBtn.setBorder(BorderFactory.createEmptyBorder(8, 40, 8, 10));
+        subBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        subBtn.setOpaque(true);
+        subBtn.setContentAreaFilled(true);
+        subBtn.setBorderPainted(false);
+
+        subBtn.addActionListener(e -> {
+
+            resetSubMenuColor();
+            subBtn.setBackground(SUB_SELECTED);
+            mainButton.setBackground(MAIN_COLOR);
+
+            if (listener != null) {
+                listener.onMenuSelected(this, pageName);
+            }
+        });
+
+        subButtons.add(subBtn);
+        subPanel.add(subBtn);
+    }
+
+    public void resetSubMenuColor() {
+        for (JButton btn : subButtons) {
+            btn.setBackground(SUB_NORMAL);
+        }
+    }
+
+    public void setMenuActionListener(MenuActionListener listener) {
+        this.listener = listener;
+    }
+
+    public interface MenuActionListener {
+        void onMenuSelected(MenuButton source, String pageName);
+    }
+
+    public void setMainSelected(boolean selected) {
+        if (subButtons.isEmpty()) {
+            mainButton.setBackground(selected ? SUB_SELECTED : MAIN_COLOR);
+        }
+    }
+}

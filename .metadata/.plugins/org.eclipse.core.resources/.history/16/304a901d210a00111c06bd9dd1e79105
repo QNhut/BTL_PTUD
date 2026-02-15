@@ -1,0 +1,76 @@
+package exception;
+
+import javax.swing.*;
+import java.awt.*;
+import java.util.ArrayList;
+import gui.Main_GUI;
+
+public class MenuBarPanel extends JPanel {
+
+	private ArrayList<MenuButton> menuButtons = new ArrayList<>();
+	private Main_GUI mainFrame;
+
+	public MenuBarPanel(Main_GUI mainFrame) {
+		this.mainFrame = mainFrame;
+
+		// ===== ĐỔI TỪ NGANG SANG DỌC =====
+		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+		setBackground(Color.WHITE);
+		setPreferredSize(new Dimension(270, 0));
+
+		// ===== MENU CHA =====
+
+		MenuButton trangChu = createMenu("Trang chủ", "image/icon/house.png");
+		trangChu.getMainButton().addActionListener(e -> {
+			selectOnly(trangChu);
+			mainFrame.showPage("TrangChu");
+		});
+
+		MenuButton sanPham = createMenu("Sản phẩm", "image/icon/box.png");
+		sanPham.addSubMenu("Danh sách", "DanhSachSanPham");
+		sanPham.addSubMenu("Nhập hàng", "NhapHang");
+
+//		sanPham.getMainButton().addActionListener(e -> {
+//			selectOnly(sanPham);
+//			mainFrame.showPage("SanPham");
+//		});
+
+		MenuButton thongKe = createMenu("Thống kê", "image/icon/box.png");
+		thongKe.addSubMenu("Theo khách hàng", "TheoKhachHang");
+		thongKe.addSubMenu("Theo ngày", "TheoNgay");
+
+//		thongKe.getMainButton().addActionListener(e -> {
+//			selectOnly(thongKe);
+//			mainFrame.showPage("ThongKe");
+//		});
+
+		addMenu(trangChu);
+		addMenu(sanPham);
+		addMenu(thongKe);
+
+		selectOnly(trangChu);
+	}
+
+	private MenuButton createMenu(String title, String icon) {
+		MenuButton btn = new MenuButton(title, icon);
+		btn.setMenuActionListener(this::onSubMenuClick);
+		return btn;
+	}
+
+	private void addMenu(MenuButton btn) {
+		menuButtons.add(btn);
+		btn.setAlignmentX(Component.LEFT_ALIGNMENT);
+		add(btn);
+	}
+
+	private void selectOnly(MenuButton selected) {
+		for (MenuButton mb : menuButtons) {
+			mb.setSelected(mb == selected);
+		}
+	}
+
+	private void onSubMenuClick(MenuButton parent, String page) {
+		selectOnly(parent);
+		mainFrame.showPage(page);
+	}
+}

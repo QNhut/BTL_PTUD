@@ -2,120 +2,170 @@ package exception;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
+import java.util.ArrayList;
 
 public class MenuButton extends JPanel {
 
     private JButton mainButton;
-    private JPopupMenu subMenu;
-    private boolean selected = false;
+    private JPanel subPanel;
+    private boolean expanded = false;
     private MenuActionListener listener;
+    private String mainPageName;
 
-    private static final Color COLOR_NORMAL = Color.WHITE;
-    private static final Color COLOR_HOVER = new Color(220, 230, 245);
-    private static final Color COLOR_SELECTED = new Color(124, 163, 206);
+    private ArrayList<JButton> subButtons = new ArrayList<>();
 
-    private static final Color SUB_NORMAL = Color.WHITE;
-    private static final Color SUB_HOVER = new Color(200, 220, 245);
+    private static final Color MAIN_COLOR = new Color(36, 170, 140);
+    private static final Color SUB_NORMAL = new Color(36, 170, 140);
+    private static final Color SUB_SELECTED = new Color(255, 80, 40);
 
-    private static final Font FONT_MAIN = new Font("Segoe UI", Font.PLAIN, 14);
-    private static final Font FONT_MAIN_SELECTED = new Font("Segoe UI", Font.BOLD, 14);
-    private static final Font FONT_SUB = new Font("Segoe UI", Font.PLAIN, 13);
+    private JLabel arrowLabel; // CHỈ tạo khi có submenu
 
     public MenuButton(String text, String iconPath) {
+        this(text, iconPath, null);
+    }
 
-        setLayout(new BorderLayout());
-        setBackground(Color.WHITE);
-        setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
+    public MenuButton(String text, String iconPath, String pageName) {
 
-        ImageIcon icon = null;
-        if (iconPath != null && !iconPath.isEmpty()) {
-            Image img = new ImageIcon(iconPath)
-                    .getImage()
-                    .getScaledInstance(22, 22, Image.SCALE_SMOOTH);
-            icon = new ImageIcon(img);
-        }
+        this.mainPageName = pageName;
 
-        mainButton = new JButton(text, icon);
-        mainButton.setHorizontalAlignment(SwingConstants.LEFT);
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        setBackground(MAIN_COLOR);
+        setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // ===== MAIN BUTTON =====
+        mainButton = new JButton();
+        mainButton.setLayout(new BorderLayout());
+        mainButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
         mainButton.setFocusPainted(false);
-        mainButton.setBackground(COLOR_NORMAL);
-        mainButton.setFont(FONT_MAIN);
-        mainButton.setBorder(BorderFactory.createEmptyBorder(12, 10, 12, 10));
+        mainButton.setBackground(MAIN_COLOR);
+        mainButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         mainButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        mainButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
+        mainButton.setOpaque(true);
+        mainButton.setContentAreaFilled(true);
+        mainButton.setBorderPainted(false);
 
-        add(mainButton, BorderLayout.CENTER);
+        // ===== ICON TRÁI =====
+        JLabel leftIcon = new JLabel(loadIcon(iconPath, 30, 30));
+        leftIcon.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 20));
 
-        subMenu = new JPopupMenu();
-        subMenu.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+        // ===== TEXT =====
+        JLabel textLabel = new JLabel(text);
+        textLabel.setForeground(Color.WHITE);
+        textLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
 
-        mainButton.addMouseListener(new MouseAdapter() {
+        mainButton.add(leftIcon, BorderLayout.WEST);
+        mainButton.add(textLabel, BorderLayout.CENTER);
 
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                if (!selected) {
-                    mainButton.setBackground(COLOR_HOVER);
-                }
-                if (subMenu.getComponentCount() > 0) {
-                    // ===== ĐỔI SANG XỔ SANG PHẢI =====
-                    subMenu.show(mainButton, mainButton.getWidth(), 0);
-                }
+        add(mainButton);
+
+        // ===== SUB PANEL =====
+        subPanel = new JPanel();
+        subPanel.setLayout(new BoxLayout(subPanel, BoxLayout.Y_AXIS));
+        subPanel.setBackground(MAIN_COLOR);
+        subPanel.setVisible(false);
+
+        add(subPanel);
+
+        // ===== SỰ KIỆN =====
+        mainButton.addActionListener(e -> {
+
+            if (!subButtons.isEmpty()) {
+                toggleMenu();
             }
+            else if (listener != null && mainPageName != null) {
 
-            @Override
-            public void mouseExited(MouseEvent e) {
-                if (!selected) {
-                    mainButton.setBackground(COLOR_NORMAL);
-                }
+                setMainSelected(true);
+                listener.onMenuSelected(this, mainPageName);
             }
         });
     }
 
+    // ===== LOAD ICON =====
+    private ImageIcon loadIcon(String path, int w, int h) {
+
+        ImageIcon icon = new ImageIcon(path);
+
+        if (icon.getIconWidth() > 0) {
+            Image img = icon.getImage().getScaledInstance(w, h, Image.SCALE_SMOOTH);
+            return new ImageIcon(img);
+        } else {
+            System.out.println("Không tìm thấy icon: " + path);
+        }
+
+        return null;
+    }
+
+    // ===== TOGGLE MENU =====
+    private void toggleMenu() {
+        expanded = !expanded;
+        subPanel.setVisible(expanded);
+
+        if (arrowLabel != null) {
+            if (expanded) {
+                arrowLabel.setIcon(loadIcon("data/img/icons/arrow-up.png", 16, 16));
+            } else {
+                arrowLabel.setIcon(loadIcon("data/img/icons/arrow-down.png", 16, 16));
+            }
+        }
+
+        revalidate();
+        repaint();
+    }
+
+    public void collapse() {
+        expanded = false;
+        subPanel.setVisible(false);
+
+        if (arrowLabel != null) {
+            arrowLabel.setIcon(loadIcon("data/img/icons/down-chevron.png", 16, 16));
+        }
+    }
+
+    // ===== ADD SUB MENU =====
     public void addSubMenu(String title, String pageName) {
 
-        JMenuItem item = new JMenuItem(title);
-        item.setFont(FONT_SUB);
-        item.setOpaque(true);
-        item.setBackground(SUB_NORMAL);
-        item.setBorder(BorderFactory.createEmptyBorder(8, 30, 8, 20));
-        item.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        // Nếu đây là submenu đầu tiên → thêm mũi tên
+        if (subButtons.isEmpty()) {
 
-        item.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                item.setBackground(SUB_HOVER);
-            }
+            arrowLabel = new JLabel(loadIcon("data/img/icons/down-chevron.png", 16, 16));
+            mainButton.add(arrowLabel, BorderLayout.EAST);
 
-            @Override
-            public void mouseExited(MouseEvent e) {
-                item.setBackground(SUB_NORMAL);
-            }
-        });
+            mainButton.revalidate();
+            mainButton.repaint();
+        }
 
-        item.addActionListener(e -> {
+        JButton subBtn = new JButton("•  " + title);
+        subBtn.setHorizontalAlignment(SwingConstants.LEFT);
+        subBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        subBtn.setFocusPainted(false);
+        subBtn.setBackground(SUB_NORMAL);
+        subBtn.setForeground(Color.WHITE);
+        subBtn.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        subBtn.setBorder(BorderFactory.createEmptyBorder(8, 40, 8, 10));
+        subBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        subBtn.setOpaque(true);
+        subBtn.setContentAreaFilled(true);
+        subBtn.setBorderPainted(false);
+
+        subBtn.addActionListener(e -> {
+
+            resetSubMenuColor();
+            subBtn.setBackground(SUB_SELECTED);
+            mainButton.setBackground(MAIN_COLOR);
+
             if (listener != null) {
                 listener.onMenuSelected(this, pageName);
             }
-            subMenu.setVisible(false);
         });
 
-        subMenu.add(item);
+        subButtons.add(subBtn);
+        subPanel.add(subBtn);
     }
 
-    public void setSelected(boolean selected) {
-        this.selected = selected;
-
-        mainButton.setBackground(
-                selected ? COLOR_SELECTED : COLOR_NORMAL
-        );
-        mainButton.setFont(
-                selected ? FONT_MAIN_SELECTED : FONT_MAIN
-        );
-    }
-
-    public JButton getMainButton() {
-        return mainButton;
+    public void resetSubMenuColor() {
+        for (JButton btn : subButtons) {
+            btn.setBackground(SUB_NORMAL);
+        }
     }
 
     public void setMenuActionListener(MenuActionListener listener) {
@@ -124,5 +174,11 @@ public class MenuButton extends JPanel {
 
     public interface MenuActionListener {
         void onMenuSelected(MenuButton source, String pageName);
+    }
+
+    public void setMainSelected(boolean selected) {
+        if (subButtons.isEmpty()) {
+            mainButton.setBackground(selected ? SUB_SELECTED : MAIN_COLOR);
+        }
     }
 }

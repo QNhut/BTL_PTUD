@@ -1,0 +1,97 @@
+package exception;
+
+import javax.swing.*;
+import java.awt.*;
+import java.util.ArrayList;
+import gui.Main_GUI;
+
+public class MenuBarPanel extends JPanel {
+
+	private ArrayList<MenuButton> menuButtons = new ArrayList<>();
+	private Main_GUI mainFrame;
+
+	public MenuBarPanel(Main_GUI mainFrame) {
+		this.mainFrame = mainFrame;
+
+		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+		setBackground(new Color(36, 170, 140));
+		setPreferredSize(new Dimension(300, 0));
+
+		MenuButton trangChu = createMenu("Trang chủ", "data/img/icons/home.png");
+		trangChu.addSubMenu("Thống kê bán hàng", "ThongKeBanHang");
+		trangChu.addSubMenu("Báo cáo doanh thu", "BaoCaoDoanhThu");
+		trangChu.addSubMenu("Tra cứu giao dịch", "TraCuuGiaoDich");
+
+		MenuButton banHang = createMenu("Bán hàng & Giao dịch", "data/img/icons/shopping-cart.png");
+		banHang.addSubMenu("Lập hoá đơn", "LapHoaDon");
+		banHang.addSubMenu("Tra cứu hoá đơn", "TraCuuHoaDon");
+		banHang.addSubMenu("Đổi hàng", "DoiHang");
+		banHang.addSubMenu("Trả hàng", "TraHang");
+
+		MenuButton sanPham = createMenu("Quản lý sản phẩm", "data/img/icons/box.png");
+		sanPham.addSubMenu("Thêm sản phẩm", "ThemSanPham");
+		sanPham.addSubMenu("Cập nhật sản phẩm", "CapNhatSanPham");
+		sanPham.addSubMenu("Tra cứu sản phẩm", "TraCuuSanPham");
+
+		MenuButton khachHang = createMenu("Quản lý khách hàng", "data/img/icons/box.png");
+		khachHang.addSubMenu("Thêm khách hàng", "ThemKhachHang");
+		khachHang.addSubMenu("Cập nhật khách hàng", "CapNhatKhachHang");
+		khachHang.addSubMenu("Tra cứu khách hàng", "TraCuuKhachHang");
+
+		MenuButton nhanVien = createMenu("Quản lý nhân viên", "data/img/icons/box.png");
+		nhanVien.addSubMenu("Thêm nhân viên", "ThemNhanVien");
+		nhanVien.addSubMenu("Cập nhật nhân viên", "CapNhatNhanVien");
+		nhanVien.addSubMenu("Tra cứu nhân viên", "TraCuuNhanVien");
+
+		MenuButton nhapHang = createMenu("Quản lý nhập hàng", "data/img/icons/box.png");
+		nhapHang.addSubMenu("Tạo phiếu nhập", "TaoPhieuNhap");
+		nhapHang.addSubMenu("Thêm nhà cung cấp", "ThemNCC");
+		nhapHang.addSubMenu("Cập nhật nhà cung cấp", "CapNhatNCC");
+		nhapHang.addSubMenu("Tra cứu nhà cung cấp", "TraCuuNCC");
+
+		MenuButton caiDat = createSingleMenu("Cài đặt", "data/img/icons/box.png", "CaiDat");
+
+		addMenu(trangChu);
+		addMenu(banHang);
+		addMenu(sanPham);
+		addMenu(khachHang);
+		addMenu(nhanVien);
+		addMenu(nhapHang);
+		addMenu(caiDat);
+
+		add(Box.createVerticalGlue());
+	}
+
+	private MenuButton createMenu(String title, String icon) {
+		MenuButton btn = new MenuButton(title, icon, null);
+		btn.setMenuActionListener(this::onMenuSelected);
+		return btn;
+	}
+
+	private MenuButton createSingleMenu(String title, String icon, String pageName) {
+		MenuButton btn = new MenuButton(title, icon, pageName);
+		btn.setMenuActionListener(this::onMenuSelected);
+		return btn;
+	}
+
+	private void addMenu(MenuButton btn) {
+		menuButtons.add(btn);
+		btn.setAlignmentX(Component.LEFT_ALIGNMENT);
+		add(btn);
+	}
+
+	private void onMenuSelected(MenuButton source, String page) {
+
+		for (MenuButton mb : menuButtons) {
+			if (mb != source) {
+				mb.collapse();
+				mb.resetSubMenuColor();
+				mb.setMainSelected(false);
+			}
+		}
+
+		if (page != null) {
+			mainFrame.showPage(page);
+		}
+	}
+}

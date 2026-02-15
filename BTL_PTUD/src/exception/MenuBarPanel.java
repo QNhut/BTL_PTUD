@@ -13,48 +13,64 @@ public class MenuBarPanel extends JPanel {
 	public MenuBarPanel(Main_GUI mainFrame) {
 		this.mainFrame = mainFrame;
 
-		// ===== ĐỔI TỪ NGANG SANG DỌC =====
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-		setBackground(Color.WHITE);
-		setPreferredSize(new Dimension(270, 0));
+		setBackground(new Color(36, 170, 140));
+		setPreferredSize(new Dimension(300, 0));
 
-		// ===== MENU CHA =====
+		MenuButton trangChu = createMenu("Trang chủ", "data/img/icons/home.png");
+		trangChu.addSubMenu("Thống kê bán hàng", "ThongKeBanHang");
+		trangChu.addSubMenu("Báo cáo doanh thu", "BaoCaoDoanhThu");
+		trangChu.addSubMenu("Tra cứu giao dịch", "TraCuuGiaoDich");
 
-		MenuButton trangChu = createMenu("Trang chủ", "image/icon/house.png");
-		trangChu.getMainButton().addActionListener(e -> {
-			selectOnly(trangChu);
-			mainFrame.showPage("TrangChu");
-		});
+		MenuButton banHang = createMenu("Bán hàng & Giao dịch", "data/img/icons/shopping-cart.png");
+		banHang.addSubMenu("Lập hoá đơn", "LapHoaDon");
+		banHang.addSubMenu("Tra cứu hoá đơn", "TraCuuHoaDon");
+		banHang.addSubMenu("Đổi hàng", "DoiHang");
+		banHang.addSubMenu("Trả hàng", "TraHang");
 
-		MenuButton sanPham = createMenu("Sản phẩm", "image/icon/box.png");
-		sanPham.addSubMenu("Danh sách", "DanhSachSanPham");
-		sanPham.addSubMenu("Nhập hàng", "NhapHang");
+		MenuButton sanPham = createMenu("Quản lý sản phẩm", "data/img/icons/box.png");
+		sanPham.addSubMenu("Thêm sản phẩm", "ThemSanPham");
+		sanPham.addSubMenu("Cập nhật sản phẩm", "CapNhatSanPham");
+		sanPham.addSubMenu("Tra cứu sản phẩm", "TraCuuSanPham");
 
-		sanPham.getMainButton().addActionListener(e -> {
-			selectOnly(sanPham);
-			mainFrame.showPage("SanPham");
-		});
-		
-		MenuButton thongKe = createMenu("Thống kê", "image/icon/box.png");
-		thongKe.addSubMenu("Theo khách hàng", "TheoKhachHang");
-		thongKe.addSubMenu("Theo ngày", "TheoNgay");
-		
-		thongKe.getMainButton().addActionListener(e -> {
-			selectOnly(thongKe);
-			mainFrame.showPage("ThongKe");
-		});
-		
+		MenuButton khachHang = createMenu("Quản lý khách hàng", "data/img/icons/people.png");
+		khachHang.addSubMenu("Thêm khách hàng", "ThemKhachHang");
+		khachHang.addSubMenu("Cập nhật khách hàng", "CapNhatKhachHang");
+		khachHang.addSubMenu("Tra cứu khách hàng", "TraCuuKhachHang");
+
+		MenuButton nhanVien = createMenu("Quản lý nhân viên", "data/img/icons/recruitment.png");
+		nhanVien.addSubMenu("Thêm nhân viên", "ThemNhanVien");
+		nhanVien.addSubMenu("Cập nhật nhân viên", "CapNhatNhanVien");
+		nhanVien.addSubMenu("Tra cứu nhân viên", "TraCuuNhanVien");
+
+		MenuButton nhapHang = createMenu("Quản lý nhập hàng", "data/img/icons/vehicle.png");
+		nhapHang.addSubMenu("Tạo phiếu nhập", "TaoPhieuNhap");
+		nhapHang.addSubMenu("Thêm nhà cung cấp", "ThemNCC");
+		nhapHang.addSubMenu("Cập nhật nhà cung cấp", "CapNhatNCC");
+		nhapHang.addSubMenu("Tra cứu nhà cung cấp", "TraCuuNCC");
+
+		MenuButton caiDat = createSingleMenu("Cài đặt", "data/img/icons/gear.png", "CaiDat");
 
 		addMenu(trangChu);
+		addMenu(banHang);
 		addMenu(sanPham);
-		addMenu(thongKe);
+		addMenu(khachHang);
+		addMenu(nhanVien);
+		addMenu(nhapHang);
+		addMenu(caiDat);
 
-		selectOnly(trangChu);
+		add(Box.createVerticalGlue());
 	}
 
 	private MenuButton createMenu(String title, String icon) {
-		MenuButton btn = new MenuButton(title, icon);
-		btn.setMenuActionListener(this::onSubMenuClick);
+		MenuButton btn = new MenuButton(title, icon, null);
+		btn.setMenuActionListener(this::onMenuSelected);
+		return btn;
+	}
+
+	private MenuButton createSingleMenu(String title, String icon, String pageName) {
+		MenuButton btn = new MenuButton(title, icon, pageName);
+		btn.setMenuActionListener(this::onMenuSelected);
 		return btn;
 	}
 
@@ -64,19 +80,18 @@ public class MenuBarPanel extends JPanel {
 		add(btn);
 	}
 
-	private void selectOnly(MenuButton selected) {
+	private void onMenuSelected(MenuButton source, String page) {
+
 		for (MenuButton mb : menuButtons) {
-			mb.setSelected(mb == selected);
-			if (mb == selected) {
-				mb.setBackground(Color.gray);
-			} else {
-				mb.setBackground(Color.white);
+			if (mb != source) {
+				mb.collapse();
+				mb.resetSubMenuColor();
+				mb.setMainSelected(false);
 			}
 		}
-	}
 
-	private void onSubMenuClick(MenuButton parent, String page) {
-		selectOnly(parent);
-		mainFrame.showPage(page);
+		if (page != null) {
+			mainFrame.showPage(page);
+		}
 	}
 }
