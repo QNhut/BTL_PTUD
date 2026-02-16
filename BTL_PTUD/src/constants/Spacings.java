@@ -1,0 +1,24 @@
+package constants;
+
+public class Spacings {
+	private Spacings() {}
+
+    //Spacing scale
+    public static final int S1 = 4;
+    public static final int S2 = 8;
+    public static final int S3 = 12;
+    public static final int S4 = 16;
+    public static final int S6 = 24;
+    public static final int S8 = 32;
+
+    //Radius
+    public static final int R_SM   = 4;
+    public static final int R_MD   = 8;
+    public static final int R_LG   = 12;
+    public static final int R_XL   = 16;
+    public static final int R_FULL = 9999;
+
+    // Layout
+    public static final int SIDEBAR_WIDTH = 256;
+    public static final int CARD_MAX_WIDTH = 448;
+}
