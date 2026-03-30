@@ -1,0 +1,23 @@
+package week6;
+
+import weka.core.Instances;
+import weka.core.converters.ConverterUtils.DataSource;
+import weka.gui.beans.DataSetEvent;
+
+public class Preprocessing {
+	DataSource source;
+	Instances dataset;
+	
+	public Instances loadDataSet(String path) throws Exception 
+	{
+		source = new DataSource(path);
+		
+		dataset = source.getDataSet();
+		
+		return dataset;
+	}
+	
+//	public void outputDataset()
+}
+
+

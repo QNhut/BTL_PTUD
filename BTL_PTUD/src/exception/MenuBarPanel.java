@@ -7,76 +7,87 @@ import gui.Main_GUI;
 
 public class MenuBarPanel extends JPanel {
 
-	private ArrayList<MenuButton> menuButtons = new ArrayList<>();
-	private Main_GUI mainFrame;
+    private ArrayList<MenuButton> menuButtons = new ArrayList<>();
+    private Main_GUI mainFrame;
 
-	public MenuBarPanel(Main_GUI mainFrame) {
-		this.mainFrame = mainFrame;
+    public MenuBarPanel(Main_GUI mainFrame) {
+        this.mainFrame = mainFrame;
 
-		// ===== ĐỔI TỪ NGANG SANG DỌC =====
-		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-		setBackground(Color.WHITE);
-		setPreferredSize(new Dimension(270, 0));
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        setBackground(Color.WHITE);
+        setPreferredSize(new Dimension(300, 0));
 
-		// ===== MENU CHA =====
+        MenuButton danhMuc = createMenu("Danh mục");
+        danhMuc.addSubMenu("Nhân viên", "data/img/icons/recruitment.png", "NhanVien");
+        danhMuc.addSubMenu("Khách Hàng", "data/img/icons/people.png", "KhachHang");
+        danhMuc.addSubMenu("Sản Phẩm", "data/img/icons/box.png", "SanPham");
+        danhMuc.addSubMenu("Nhà cung cấp", "data/img/icons/vehicle.png", "NhaCungCap");
+        danhMuc.addSubMenu("Khuyến mãi", "data/img/icons/tag.png", "KhuyenMai");
 
-		MenuButton trangChu = createMenu("Trang chủ", "image/icon/house.png");
-		trangChu.getMainButton().addActionListener(e -> {
-			selectOnly(trangChu);
-			mainFrame.showPage("TrangChu");
-		});
+        MenuButton xuLy = createMenu("Xử lý");
+        xuLy.addSubMenu("Bán Hàng", "data/img/icons/shopping-cart.png", "BanHang");
+        xuLy.addSubMenu("Nhập hàng", "data/img/icons/open-box.png", "NhapHang");
+        xuLy.addSubMenu("Đổi hàng", "data/img/icons/commercial.png", "DoiHang");
+        xuLy.addSubMenu("Trả hàng", "data/img/icons/exchange.png", "TraHang");
 
-		MenuButton sanPham = createMenu("Sản phẩm", "image/icon/box.png");
-		sanPham.addSubMenu("Danh sách", "DanhSachSanPham");
-		sanPham.addSubMenu("Nhập hàng", "NhapHang");
+        MenuButton traCuu = createMenu("Tra cứu");
+        traCuu.addSubMenu("Hoá đơn", "data/img/icons/invoice.png", "TraCuuHoaDon");
+        traCuu.addSubMenu("Phiếu nhập", "data/img/icons/invoice_1.png", "TraCuuPhieuNhap");
+        traCuu.addSubMenu("Đổi hàng", "data/img/icons/commercial.png", "TraCuuDoiHang");
+        traCuu.addSubMenu("Trả hàng", "data/img/icons/exchange.png", "TraCuuTraHang");
 
-		sanPham.getMainButton().addActionListener(e -> {
-			selectOnly(sanPham);
-			mainFrame.showPage("SanPham");
-		});
-		
-		MenuButton thongKe = createMenu("Thống kê", "image/icon/box.png");
-		thongKe.addSubMenu("Theo khách hàng", "TheoKhachHang");
-		thongKe.addSubMenu("Theo ngày", "TheoNgay");
-		
-		thongKe.getMainButton().addActionListener(e -> {
-			selectOnly(thongKe);
-			mainFrame.showPage("ThongKe");
-		});
-		
+        MenuButton thongKe = createMenu("Thống kê");
+        thongKe.addSubMenu("Doanh thu", "data/img/icons/up.png", "ThongKeDoanhThu");
+        thongKe.addSubMenu("Khách hàng", "data/img/icons/people.png", "ThongKeKhachHang");
+        thongKe.addSubMenu("Sản phẩm", "data/img/icons/stats.png", "ThongKeSanPham");
 
-		addMenu(trangChu);
-		addMenu(sanPham);
-		addMenu(thongKe);
 
-		selectOnly(trangChu);
-	}
+        // ===== CÀI ĐẶT (KHÔNG SUB) =====
+        MenuButton caiDat = createSingleMenu("Cài đặt", "CaiDat");
 
-	private MenuButton createMenu(String title, String icon) {
-		MenuButton btn = new MenuButton(title, icon);
-		btn.setMenuActionListener(this::onSubMenuClick);
-		return btn;
-	}
+        addMenu(danhMuc);
+        addMenu(xuLy);
+        addMenu(traCuu);
+        addMenu(thongKe);
+        addMenu(caiDat);
 
-	private void addMenu(MenuButton btn) {
-		menuButtons.add(btn);
-		btn.setAlignmentX(Component.LEFT_ALIGNMENT);
-		add(btn);
-	}
+        add(Box.createVerticalGlue());
+    }
 
-	private void selectOnly(MenuButton selected) {
-		for (MenuButton mb : menuButtons) {
-			mb.setSelected(mb == selected);
-			if (mb == selected) {
-				mb.setBackground(Color.gray);
-			} else {
-				mb.setBackground(Color.white);
-			}
-		}
-	}
+    // ===== MENU CHA =====
+    private MenuButton createMenu(String title) {
+        MenuButton btn = new MenuButton(title, null);
+        btn.setMenuActionListener(this::onMenuSelected);
+        return btn;
+    }
 
-	private void onSubMenuClick(MenuButton parent, String page) {
-		selectOnly(parent);
-		mainFrame.showPage(page);
-	}
+    // ===== MENU ĐƠN =====
+    private MenuButton createSingleMenu(String title, String pageName) {
+        MenuButton btn = new MenuButton(title, pageName);
+        btn.setMenuActionListener(this::onMenuSelected);
+        return btn;
+    }
+
+    // ===== ADD MENU =====
+    private void addMenu(MenuButton btn) {
+        menuButtons.add(btn);
+        btn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        add(btn);
+    }
+
+    // ===== EVENT =====
+    private void onMenuSelected(MenuButton source, String page) {
+
+        for (MenuButton mb : menuButtons) {
+            if (mb != source) {
+                mb.collapse();
+                mb.resetSubMenuColor();
+                mb.setMainSelected(false);
+            }
+        }
+
+        if (page != null) {
+            mainFrame.showPage(page);
+        }
+    }
 }

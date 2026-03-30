@@ -1,0 +1,15 @@
+package week6;
+
+import weka.core.Instances;
+
+public class main {
+		public static void main(String[] args) {
+		Preprocessing preprocessing = new Preprocessing();
+		try {
+			Instances data = preprocessing.loadData("path/to/your/dataset.arff");
+			System.out.println(data);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+}

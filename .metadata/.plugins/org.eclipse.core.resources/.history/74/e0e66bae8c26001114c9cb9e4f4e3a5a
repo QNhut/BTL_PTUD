@@ -1,0 +1,42 @@
+package week6;
+
+import weka.core.Instances;
+import weka.classifiers.Evaluation;
+import java.util.Random;
+
+public class DemoDMLabs {
+
+    public static void main(String[] args) {
+        try {
+            Instances data, datatrain, datatest;
+
+            // B1: Load data
+            Preprocessing preprocess = new Preprocessing();
+            data = preprocess.loadDataSet(
+                "/Users/quocnhut/Documents/University/Subjects/Third_year/HK2/Data Mining and Application/data/weather.nominal.arff"
+            );
+
+            data.setClassIndex(data.numAttributes() - 1);
+
+            datatrain = preprocess.splitData(data, 30, true);
+            datatest  = preprocess.splitData(data, 30, false);
+
+            // B3: Train model
+            ClassificationData classify = new ClassificationData();
+            classify.train(datatrain);
+
+            // B4: In cây quyết định
+            classify.printTree();
+
+            // B5: Evaluate trên test
+            Evaluation eval = new Evaluation(datatrain);
+            eval.evaluateModel(classify.getModel(), datatest);
+
+            System.out.println("=== Evaluation ===");
+            System.out.println(eval.toSummaryString());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}

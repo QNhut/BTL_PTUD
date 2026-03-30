@@ -33,7 +33,7 @@ public class Main_GUI extends JFrame implements ActionListener {
 
 		// ===== HEADER =====
 		pHeader = new JPanel(new BorderLayout());
-		pHeader.setPreferredSize(new Dimension(270, 0));
+		pHeader.setPreferredSize(new Dimension(300, 0));
 		pHeader.setBackground(Color.PINK);
 		add(pHeader, BorderLayout.WEST);
 
@@ -78,15 +78,36 @@ public class Main_GUI extends JFrame implements ActionListener {
 		contentPanel.setBackground(Color.WHITE);
 		add(contentPanel, BorderLayout.CENTER);
 
-		contentPanel.add(createEmptyPage("TrangChu"), "TrangChu");
-		contentPanel.add(createEmptyPage("DanhSachSanPham"), "DanhSachSanPham");
+//		Danh mục
+		contentPanel.add(createEmptyPage("NhanVien"), "NhanVien");
+		contentPanel.add(createEmptyPage("KhachHang"), "KhachHang");
 		contentPanel.add(createEmptyPage("SanPham"), "SanPham");
+		contentPanel.add(createEmptyPage("NhaCungCap"), "NhaCungCap");
+		contentPanel.add(createEmptyPage("KhuyenMai"), "KhuyenMai");
+		
+		//		Xử lý
+		contentPanel.add(createEmptyPage("BanHang"), "BanHang");
 		contentPanel.add(createEmptyPage("NhapHang"), "NhapHang");
-		contentPanel.add(createEmptyPage("ThongKe"), "ThongKe");
-		contentPanel.add(createEmptyPage("TheoKhachHang"), "TheoKhachHang");
-		contentPanel.add(createEmptyPage("TheoNgay"), "TheoNgay");
+		contentPanel.add(createEmptyPage("DoiHang"), "DoiHang");
+		contentPanel.add(createEmptyPage("TraHang"), "TraHang");
+		
+		//		Tra cứu
+		contentPanel.add(createEmptyPage("TraCuuHoaDon"), "TraCuuHoaDon");
+		contentPanel.add(createEmptyPage("TraCuuPhieuNhap"), "TraCuuPhieuNhap");
+		contentPanel.add(createEmptyPage("TraCuuDoiHang"),"TraCuuDoiHang");
+		contentPanel.add(createEmptyPage("TraCuuTraHang"), "TraCuuTraHang");
+		
+		//		Thống kê
+		contentPanel.add(createEmptyPage("ThongKeDoanhThu"), "ThongKeDoanhThu");
+		contentPanel.add(createEmptyPage("ThongKeKhachHang"), "ThongKeKhachHang");
+		contentPanel.add(createEmptyPage("ThongKeSanPham"), "ThongKeSanPham");
+		
+		
+//		Cài đặt
+		contentPanel.add(createEmptyPage("CaiDat"), "CaiDat");
 
-		cardLayout.show(contentPanel, "TrangChu");
+
+		cardLayout.show(contentPanel, "ThongKeBanHang");
 	}
 
 	private JPanel createEmptyPage(String name) {
