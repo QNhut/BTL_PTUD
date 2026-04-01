@@ -1,0 +1,18 @@
+# Thư mục build
+bin/
+out/
+build/
+
+# File compiled
+*.class
+
+# IDE
+.metadata/
+.project
+.classpath
+.settings/
+.idea/
+*.iml
+
+# Logs
+*.log

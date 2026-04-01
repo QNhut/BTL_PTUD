@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UI Constants — Design Reference</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --c-primary: #18A67A;
+    --c-accent: #ED5A2D;
+    --c-success: #16A34A;
+    --c-danger: #EF4444;
+    --c-bg: #FFFFFF;
+    --c-fg: #212121;
+    --c-muted: #737373;
+    --c-border: #E0E0E0;
+    --c-secondary: #F2F2F2;
+    --ink: #1a1a1a;
+    --paper: #FAF9F7;
+    --paper2: #F3F1EE;
+    --line: #E2DDD8;
+    --mono: 'DM Mono', monospace;
+    --sans: 'Plus Jakarta Sans', sans-serif;
+    --display: 'Fraunces', serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* HERO */
+  .hero {
+    background: var(--ink);
+    color: #fff;
+    padding: 72px 64px 56px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 320px; height: 320px;
+    border-radius: 50%;
+    background: var(--c-primary);
+    opacity: 0.12;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; left: 30%;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background: var(--c-accent);
+    opacity: 0.1;
+  }
+  .hero-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--c-primary);
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-family: var(--display);
+    font-size: clamp(36px, 5vw, 56px);
+    font-weight: 300;
+    line-height: 1.1;
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+  }
+  .hero h1 em {
+    font-style: italic;
+    color: var(--c-primary);
+  }
+  .hero-sub {
+    font-size: 15px;
+    color: rgba(255,255,255,0.55);
+    max-width: 520px;
+    margin-bottom: 36px;
+  }
+  .hero-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 100px;
+    border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.6);
+  }
+
+  /* NAV */
+  .sticky-nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(250,249,247,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+    padding: 0 64px;
+    display: flex;
+    gap: 0;
+  }
+  .nav-link {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--c-muted);
+    text-decoration: none;
+    padding: 14px 20px;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .nav-link:hover { color: var(--ink); }
+  .nav-link.active { color: var(--c-primary); border-bottom-color: var(--c-primary); }
+  .nav-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+  /* LAYOUT */
+  .main { max-width: 1100px; margin: 0 auto; padding: 56px 48px 100px; }
+
+  /* SECTION */
+  .section { margin-bottom: 72px; }
+  .section-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--line);
+  }
+  .section-num {
+    font-family: var(--display);
+    font-size: 48px;
+    font-weight: 300;
+    color: var(--line);
+    line-height: 1;
+    flex-shrink: 0;
+    user-select: none;
+  }
+  .section-info { flex: 1; }
+  .section-info h2 {
+    font-family: var(--display);
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+  .section-info p { font-size: 14px; color: var(--c-muted); }
+  .file-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: var(--ink);
+    color: rgba(255,255,255,0.7);
+    padding: 4px 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+    display: inline-block;
+  }
+  .usage-block {
+    background: #1e1e1e;
+    border-radius: 10px;
+    padding: 14px 20px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .usage-block span { font-family: var(--mono); font-size: 12.5px; color: #9cdcfe; }
+  .usage-block .comment { color: #6a9955; }
+  .usage-block .method { color: #dcdcaa; }
+  .usage-block .const { color: #4ec9b0; }
+
+  /* COLORS GRID */
+  .colors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  .color-card {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: white;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: default;
+  }
+  .color-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.1); }
+  .color-swatch {
+    height: 88px;
+    display: flex;
+    align-items: flex-end;
+    padding: 10px 14px;
+  }
+  .swatch-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(4px);
+    color: rgba(255,255,255,0.9);
+  }
+  .swatch-label.dark { background: rgba(0,0,0,0.1); color: rgba(0,0,0,0.6); }
+  .color-info { padding: 12px 14px; }
+  .color-name { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 4px; }
+  .color-hex { font-family: var(--mono); font-size: 11px; color: var(--c-muted); margin-bottom: 6px; }
+  .color-use { font-size: 12px; color: var(--c-muted); line-height: 1.4; }
+
+  /* FONT SECTION */
+  .font-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .font-group-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--c-muted);
+    margin-bottom: 12px;
+    grid-column: 1 / -1;
+    padding-top: 8px;
+  }
+  .font-card {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    transition: box-shadow 0.2s;
+  }
+  .font-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.07); }
+  .font-preview {
+    font-family: 'Arial', sans-serif;
+    color: var(--ink);
+    line-height: 1;
+    flex-shrink: 0;
+    width: 80px;
+    font-weight: 400;
+  }
+  .font-preview.bold { font-weight: 700; }
+  .font-meta { flex: 1; }
+  .font-const { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--c-primary); margin-bottom: 4px; }
+  .font-px { font-family: var(--mono); font-size: 11px; color: var(--c-muted); margin-bottom: 4px; }
+  .font-use { font-size: 12px; color: var(--c-muted); }
+  .style-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  .style-card {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .style-sample { font-family: 'Arial', sans-serif; font-size: 22px; color: var(--ink); margin-bottom: 8px; }
+  .style-sample.bold { font-weight: 700; }
+
+  /* SPACING SECTION */
+  .spacing-group { margin-bottom: 32px; }
+  .spacing-group-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--c-muted);
+    margin-bottom: 16px;
+  }
+  .spacing-rows { display: flex; flex-direction: column; gap: 10px; }
+  .spacing-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .spacing-const { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--ink); width: 100px; flex-shrink: 0; }
+  .spacing-bar-wrap { flex: 1; }
+  .spacing-bar { height: 8px; border-radius: 4px; background: var(--c-primary); opacity: 0.7; }
+  .spacing-px { font-family: var(--mono); font-size: 12px; color: var(--c-muted); width: 40px; text-align: right; flex-shrink: 0; }
+  .spacing-use { font-size: 12px; color: var(--c-muted); width: 180px; flex-shrink: 0; }
+
+  /* RADIUS */
+  .radius-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .radius-card {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+  }
+  .radius-demo {
+    width: 56px;
+    height: 56px;
+    background: var(--c-primary);
+    opacity: 0.15;
+    border: 2px solid var(--c-primary);
+    margin: 0 auto 12px;
+  }
+  .radius-const { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--ink); margin-bottom: 4px; }
+  .radius-px { font-family: var(--mono); font-size: 11px; color: var(--c-muted); margin-bottom: 6px; }
+  .radius-use { font-size: 11px; color: var(--c-muted); }
+
+  /* LAYOUT */
+  .layout-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .layout-card {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .layout-demo { height: 48px; border-radius: 6px; border: 2px dashed var(--c-border); display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+  .layout-demo-inner { height: 100%; background: var(--c-primary); opacity: 0.15; border-radius: 4px; }
+  .layout-const { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 4px; }
+  .layout-px { font-family: var(--mono); font-size: 12px; color: var(--c-muted); margin-bottom: 6px; }
+  .layout-use { font-size: 13px; color: var(--c-muted); }
+
+  /* UTILITY SECTION */
+  .util-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+  .util-card {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .util-name { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--c-primary); margin-bottom: 8px; }
+  .util-sig { font-family: var(--mono); font-size: 11px; color: #555; background: var(--paper2); padding: 8px 12px; border-radius: 6px; margin-bottom: 10px; line-height: 1.6; }
+  .util-desc { font-size: 13px; color: var(--c-muted); }
+
+  /* FOOTER */
+  footer {
+    background: var(--ink);
+    color: rgba(255,255,255,0.4);
+    text-align: center;
+    padding: 28px;
+    font-size: 12px;
+    font-family: var(--mono);
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .section { animation: fadeUp 0.5s ease both; }
+  .section:nth-child(1) { animation-delay: 0.05s; }
+  .section:nth-child(2) { animation-delay: 0.1s; }
+  .section:nth-child(3) { animation-delay: 0.15s; }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-label">📦 constants package · Java Swing UI</div>
+  <h1>Design<br><em>Constants</em><br>Reference</h1>
+  <p class="hero-sub">Tài liệu tham khảo nội bộ — màu sắc, font chữ, khoảng cách dùng thống nhất trong toàn bộ giao diện.</p>
+  <div class="hero-pills">
+    <span class="pill">Colors.java</span>
+    <span class="pill">FontStyle.java</span>
+    <span class="pill">Spacings.java</span>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="sticky-nav">
+  <a href="#colors" class="nav-link active">
+    <span class="nav-dot" style="background:#18A67A;"></span> Colors
+  </a>
+  <a href="#fonts" class="nav-link">
+    <span class="nav-dot" style="background:#185FA5;"></span> FontStyle
+  </a>
+  <a href="#spacings" class="nav-link">
+    <span class="nav-dot" style="background:#ED5A2D;"></span> Spacings
+  </a>
+  <a href="#utils" class="nav-link">
+    <span class="nav-dot" style="background:#737373;"></span> Hàm tiện ích
+  </a>
+</nav>
+
+<div class="main">
+
+  <!-- ═══════════════════════════════ COLORS ═══════════════════════════════ -->
+  <section class="section" id="colors">
+    <div class="section-head">
+      <div class="section-num">01</div>
+      <div class="section-info">
+        <h2>Colors</h2>
+        <p>Bảng màu dùng chung cho toàn bộ giao diện. Gọi trực tiếp qua tên hằng số.</p>
+        <span class="file-badge">constants/Colors.java</span>
+      </div>
+    </div>
+
+    <div class="usage-block">
+      <span class="comment">// Cách dùng: </span>
+      <span><span class="method">label</span>.setForeground(<span class="const">Colors</span>.PRIMARY);</span>
+    </div>
+
+    <div style="margin-bottom:12px; font-size:11px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--c-muted);">Màu ngữ nghĩa</div>
+    <div class="colors-grid" style="margin-bottom:20px;">
+      <div class="color-card">
+        <div class="color-swatch" style="background:#18A67A;">
+          <span class="swatch-label">PRIMARY</span>
+        </div>
+        <div class="color-info">
+          <div class="color-name">Colors.PRIMARY</div>
+          <div class="color-hex">#18A67A</div>
+          <div class="color-use">Nút chính, nền sidebar, màu chủ đạo</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#ED5A2D;">
+          <span class="swatch-label">ACCENT</span>
+        </div>
+        <div class="color-info">
+          <div class="color-name">Colors.ACCENT</div>
+          <div class="color-hex">#ED5A2D</div>
+          <div class="color-use">Highlight, nút đang được chọn / active</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#16A34A;">
+          <span class="swatch-label">SUCCESS</span>
+        </div>
+        <div class="color-info">
+          <div class="color-name">Colors.SUCCESS</div>
+          <div class="color-hex">#16A34A</div>
+          <div class="color-use">Tổng tiền, còn hàng, đã thanh toán</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#EF4444;">
+          <span class="swatch-label">DANGER</span>
+        </div>
+        <div class="color-info">
+          <div class="color-name">Colors.DANGER</div>
+          <div class="color-hex">#EF4444</div>
+          <div class="color-use">Cảnh báo, lỗi, xoá</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px; font-size:11px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--c-muted);">Màu nền & chữ</div>
+    <div class="colors-grid">
+      <div class="color-card">
+        <div class="color-swatch" style="background:#FFFFFF; border-bottom:1px solid #E0E0E0;">
+          <span class="swatch-label dark">BACKGROUND</span>
+        </div>
+        <div class="color-info">
+          <div class="color-name">Colors.BACKGROUND</div>
+          <div class="color-hex">Color.WHITE</div>
+          <div class="color-use">Nền chính của toàn bộ giao diện</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#212121;">
+          <span class="swatch-label">FOREGROUND</span>
+        </div>
+        <div class="color-info">
+          <div class="color-name">Colors.FOREGROUND</div>
+          <div class="color-hex">#212121</div>
+          <div class="color-use">Màu chữ mặc định</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#737373;">
+          <span class="swatch-label">MUTED</span>
+        </div>
+        <div class="color-info">
+          <div class="color-name">Colors.MUTED</div>
+          <div class="color-hex">#737373</div>
+          <div class="color-use">Chữ phụ, placeholder, nhãn mờ</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#E0E0E0;">
+          <span class="swatch-label dark">BORDER</span>
+        </div>
+        <div class="color-info">
+          <div class="color-name">Colors.BORDER</div>
+          <div class="color-hex">#E0E0E0</div>
+          <div class="color-use">Viền ô, đường phân cách</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#F2F2F2;">
+          <span class="swatch-label dark">SECONDARY</span>
+        </div>
+        <div class="color-info">
+          <div class="color-name">Colors.SECONDARY</div>
+          <div class="color-hex">#F2F2F2</div>
+          <div class="color-use">Nền phụ, hiệu ứng hover</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════ FONTS ═══════════════════════════════ -->
+  <section class="section" id="fonts">
+    <div class="section-head">
+      <div class="section-num">02</div>
+      <div class="section-info">
+        <h2>FontStyle</h2>
+        <p>Cỡ chữ và kiểu chữ dùng thống nhất. Font mặc định: <strong>Arial</strong>.</p>
+        <span class="file-badge">constants/FontStyle.java</span>
+      </div>
+    </div>
+
+    <div class="usage-block">
+      <span class="comment">// Cách dùng: </span>
+      <span><span class="method">label</span>.setFont(<span class="const">FontStyle</span>.font(<span class="const">FontStyle</span>.XL, <span class="const">FontStyle</span>.BOLD));</span>
+    </div>
+
+    <div style="margin-bottom:12px; font-size:11px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--c-muted);">Cỡ chữ (size)</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:28px;">
+      <div class="font-card">
+        <div class="font-preview" style="font-size:12px;">Aa</div>
+        <div class="font-meta">
+          <div class="font-const">FontStyle.XS</div>
+          <div class="font-px">= 12</div>
+          <div class="font-use">Chú thích nhỏ, caption, tooltip</div>
+        </div>
+      </div>
+      <div class="font-card">
+        <div class="font-preview" style="font-size:14px;">Aa</div>
+        <div class="font-meta">
+          <div class="font-const">FontStyle.SM</div>
+          <div class="font-px">= 14</div>
+          <div class="font-use">Text phụ, label form, nhãn bảng</div>
+        </div>
+      </div>
+      <div class="font-card">
+        <div class="font-preview" style="font-size:16px;">Aa</div>
+        <div class="font-meta">
+          <div class="font-const">FontStyle.BASE</div>
+          <div class="font-px">= 16</div>
+          <div class="font-use">Nội dung chính, text mặc định</div>
+        </div>
+      </div>
+      <div class="font-card">
+        <div class="font-preview" style="font-size:18px;">Aa</div>
+        <div class="font-meta">
+          <div class="font-const">FontStyle.LG</div>
+          <div class="font-px">= 18</div>
+          <div class="font-use">Sub-heading, tiêu đề panel nhỏ</div>
+        </div>
+      </div>
+      <div class="font-card">
+        <div class="font-preview" style="font-size:24px;">Aa</div>
+        <div class="font-meta">
+          <div class="font-const">FontStyle.XL</div>
+          <div class="font-px">= 24</div>
+          <div class="font-use">Tiêu đề panel, tiêu đề trang</div>
+        </div>
+      </div>
+      <div class="font-card">
+        <div class="font-preview" style="font-size:30px;">Aa</div>
+        <div class="font-meta">
+          <div class="font-const">FontStyle.XXL</div>
+          <div class="font-px">= 30</div>
+          <div class="font-use">Tiêu đề lớn, màn hình chính</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px; font-size:11px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--c-muted);">Kiểu chữ (style)</div>
+    <div class="style-cards">
+      <div class="style-card">
+        <div class="style-sample">Hello World</div>
+        <div class="font-const">FontStyle.NORMAL</div>
+        <div class="font-px">= Font.PLAIN</div>
+        <div class="font-use">Chữ thường — nội dung, mô tả</div>
+      </div>
+      <div class="style-card">
+        <div class="style-sample bold">Hello World</div>
+        <div class="font-const">FontStyle.BOLD</div>
+        <div class="font-px">= Font.BOLD</div>
+        <div class="font-use">Chữ đậm — tiêu đề, nút, nhấn mạnh</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════ SPACINGS ═══════════════════════════════ -->
+  <section class="section" id="spacings">
+    <div class="section-head">
+      <div class="section-num">03</div>
+      <div class="section-info">
+        <h2>Spacings</h2>
+        <p>Khoảng cách, bo góc và kích thước layout cố định.</p>
+        <span class="file-badge">constants/Spacings.java</span>
+      </div>
+    </div>
+
+    <!-- Spacing scale -->
+    <div class="spacing-group">
+      <div class="spacing-group-title">Spacing scale — khoảng cách</div>
+      <div class="usage-block" style="margin-bottom:16px;">
+        <span class="comment">// vd: </span>
+        <span><span class="method">layout</span>.setHgap(<span class="const">Spacings</span>.S4);</span>
+      </div>
+      <div class="spacing-rows">
+        <div class="spacing-row">
+          <div class="spacing-const">Spacings.S1</div>
+          <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:4px;"></div></div>
+          <div class="spacing-px">4px</div>
+          <div class="spacing-use">Khoảng cách rất nhỏ</div>
+        </div>
+        <div class="spacing-row">
+          <div class="spacing-const">Spacings.S2</div>
+          <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:8px;"></div></div>
+          <div class="spacing-px">8px</div>
+          <div class="spacing-use">Gap giữa icon và text</div>
+        </div>
+        <div class="spacing-row">
+          <div class="spacing-const">Spacings.S3</div>
+          <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:12px;"></div></div>
+          <div class="spacing-px">12px</div>
+          <div class="spacing-use">Padding nhỏ trong component</div>
+        </div>
+        <div class="spacing-row">
+          <div class="spacing-const">Spacings.S4</div>
+          <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:16px;"></div></div>
+          <div class="spacing-px">16px</div>
+          <div class="spacing-use">Padding chuẩn, gap giữa phần tử</div>
+        </div>
+        <div class="spacing-row">
+          <div class="spacing-const">Spacings.S6</div>
+          <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:24px;"></div></div>
+          <div class="spacing-px">24px</div>
+          <div class="spacing-use">Khoảng cách giữa section</div>
+        </div>
+        <div class="spacing-row">
+          <div class="spacing-const">Spacings.S8</div>
+          <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:32px;"></div></div>
+          <div class="spacing-px">32px</div>
+          <div class="spacing-use">Margin lớn, khoảng cách ngoài</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Radius -->
+    <div class="spacing-group">
+      <div class="spacing-group-title">Radius — bo góc</div>
+      <div class="usage-block" style="margin-bottom:16px;">
+        <span class="comment">// vd: </span>
+        <span>new <span class="method">RoundButton</span>("Login", <span class="const">Spacings</span>.R_MD);</span>
+      </div>
+      <div class="radius-grid">
+        <div class="radius-card">
+          <div class="radius-demo" style="border-radius:4px;"></div>
+          <div class="radius-const">Spacings.R_SM</div>
+          <div class="radius-px">4px</div>
+          <div class="radius-use">Badge, tag nhỏ</div>
+        </div>
+        <div class="radius-card">
+          <div class="radius-demo" style="border-radius:8px;"></div>
+          <div class="radius-const">Spacings.R_MD</div>
+          <div class="radius-px">8px</div>
+          <div class="radius-use">Nút, input field</div>
+        </div>
+        <div class="radius-card">
+          <div class="radius-demo" style="border-radius:12px;"></div>
+          <div class="radius-const">Spacings.R_LG</div>
+          <div class="radius-px">12px</div>
+          <div class="radius-use">Panel, form đăng nhập, chức năng chọn</div>
+        </div>
+        <div class="radius-card">
+          <div class="radius-demo" style="border-radius:16px;"></div>
+          <div class="radius-const">Spacings.R_XL</div>
+          <div class="radius-px">16px</div>
+          <div class="radius-use">Card lớn, modal, popup</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Layout -->
+    <div class="spacing-group">
+      <div class="spacing-group-title">Layout — kích thước cố định</div>
+      <div class="usage-block" style="margin-bottom:16px;">
+        <span class="comment">// vd: </span>
+        <span><span class="method">sidebar</span>.setPreferredSize(new Dimension(<span class="const">Spacings</span>.SIDEBAR_WIDTH, getHeight()));</span>
+      </div>
+      <div class="layout-cards">
+        <div class="layout-card">
+          <div class="layout-demo">
+            <div class="layout-demo-inner" style="width:256px; max-width:100%;"></div>
+          </div>
+          <div class="layout-const">Spacings.SIDEBAR_WIDTH</div>
+          <div class="layout-px">= 256px</div>
+          <div class="layout-use">Chiều rộng thanh sidebar trái</div>
+        </div>
+        <div class="layout-card">
+          <div class="layout-demo">
+            <div class="layout-demo-inner" style="width:100%; max-width:448px;"></div>
+          </div>
+          <div class="layout-const">Spacings.CARD_MAX_WIDTH</div>
+          <div class="layout-px">= 448px</div>
+          <div class="layout-use">Chiều rộng tối đa của card / form</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════ UTILS ═══════════════════════════════ -->
+  <section class="section" id="utils">
+    <div class="section-head">
+      <div class="section-num">04</div>
+      <div class="section-info">
+        <h2>Hàm tiện ích</h2>
+        <p>Các hàm static dùng kèm với hằng số để tạo giá trị nhanh.</p>
+      </div>
+    </div>
+
+    <div class="util-cards">
+      <div class="util-card">
+        <div class="util-name">Colors.hex()</div>
+        <div class="util-sig">Color hex(String hex)</div>
+        <div class="util-desc">Chuyển chuỗi hex <code style="font-family:var(--mono);font-size:11px;">#RRGGBB</code> thành đối tượng <code style="font-family:var(--mono);font-size:11px;">Color</code>. Dùng khi cần màu tuỳ chỉnh ngoài bảng.</div>
+        <div style="margin-top:10px;background:var(--paper2);border-radius:6px;padding:8px 12px;font-family:var(--mono);font-size:11px;color:#555;">Colors.hex("#FF6B6B")</div>
+      </div>
+      <div class="util-card">
+        <div class="util-name">Colors.opacity()</div>
+        <div class="util-sig">Color opacity(Color c, float o)</div>
+        <div class="util-desc">Tạo màu với độ trong suốt từ 0.0 (trong suốt) đến 1.0 (đục hoàn toàn). Dùng cho nền mờ, overlay.</div>
+        <div style="margin-top:10px;background:var(--paper2);border-radius:6px;padding:8px 12px;font-family:var(--mono);font-size:11px;color:#555;">Colors.opacity(Colors.PRIMARY, 0.3f)</div>
+      </div>
+      <div class="util-card">
+        <div class="util-name">FontStyle.font()</div>
+        <div class="util-sig">Font font(int size, int style)</div>
+        <div class="util-desc">Tạo đối tượng <code style="font-family:var(--mono);font-size:11px;">Font</code> với font Arial, cỡ và kiểu chỉ định. Kết hợp hằng số size + style.</div>
+        <div style="margin-top:10px;background:var(--paper2);border-radius:6px;padding:8px 12px;font-family:var(--mono);font-size:11px;color:#555;">FontStyle.font(FontStyle.LG, FontStyle.BOLD)</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  constants package · Java Swing UI · Tài liệu nội bộ team
+</footer>
+
+<script>
+  const links = document.querySelectorAll('.nav-link');
+  const sections = document.querySelectorAll('section[id]');
+  window.addEventListener('scroll', () => {
+    let cur = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 80) cur = s.id;
+    });
+    links.forEach(l => {
+      l.classList.toggle('active', l.getAttribute('href') === '#' + cur);
+    });
+  });
+</script>
+</body>
+</html>
