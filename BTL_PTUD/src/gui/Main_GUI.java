@@ -6,6 +6,8 @@ import java.awt.event.ActionListener;
 import javax.swing.*;
 
 import exception.MenuBarPanel;
+import gui.TaiKhoan_GUI;
+//import gui.DangKy_GUI;
 
 public class Main_GUI extends JFrame implements ActionListener {
 
@@ -85,29 +87,29 @@ public class Main_GUI extends JFrame implements ActionListener {
 		contentPanel.add(createEmptyPage("NhaCungCap"), "NhaCungCap");
 		contentPanel.add(createEmptyPage("KhuyenMai"), "KhuyenMai");
 		
-		//		Xử lý
+//		Xử lý
 		contentPanel.add(createEmptyPage("BanHang"), "BanHang");
-		contentPanel.add(createEmptyPage("NhapHang"), "NhapHang");
+		contentPanel.add(new NhapHang_GUI(), "NhapHang");
 		contentPanel.add(createEmptyPage("DoiHang"), "DoiHang");
 		contentPanel.add(createEmptyPage("TraHang"), "TraHang");
 		
-		//		Tra cứu
+//		Tra cứu
 		contentPanel.add(createEmptyPage("TraCuuHoaDon"), "TraCuuHoaDon");
 		contentPanel.add(createEmptyPage("TraCuuPhieuNhap"), "TraCuuPhieuNhap");
 		contentPanel.add(createEmptyPage("TraCuuDoiHang"),"TraCuuDoiHang");
 		contentPanel.add(createEmptyPage("TraCuuTraHang"), "TraCuuTraHang");
 		
-		//		Thống kê
+//		Thống kê
 		contentPanel.add(createEmptyPage("ThongKeDoanhThu"), "ThongKeDoanhThu");
 		contentPanel.add(createEmptyPage("ThongKeKhachHang"), "ThongKeKhachHang");
 		contentPanel.add(createEmptyPage("ThongKeSanPham"), "ThongKeSanPham");
 		
 		
 //		Cài đặt
-		contentPanel.add(createEmptyPage("CaiDat"), "CaiDat");
+		contentPanel.add(new TaiKhoan_GUI(), "CaiDat");
 
 
-		cardLayout.show(contentPanel, "ThongKeBanHang");
+		cardLayout.show(contentPanel, "NhapHang");
 	}
 
 	private JPanel createEmptyPage(String name) {

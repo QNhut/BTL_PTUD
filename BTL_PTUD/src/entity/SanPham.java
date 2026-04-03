@@ -103,24 +103,17 @@ public class SanPham {
 	}
 
 	@Override
-	public int hashCode() {
-		return Objects.hash(maSP);
+	public boolean equals(Object o) {
+	    if (this == o) return true;
+	    if (!(o instanceof SanPham)) return false;
+
+	    SanPham sp = (SanPham) o;
+	    return this.getTenSP().equals(sp.getTenSP());
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		SanPham other = (SanPham) obj;
-		return Objects.equals(maSP, other.maSP);
-	}
-
-	public Object[] addToTable() {
-		return new Object[] {};
+	public int hashCode() {
+	    return getTenSP().hashCode();
 	}
 
 }
