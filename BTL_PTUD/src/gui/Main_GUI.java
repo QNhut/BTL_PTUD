@@ -6,7 +6,6 @@ import java.awt.event.ActionListener;
 import javax.swing.*;
 
 import exception.MenuBarPanel;
-import gui.TaiKhoan_GUI;
 //import gui.DangKy_GUI;
 
 public class Main_GUI extends JFrame implements ActionListener {
@@ -24,6 +23,7 @@ public class Main_GUI extends JFrame implements ActionListener {
 
 	private JPanel contentPanel;
 	private CardLayout cardLayout;
+	private Component LapHoaDon_GUI ;
 
 	public Main_GUI() {
 
@@ -87,9 +87,10 @@ public class Main_GUI extends JFrame implements ActionListener {
 		contentPanel.add(createEmptyPage("NhaCungCap"), "NhaCungCap");
 		contentPanel.add(createEmptyPage("KhuyenMai"), "KhuyenMai");
 		
-//		Xử lý
-		contentPanel.add(createEmptyPage("BanHang"), "BanHang");
-		contentPanel.add(new NhapHang_GUI(), "NhapHang");
+
+		//	Xử lý
+		contentPanel.add(new gui.LapHoaDon_GUI(	), "BanHang");
+
 		contentPanel.add(createEmptyPage("DoiHang"), "DoiHang");
 		contentPanel.add(createEmptyPage("TraHang"), "TraHang");
 		
@@ -105,8 +106,6 @@ public class Main_GUI extends JFrame implements ActionListener {
 		contentPanel.add(createEmptyPage("ThongKeSanPham"), "ThongKeSanPham");
 		
 		
-//		Cài đặt
-		contentPanel.add(new TaiKhoan_GUI(), "CaiDat");
 
 
 		cardLayout.show(contentPanel, "NhapHang");
