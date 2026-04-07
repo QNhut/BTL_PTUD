@@ -16,34 +16,35 @@ public class MenuBarPanel extends JPanel {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBackground(Color.WHITE);
         setPreferredSize(new Dimension(300, 0));
+        setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
 
-        MenuButton danhMuc = createMenu("Danh mục");
+        MenuButton danhMuc = createMenu("DANH MỤC");
         danhMuc.addSubMenu("Nhân viên", "data/img/icons/recruitment.png", "NhanVien");
         danhMuc.addSubMenu("Khách Hàng", "data/img/icons/people.png", "KhachHang");
         danhMuc.addSubMenu("Sản Phẩm", "data/img/icons/box.png", "SanPham");
         danhMuc.addSubMenu("Nhà cung cấp", "data/img/icons/vehicle.png", "NhaCungCap");
         danhMuc.addSubMenu("Khuyến mãi", "data/img/icons/tag.png", "KhuyenMai");
 
-        MenuButton xuLy = createMenu("Xử lý");
-        xuLy.addSubMenu("Bán Hàng", "data/img/icons/shopping-cart.png", "BanHang");
-        xuLy.addSubMenu("Nhập hàng", "data/img/icons/open-box.png", "NhapHang");
+        MenuButton xuLy = createMenu("XỬ LÝ");
+        xuLy.addSubMenu("Tạo hoá đơn", "data/img/icons/shopping-cart.png", "BanHang");
+        xuLy.addSubMenu("Tạo phiếu nhập", "data/img/icons/open-box.png", "NhapHang");
         xuLy.addSubMenu("Đổi hàng", "data/img/icons/commercial.png", "DoiHang");
         xuLy.addSubMenu("Trả hàng", "data/img/icons/exchange.png", "TraHang");
 
-        MenuButton traCuu = createMenu("Tra cứu");
+        MenuButton traCuu = createMenu("TRA CỨU");
         traCuu.addSubMenu("Hoá đơn", "data/img/icons/invoice.png", "TraCuuHoaDon");
         traCuu.addSubMenu("Phiếu nhập", "data/img/icons/invoice_1.png", "TraCuuPhieuNhap");
         traCuu.addSubMenu("Đổi hàng", "data/img/icons/commercial.png", "TraCuuDoiHang");
         traCuu.addSubMenu("Trả hàng", "data/img/icons/exchange.png", "TraCuuTraHang");
 
-        MenuButton thongKe = createMenu("Thống kê");
+        MenuButton thongKe = createMenu("THỐNG KÊ");
         thongKe.addSubMenu("Doanh thu", "data/img/icons/up.png", "ThongKeDoanhThu");
         thongKe.addSubMenu("Khách hàng", "data/img/icons/people.png", "ThongKeKhachHang");
         thongKe.addSubMenu("Sản phẩm", "data/img/icons/stats.png", "ThongKeSanPham");
 
 
         // ===== CÀI ĐẶT (KHÔNG SUB) =====
-        MenuButton caiDat = createSingleMenu("Cài đặt", "CaiDat");
+        MenuButton caiDat = createSingleMenu("CÀI ĐẶC", "CaiDat");
 
         addMenu(danhMuc);
         addMenu(xuLy);

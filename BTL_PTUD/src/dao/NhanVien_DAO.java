@@ -31,16 +31,13 @@ public class NhanVien_DAO {
 				String sDT = rs.getString("SoDienThoai");
 				String cCCD = rs.getString("CCCD");
 				String diaChi = rs.getString("DiaChi");
-				String gioiTinh = rs.getString("GioiTinh");
+				String gioiTinhText = rs.getString("GioiTinh");
 				String chucVu = rs.getString("ChucVu");
 				String caLam = rs.getString("CaLam");
-				String trangThai = rs.getString("TrangThai");
 				String hinhAnh = rs.getString("HinhAnh");
+				boolean gioiTinh = parseGioiTinh(gioiTinhText);
 
-				diaChi = (diaChi == null) ? "" : diaChi;
-				hinhAnh = (hinhAnh == null) ? "" : hinhAnh;
-
-				nv = new NhanVien(maNV, tenNV, sDT, cCCD, diaChi, gioiTinh, chucVu, caLam, trangThai, hinhAnh);
+				nv = new NhanVien(maNV, tenNV, gioiTinh, sDT, diaChi, null, cCCD, chucVu, 0.0, caLam, hinhAnh);
 			}
 			rs.close();
 			stmt.close();
@@ -63,16 +60,13 @@ public class NhanVien_DAO {
 				String sDT = rs.getString("SoDienThoai");
 				String cCCD = rs.getString("CCCD");
 				String diaChi = rs.getString("DiaChi");
-				String gioiTinh = rs.getString("GioiTinh");
+				String gioiTinhText = rs.getString("GioiTinh");
 				String chucVu = rs.getString("ChucVu");
 				String caLam = rs.getString("CaLam");
-				String trangThai = rs.getString("TrangThai");
 				String hinhAnh = rs.getString("HinhAnh");
+				boolean gioiTinh = parseGioiTinh(gioiTinhText);
 
-				diaChi = (diaChi == null) ? "" : diaChi;
-				hinhAnh = (hinhAnh == null) ? "" : hinhAnh;
-
-				dsNV.add(new NhanVien(maNV, tenNV, sDT, cCCD, diaChi, gioiTinh, chucVu, caLam, trangThai, hinhAnh));
+				dsNV.add(new NhanVien(maNV, tenNV, gioiTinh, sDT, diaChi, null, cCCD, chucVu, 0.0, caLam, hinhAnh));
 			}
 			rs.close();
 			stmt.close();
@@ -90,9 +84,9 @@ public class NhanVien_DAO {
 			String sql = "insert into NhanVien (MaNhanVien, TenNhanVien, GioiTinh, SoDienThoai, CCCD, DiaChi, ChucVu, CaLam, TrangThai, HinhAnh) "
 					+ "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 			PreparedStatement stmt = con.prepareStatement(sql);
-			stmt.setString(1, nv.getMaNhanVien());
-			stmt.setString(2, nv.getTenNhanVien());
-			stmt.setString(3, nv.getGioiTinh());
+			stmt.setString(1, nv.getMaNV());
+			stmt.setString(2, nv.getTenNV());
+			stmt.setString(3, nv.isGioiTinh() ? "Nam" : "Nu");
 			stmt.setString(4, nv.getSoDienThoai());
 			stmt.setString(5, nv.getcCCD());
 
@@ -102,14 +96,14 @@ public class NhanVien_DAO {
 				stmt.setString(6, nv.getDiaChi());
 			}
 
-			stmt.setString(7, nv.getChucVu());
+			stmt.setString(7, nv.getVaiTro());
 			stmt.setString(8, nv.getCaLam());
-			stmt.setString(9, nv.getTrangThai());
+			stmt.setString(9, "Dang lam");
 
-			if (nv.getHinhAnh() == null || nv.getHinhAnh().isEmpty()) {
+			if (nv.getLinkAnh() == null || nv.getLinkAnh().isEmpty()) {
 				stmt.setNull(10, Types.NVARCHAR);
 			} else {
-				stmt.setString(10, nv.getHinhAnh());
+				stmt.setString(10, nv.getLinkAnh());
 			}
 
 			n = stmt.executeUpdate();
@@ -127,8 +121,8 @@ public class NhanVien_DAO {
 			con = ConnectDB.getInstance().getConnection();
 			String sql = "UPDATE NhanVien SET TenNhanVien=?, GioiTinh=?, SoDienThoai=?, CCCD=?, DiaChi=?, ChucVu=?, CaLam=?, TrangThai=?, HinhAnh=? WHERE MaNhanVien=?";
 			PreparedStatement stmt = con.prepareStatement(sql);
-			stmt.setString(1, nv.getTenNhanVien());
-			stmt.setString(2, nv.getGioiTinh());
+			stmt.setString(1, nv.getTenNV());
+			stmt.setString(2, nv.isGioiTinh() ? "Nam" : "Nu");
 			stmt.setString(3, nv.getSoDienThoai());
 			stmt.setString(4, nv.getcCCD());
 
@@ -138,23 +132,30 @@ public class NhanVien_DAO {
 				stmt.setString(5, nv.getDiaChi());
 			}
 
-			stmt.setString(6, nv.getChucVu());
+			stmt.setString(6, nv.getVaiTro());
 			stmt.setString(7, nv.getCaLam());
-			stmt.setString(8, nv.getTrangThai());
+			stmt.setString(8, "Dang lam");
 
-			if (nv.getHinhAnh() == null || nv.getHinhAnh().isEmpty()) {
+			if (nv.getLinkAnh() == null || nv.getLinkAnh().isEmpty()) {
 				stmt.setNull(9, Types.NVARCHAR);
 			} else {
-				stmt.setString(9, nv.getHinhAnh());
+				stmt.setString(9, nv.getLinkAnh());
 			}
 
-			stmt.setString(10, nv.getMaNhanVien());
+			stmt.setString(10, nv.getMaNV());
 			n = stmt.executeUpdate();
 			stmt.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 		return n > 0;
+	}
+
+	private boolean parseGioiTinh(String gioiTinhText) {
+		if (gioiTinhText == null) {
+			return true;
+		}
+		return gioiTinhText.trim().equalsIgnoreCase("Nam");
 	}
 
 	// Xóa nhân viên

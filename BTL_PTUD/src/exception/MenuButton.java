@@ -3,24 +3,25 @@ package exception;
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
+import constants.Colors;
 
 public class MenuButton extends JPanel {
 
-    private JButton mainButton;
+    private RoundedButton mainButton;
     private JPanel subPanel;
     private boolean expanded = false;
     private MenuActionListener listener;
     private String mainPageName;
 
-    private ArrayList<JButton> subButtons = new ArrayList<>();
+    private ArrayList<RoundedButton> subButtons = new ArrayList<>();
 
     // ===== COLOR =====
-    private static final Color MAIN_COLOR = new Color(36, 170, 140);
-    private static final Color SUB_NORMAL = new Color(245, 245, 245);
-    private static final Color SUB_SELECTED = new Color(255, 80, 40);
-
-    private static final Color TEXT_SUB_NORMAL = new Color(80, 80, 80);
-    private static final Color TEXT_SUB_SELECTED = Color.WHITE;
+    private static final Color MAIN_COLOR = Colors.PRIMARY;          // Xanh chính
+    private static final Color SUB_NORMAL = Colors.BACKGROUND;       // Trắng
+    private static final Color SUB_SELECTED = Colors.ACCENT;         // Cam highlight
+    private static final Color TEXT_MAIN = Colors.BACKGROUND;        // Text màu trắng
+    private static final Color TEXT_SUB_NORMAL = Colors.TEXT_PRIMARY;   // Text tối
+    private static final Color TEXT_SUB_SELECTED = Colors.BACKGROUND;   // Text trắng
 
     private JLabel arrowLabel;
 
@@ -32,31 +33,29 @@ public class MenuButton extends JPanel {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBackground(Color.WHITE); // nền ngoài trắng
         setAlignmentX(Component.LEFT_ALIGNMENT);
+        setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0)); // Khoảng cách giữa các button cha
 
         // ===== MAIN BUTTON =====
-        mainButton = new JButton();
+        mainButton = new RoundedButton(400, 50, 40, "", MAIN_COLOR);
         mainButton.setLayout(new BorderLayout());
         mainButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
-        mainButton.setFocusPainted(false);
-        mainButton.setBackground(MAIN_COLOR);
-        mainButton.setForeground(Color.WHITE);
-        mainButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         mainButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        mainButton.setOpaque(true);
-        mainButton.setContentAreaFilled(true);
-        mainButton.setBorderPainted(false);
+        mainButton.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 20));
 
+        // TEXT LABEL
         JLabel textLabel = new JLabel(text);
-        textLabel.setForeground(Color.WHITE);
-        textLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        textLabel.setForeground(TEXT_MAIN);
+        textLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+
+        // ARROW ICON (không thêm ngay, chỉ thêm khi có sub-menu)
+        arrowLabel = new JLabel();
+        arrowLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));
 
         mainButton.add(textLabel, BorderLayout.CENTER);
+        mainButton.add(arrowLabel, BorderLayout.EAST);
 
-        // margin giữa các menu
-        mainButton.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createEmptyBorder(5, 10, 5, 10),
-                BorderFactory.createEmptyBorder(10, 15, 10, 15)
-        ));
+        // Tắt hiệu ứng hover màu sáng cho button cha
+        mainButton.setEnableHover(false);
 
         add(mainButton);
 
@@ -64,6 +63,7 @@ public class MenuButton extends JPanel {
         subPanel = new JPanel();
         subPanel.setLayout(new BoxLayout(subPanel, BoxLayout.Y_AXIS));
         subPanel.setBackground(Color.WHITE);
+        subPanel.setBorder(BorderFactory.createEmptyBorder(4, 10, 0, 10)); // Khoảng cách với button cha
         subPanel.setVisible(false);
 
         add(subPanel);
@@ -105,7 +105,7 @@ public class MenuButton extends JPanel {
             arrowLabel.setIcon(loadIcon(
                     expanded ? "data/img/icons/up-chevron.png"
                              : "data/img/icons/down-chevron.png",
-                    16, 16
+                    18, 18
             ));
         }
 
@@ -117,8 +117,8 @@ public class MenuButton extends JPanel {
         expanded = false;
         subPanel.setVisible(false);
 
-        if (arrowLabel != null) {
-            arrowLabel.setIcon(loadIcon("data/img/icons/down-chevron.png", 16, 16));
+        if (arrowLabel != null && !subButtons.isEmpty()) {
+            arrowLabel.setIcon(loadIcon("data/img/icons/down-chevron.png", 18, 18));
         }
     }
 
@@ -126,33 +126,28 @@ public class MenuButton extends JPanel {
     public void addSubMenu(String title, String iconPath, String pageName) {
 
         if (subButtons.isEmpty()) {
-            arrowLabel = new JLabel(loadIcon("data/img/icons/down-chevron.png", 16, 16));
-            mainButton.add(arrowLabel, BorderLayout.EAST);
+            // Thêm arrow icon khi có sub-menu đầu tiên
+            arrowLabel.setIcon(loadIcon("data/img/icons/down-chevron.png", 18, 18));
         }
 
-        JButton subBtn = new JButton();
+        RoundedButton subBtn = new RoundedButton(350, 40, 30, "", SUB_NORMAL);
         subBtn.setLayout(new BorderLayout());
 
         // ICON
         JLabel iconLabel = new JLabel(loadIcon(iconPath, 18, 18));
-        iconLabel.setBorder(BorderFactory.createEmptyBorder(0, 25, 0, 10));
+        iconLabel.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 15));
 
         // TEXT
         JLabel textLabel = new JLabel(title);
         textLabel.setForeground(TEXT_SUB_NORMAL);
-        textLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        textLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
 
         subBtn.add(iconLabel, BorderLayout.WEST);
         subBtn.add(textLabel, BorderLayout.CENTER);
 
         subBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-        subBtn.setFocusPainted(false);
-        subBtn.setBackground(SUB_NORMAL);
         subBtn.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
         subBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        subBtn.setOpaque(true);
-        subBtn.setContentAreaFilled(true);
-        subBtn.setBorderPainted(false);
 
         // ===== CLICK =====
         subBtn.addActionListener(e -> {
@@ -161,6 +156,11 @@ public class MenuButton extends JPanel {
 
             subBtn.setBackground(SUB_SELECTED);
             textLabel.setForeground(TEXT_SUB_SELECTED);
+
+            // Giữ lại trạng thái arrow khi click sub-button
+            if (arrowLabel != null && arrowLabel.getIcon() == null) {
+                arrowLabel.setIcon(loadIcon(expanded ? "data/img/icons/up-chevron.png" : "data/img/icons/down-chevron.png", 18, 18));
+            }
 
             if (listener != null) {
                 listener.onMenuSelected(this, pageName);
@@ -173,7 +173,7 @@ public class MenuButton extends JPanel {
 
     // ===== RESET =====
     public void resetSubMenuColor() {
-        for (JButton btn : subButtons) {
+        for (RoundedButton btn : subButtons) {
             btn.setBackground(SUB_NORMAL);
 
             for (Component c : btn.getComponents()) {

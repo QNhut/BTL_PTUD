@@ -1,27 +1,38 @@
 package entity;
 
-import java.time.LocalDate;
 import java.util.Objects;
 
 public class TaiKhoan {
-	private String tenDangNhap, maKhau;
-	private LocalDate ngayTao;
+	private String tenDangNhap;
+	private String matKhau;
 	private boolean trangThaiOnline;
 	private NhanVien nhanVien;
 
-	public TaiKhoan() {
+	public TaiKhoan(String tenDangNhap, String matKhau, boolean trangThaiOnline, NhanVien nhanVien) {
+		setTenDangNhap(tenDangNhap);
+		setMatKhau(matKhau);
+		setTrangThaiOnline(trangThaiOnline);
+		setNhanVien(nhanVien);
+	}
+
+	public TaiKhoan(String tenDangNhap, String matKhau, NhanVien nhanVien) {
+		setTenDangNhap(tenDangNhap);
+		setMatKhau(matKhau);
+		setTrangThaiOnline(false);
+		setNhanVien(nhanVien);
+	}
+
+	public TaiKhoan(String tenDangNhap, boolean trangThaiOnline, NhanVien nhanVien) {
+		setTenDangNhap(tenDangNhap);
+		setTrangThaiOnline(trangThaiOnline);
+		setNhanVien(nhanVien);
 	}
 
 	public TaiKhoan(String tenDangNhap) {
-		this.tenDangNhap = tenDangNhap;
+		setTenDangNhap(tenDangNhap);
 	}
 
-	public TaiKhoan(String tenDangNhap, String maKhau, LocalDate ngayTao, boolean trangThaiOnline, NhanVien nhanVien) {
-		this.tenDangNhap = tenDangNhap;
-		this.maKhau = maKhau;
-		this.ngayTao = ngayTao;
-		this.trangThaiOnline = trangThaiOnline;
-		this.nhanVien = nhanVien;
+	public TaiKhoan() {
 	}
 
 	public String getTenDangNhap() {
@@ -29,23 +40,22 @@ public class TaiKhoan {
 	}
 
 	public void setTenDangNhap(String tenDangNhap) {
+		tenDangNhap = normalizeRequired(tenDangNhap);
+		if (isBlank(tenDangNhap)) {
+			throw new IllegalArgumentException("Ten dang nhap khong duoc de trong");
+		}
 		this.tenDangNhap = tenDangNhap;
 	}
 
-	public String getMaKhau() {
-		return maKhau;
+	public String getMatKhau() {
+		return matKhau;
 	}
 
-	public void setMaKhau(String maKhau) {
-		this.maKhau = maKhau;
-	}
-
-	public LocalDate getNgayTao() {
-		return ngayTao;
-	}
-
-	public void setNgayTao(LocalDate ngayTao) {
-		this.ngayTao = ngayTao;
+	public void setMatKhau(String matKhau) {
+		if (isBlank(matKhau)) {
+			throw new IllegalArgumentException("Mat khau khong duoc de trong");
+		}
+		this.matKhau = matKhau;
 	}
 
 	public boolean isTrangThaiOnline() {
@@ -81,8 +91,18 @@ public class TaiKhoan {
 		return Objects.equals(tenDangNhap, other.tenDangNhap);
 	}
 
-	public Object[] addToTable() {
-		return new Object[] {};
+	@Override
+	public String toString() {
+		return "TaiKhoan{" + "tenDangNhap='" + tenDangNhap + '\'' + ", trangThaiOnline=" + trangThaiOnline
+				+ ", nhanVien=" + nhanVien + '}';
+	}
+
+	private boolean isBlank(String value) {
+		return value == null || value.trim().isEmpty();
+	}
+
+	private String normalizeRequired(String value) {
+		return value == null ? null : value.trim();
 	}
 
 }
