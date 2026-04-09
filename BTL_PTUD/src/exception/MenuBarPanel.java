@@ -44,13 +44,17 @@ public class MenuBarPanel extends JPanel {
 
 
         // ===== CÀI ĐẶT (KHÔNG SUB) =====
-        MenuButton caiDat = createSingleMenu("CÀI ĐẶC", "CaiDat");
+        MenuButton heThong = createSingleMenu("HỆ THỐNG", "HeThong");
+        heThong.addSubMenu("Tài khoản", "data/img/icons/gear.png", "TaiKhoan");
+        heThong.addSubMenu("Trang chủ", "data/img/icons/home.png", "TrangChu");
+        heThong.addSubMenu("Trợ giúp", "data/img/icons/question.png", "TroGiup");
+        heThong.addSubMenu("Thoát", "data/img/icons/logout.png", "Thoat");
 
         addMenu(danhMuc);
         addMenu(xuLy);
         addMenu(traCuu);
         addMenu(thongKe);
-        addMenu(caiDat);
+        addMenu(heThong);
 
         add(Box.createVerticalGlue());
     }

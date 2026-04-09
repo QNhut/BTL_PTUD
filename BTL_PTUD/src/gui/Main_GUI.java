@@ -1,8 +1,6 @@
 package gui;
 
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.geom.Ellipse2D;
@@ -14,12 +12,10 @@ import constants.Colors;
 import constants.FontStyle;
 import entity.TaiKhoan;
 import exception.MenuBarPanel;
-import exception.RoundedButton;
-import gui.TaiKhoan_GUI;
 import service.TaiKhoan_Service;
 //import gui.DangKy_GUI;
 
-public class Main_GUI extends JFrame implements ActionListener {
+public class Main_GUI extends JFrame {
 
 	private JPanel pHeader;
 	private JPanel pMainHeader;
@@ -29,7 +25,6 @@ public class Main_GUI extends JFrame implements ActionListener {
 	private JLabel lblLogo;
 	private JLabel lblNhanVienTK;
 	private JLabel lblVaiTroTK;
-	private JButton btnDangXuat;
 
 	private MenuBarPanel menuBarPanel;
 
@@ -98,7 +93,7 @@ public class Main_GUI extends JFrame implements ActionListener {
 
 		pDangXuat = new JPanel();
 		pDangXuat.setLayout(new BoxLayout(pDangXuat, BoxLayout.Y_AXIS));
-		pDangXuat.setPreferredSize(new Dimension(0, 120));
+		pDangXuat.setPreferredSize(new Dimension(0, 90));
 		pDangXuat.setOpaque(true);
 		pDangXuat.setBackground(Colors.BACKGROUND);
 		pDangXuat.setBorder(BorderFactory.createCompoundBorder(
@@ -122,9 +117,7 @@ public class Main_GUI extends JFrame implements ActionListener {
 		accountCard.setBackground(Colors.BACKGROUND);
 		accountCard.setAlignmentX(Component.CENTER_ALIGNMENT);
 		accountCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 74));
-		accountCard.setBorder(BorderFactory.createCompoundBorder(
-				BorderFactory.createLineBorder(Colors.BORDER_LIGHT, 1),
-				BorderFactory.createEmptyBorder(8, 10, 8, 10)));
+		accountCard.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
 
 		String linkAnhNhanVien = null;
 		if (taiKhoanDangNhap != null && taiKhoanDangNhap.getNhanVien() != null) {
@@ -155,11 +148,6 @@ public class Main_GUI extends JFrame implements ActionListener {
 		lblVaiTroTK.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
 		lblVaiTroTK.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-		btnDangXuat = new RoundedButton(220, 38, 12, "Đăng xuất", Colors.ACCENT);
-		btnDangXuat.setForeground(Colors.BACKGROUND);
-		btnDangXuat.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
-		btnDangXuat.setAlignmentX(Component.CENTER_ALIGNMENT);
-		btnDangXuat.addActionListener(this);
 
 		userInfoPanel.add(lblNhanVienTK);
 		userInfoPanel.add(Box.createVerticalStrut(2));
@@ -169,8 +157,6 @@ public class Main_GUI extends JFrame implements ActionListener {
 		accountCard.add(userInfoPanel, BorderLayout.CENTER);
 
 		pDangXuat.add(accountCard);
-		pDangXuat.add(Box.createVerticalStrut(12));
-		pDangXuat.add(btnDangXuat);
 		pHeader.add(pDangXuat, BorderLayout.SOUTH);
 
 		// ===== CONTENT =====
@@ -203,8 +189,10 @@ public class Main_GUI extends JFrame implements ActionListener {
 		contentPanel.add(createEmptyPage("ThongKeKhachHang"), "ThongKeKhachHang");
 		contentPanel.add(createEmptyPage("ThongKeSanPham"), "ThongKeSanPham");
 
-//		Cài đặt
-		contentPanel.add(new TaiKhoan_GUI(), "CaiDat");
+//		Hê thống
+		contentPanel.add(createEmptyPage("TaiKhoan"), "TaiKhoan");
+		contentPanel.add(createEmptyPage("TrangChu"), "TrangChu");
+		contentPanel.add(createEmptyPage("TroGiup"), "TroGiup");
 
 		cardLayout.show(contentPanel, "NhapHang");
 
@@ -227,17 +215,19 @@ public class Main_GUI extends JFrame implements ActionListener {
 	}
 
 	public void showPage(String pageName) {
+		if ("Thoat".equals(pageName)) {
+			xacNhanDangXuat();
+			return;
+		}
 		cardLayout.show(contentPanel, pageName);
 	}
 
-	@Override
-	public void actionPerformed(ActionEvent e) {
-		if (e.getSource() == btnDangXuat) {
-			int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc chắn muốn đăng xuất?", "Xác nhận",
-					JOptionPane.YES_NO_OPTION);
-			if (confirm == JOptionPane.YES_OPTION) {
-				dangXuatVaTroVeDangNhap(true);
-			}
+
+	private void xacNhanDangXuat() {
+		int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc chắn muốn đăng xuất?", "Xác nhận",
+				JOptionPane.YES_NO_OPTION);
+		if (confirm == JOptionPane.YES_OPTION) {
+			dangXuatVaTroVeDangNhap(true);
 		}
 	}
 
