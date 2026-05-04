@@ -75,4 +75,12 @@ public class ChiTietPhieuNhap {
         String otherMaSP = other.sanPham == null ? null : other.sanPham.getMaSanPham();
         return Objects.equals(thisMaPN, otherMaPN) && Objects.equals(thisMaSP, otherMaSP);
     }
+    
+    public Object[] toRowData() {
+		String tenSanPham = sanPham == null ? "" : sanPham.getTenSanPham();
+        String donViTinh = sanPham == null || sanPham.getDonViTinh() == null ? "" : sanPham.getDonViTinh();
+		double thanhTien = soLuong * giaNhap;
+        return new Object[] { tenSanPham, soLuong, donViTinh, giaNhap, thanhTien };
+	}
+    
 }

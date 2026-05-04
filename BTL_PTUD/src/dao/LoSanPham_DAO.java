@@ -6,6 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDate;
 import java.util.ArrayList;
 
 import ConnectDB.ConnectDB;
@@ -66,5 +67,61 @@ public class LoSanPham_DAO {
             e.printStackTrace();
         }
         return false;
+    }
+
+    public int layTongSoLuongTonTheoMaSanPham(String maSanPham) {
+        if (maSanPham == null || maSanPham.trim().isEmpty()) {
+            return 0;
+        }
+
+        String sql = "SELECT COALESCE(SUM(SoLuong), 0) AS TongSoLuong "
+                + "FROM LoSanPham WHERE MaSanPham = ? AND TrangThai = ? AND (HanSuDung IS NULL OR HanSuDung >= ?)";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            if (con == null) {
+                return 0;
+            }
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, maSanPham.trim());
+                ps.setBoolean(2, true);
+                ps.setDate(3, Date.valueOf(LocalDate.now()));
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt("TongSoLuong");
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    /**
+     * Sinh mã lô sản phẩm tự động: LSP + YYYY + 4 số (VD: LSP20260001)
+     */
+    public String sinhMaTuDong() {
+        String prefix = "LSP";
+        int nam = LocalDate.now().getYear();
+        String pattern = prefix + nam;
+        String sql = "SELECT MAX(MaLoSanPham) FROM LoSanPham WHERE MaLoSanPham LIKE ?";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, pattern + "%");
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        String maxMa = rs.getString(1);
+                        if (maxMa != null && maxMa.length() >= pattern.length() + 4) {
+                            int stt = Integer.parseInt(maxMa.substring(pattern.length())) + 1;
+                            return pattern + String.format("%04d", stt);
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return pattern + "0001";
     }
 }

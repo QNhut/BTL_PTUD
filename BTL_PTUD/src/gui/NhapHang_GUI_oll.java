@@ -33,6 +33,7 @@ import com.toedter.calendar.JDateChooser;
 
 import constants.FontStyle;
 import constants.Colors;
+import dao.LoSanPham_DAO;
 import entity.SanPham;
 import exception.QuantityEditor;
 
@@ -83,13 +84,14 @@ public class NhapHang_GUI_oll extends JPanel{
 	private JLabel lblsubTitleBottom;
 	private JButton btnXoaTatCa;
 	
-	private String[] columnNames = {"Sản phẩm", "Số lượng", "Giá", "Thành tiền", ""};
+	private String[] columnNames = {"Sản phẩm", "Số lượng", "Giá", "Thành tiền"};
 	private DefaultTableModel tableModel;
 	private JTable tblSelected;
 	private JPanel pnlTotelPrice;
 	private double totalPrice = 0;
 	private JLabel lblTotal;
 	private JLabel lblTotalPrice;
+	private final LoSanPham_DAO loSanPhamDAO = new LoSanPham_DAO();
 
 	public NhapHang_GUI_oll() {
 		setLayout(new BorderLayout(10,10));
@@ -153,9 +155,9 @@ public class NhapHang_GUI_oll extends JPanel{
 		List<SanPham> list = new ArrayList<>();
 		for (int i = 1; i <= 23; i++) {
 		    SanPham sp = new SanPham();
+		    sp.setMaSP("SP_MOCK_" + i);
 		    sp.setTenSP("Sản phẩm " + i);
 		    sp.setGiaBan(5000 * i);
-		    sp.setSoLuong(100 + i);
 		    sp.setDonViTinh("Hộp");
 		    list.add(sp);
 		}
@@ -565,7 +567,7 @@ public class NhapHang_GUI_oll extends JPanel{
 	    lblGia.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
 	    lblGia.setForeground(Colors.TEXT_PRIMARY); 
 
-	    JLabel lblTon = new JLabel("Tồn: " + sp.getSoLuong());
+	    JLabel lblTon = new JLabel("Tồn: " + getTonKhoHienTai(sp));
 	    lblTon.setForeground(Colors.TEXT_SECONDARY);
 	    lblTon.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
 
@@ -613,6 +615,13 @@ public class NhapHang_GUI_oll extends JPanel{
 	    card.add(btn);
 
 	    return card;
+	}
+
+	private int getTonKhoHienTai(SanPham sanPham) {
+	    if (sanPham == null) {
+	        return 0;
+	    }
+	    return loSanPhamDAO.layTongSoLuongTonTheoMaSanPham(sanPham.getMaSanPham());
 	}
 	
 	private void loadProducts(List<SanPham> list) {

@@ -168,7 +168,7 @@ public class Main_GUI extends JFrame {
 //		Danh mục
 		contentPanel.add(createEmptyPage("NhanVien"), "NhanVien");
 		contentPanel.add(createEmptyPage("KhachHang"), "KhachHang");
-		contentPanel.add(createEmptyPage("SanPham"), "SanPham");
+		contentPanel.add(new SanPham_GUI(), "SanPham");
 		contentPanel.add(createEmptyPage("NhaCungCap"), "NhaCungCap");
 		contentPanel.add(createEmptyPage("KhuyenMai"), "KhuyenMai");
 

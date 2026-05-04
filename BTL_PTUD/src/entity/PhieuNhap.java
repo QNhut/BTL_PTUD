@@ -127,4 +127,5 @@ public class PhieuNhap {
         String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized;
     }
+    
 }

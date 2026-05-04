@@ -91,4 +91,28 @@ public class HoaDon_DAO {
         String maPTTT = rs.getString("MaPTTT");
         return new HoaDon(maHoaDon, ngayLap, 0, 0, maPTTT, nhanVien, khachHang);
     }
+
+    /** Sinh mã hóa đơn tự động: HD + YYYY + 4 số (VD: HD20260001) */
+    public String sinhMaTuDong() {
+        String prefix = "HD";
+        int nam = LocalDate.now().getYear();
+        String pattern = prefix + nam;
+        String sql = "SELECT MAX(MaHoaDon) FROM HoaDon WHERE MaHoaDon LIKE ?";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, pattern + "%");
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        String maxMa = rs.getString(1);
+                        if (maxMa != null && maxMa.length() >= pattern.length() + 4) {
+                            int stt = Integer.parseInt(maxMa.substring(pattern.length())) + 1;
+                            return pattern + String.format("%04d", stt);
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return pattern + "0001";
+    }
 }

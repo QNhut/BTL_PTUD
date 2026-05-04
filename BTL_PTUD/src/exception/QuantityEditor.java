@@ -16,12 +16,22 @@ public class QuantityEditor extends AbstractCellEditor implements TableCellEdito
     private JButton btnMinus = new JButton("-");
     private JTextField txtValue = new JTextField("0", 3); 
     private JButton btnPlus = new JButton("+");
+	private final int quantityColumn;
+	private final int priceColumn;
+	private final int totalColumn;
 
     private int value;
     private JTable table;
     private int row;
 
     public QuantityEditor() {
+		this(1, 2, 3);
+	}
+
+	public QuantityEditor(int quantityColumn, int priceColumn, int totalColumn) {
+		this.quantityColumn = quantityColumn;
+		this.priceColumn = priceColumn;
+		this.totalColumn = totalColumn;
         panel.setLayout(new FlowLayout(FlowLayout.CENTER, 3, 0));
 
 //      Định dạng txtValue
@@ -76,12 +86,12 @@ public class QuantityEditor extends AbstractCellEditor implements TableCellEdito
         txtValue.setText(String.valueOf(value));
 
         if (table != null) {
-            table.setValueAt(value, row, 1);
+            table.setValueAt(value, row, quantityColumn);
 
-            Object priceObj = table.getValueAt(row, 2);
-            if (priceObj instanceof Integer) {
-                int price = (Integer) priceObj;
-                table.setValueAt(price * value, row, 3);
+            Object priceObj = table.getValueAt(row, priceColumn);
+            if (priceObj instanceof Number) {
+                double price = ((Number) priceObj).doubleValue();
+                table.setValueAt(price * value, row, totalColumn);
             }
         }
     }

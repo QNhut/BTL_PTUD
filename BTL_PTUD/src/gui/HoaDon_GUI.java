@@ -2,6 +2,7 @@ package gui;
 
 import constants.Colors;
 import constants.FontStyle;
+import dao.LoSanPham_DAO;
 import entity.NhaCungCap;
 import entity.SanPham;
 import exception.QuantityEditor;
@@ -94,6 +95,7 @@ public class HoaDon_GUI extends JPanel {
     private double totalPrice = 0;
     private JLabel lblTotal;
     private JLabel lblTotalPrice;
+    private final LoSanPham_DAO loSanPhamDAO = new LoSanPham_DAO();
 
     public HoaDon_GUI() {
         setLayout(new BorderLayout(10, 10));
@@ -212,19 +214,19 @@ public class HoaDon_GUI extends JPanel {
         scrProduct.setBorder(null);
 
         List<SanPham> list = new ArrayList<>();
-        list.add(new SanPham("sp01", "Paracetamol 500mg","lsp01", "Hạ sốt","Thành phần 1", 15000, 620, 100, true, "img1.jpg"));
-        list.add(new SanPham("sp02", "Miếng dán giảm đau Salonpas","lsp02", "Giảm đau","Thành phần 2", 430200, 252, 50, true, "img1.jpg"));
-        list.add(new SanPham("sp03", "Berberin","lsp03", "Tiêu hóa","Thành phần 3", 2000, 302, 200, true, "img1.jpg"));
-        list.add(new SanPham("sp04", "Omeprazole 20mg","lsp04", "Dạ dày","Thành phần 4", 212000, 324, 80, true, "img1.jpg"));
-        list.add(new SanPham("sp05", "Acetylcystein (thuốc ho)","lsp05", "Thuốc ho","Thành phần 5", 42547, 1673, 150, true, "img1.jpg"));
-        list.add(new SanPham("sp06", "Diphenhydramine (kem bôi)","lsp06", "Dị ứng","Thành phần 6", 32450, 219, 120, true, "img1.jpg"));
-        list.add(new SanPham("sp07", "Băng gạc y tế","lsp07", "Vật tư y tế","Thành phần 7", 2000, 302, 500, true, "img1.jpg"));
-        list.add(new SanPham("sp08", "Amoxicillin 500mg","lsp08", "Kháng sinh","Thành phần 8", 35000, 500, 90, true, "img1.jpg"));
-        list.add(new SanPham("sp09", "Vitamin C 1000mg","lsp09", "Vitamin","Thành phần 9", 85000, 410, 110, true, "img1.jpg"));
-        list.add(new SanPham("sp10", "Ibuprofen 400mg","lsp01", "Hạ sốt","Thành phần 10", 15000, 620, 100, true, "img1.jpg"));
-        list.add(new SanPham("sp11", "Cetirizine 10mg","lsp06", "Dị ứng","Thành phần 11", 28000, 380, 70, true, "img1.jpg"));
-        list.add(new SanPham("sp12", "Strepsils viêm họng","lsp10", "Viêm họng","Thành phần 12", 45000, 890, 60, true, "img1.jpg"));
-        list.add(new SanPham("sp13", "Decolgen (cảm cúm)","lsp11", "Cảm cúm","Thành phần 13", 3500, 1500, 300, true, "img1.jpg"));
+        list.add(new SanPham("sp01", "Paracetamol 500mg","lsp01", "Hạ sốt","Thành phần 1", 15000, 620, true, "img1.jpg"));
+        list.add(new SanPham("sp02", "Miếng dán giảm đau Salonpas","lsp02", "Giảm đau","Thành phần 2", 430200, 252, true, "img1.jpg"));
+        list.add(new SanPham("sp03", "Berberin","lsp03", "Tiêu hóa","Thành phần 3", 2000, 302, true, "img1.jpg"));
+        list.add(new SanPham("sp04", "Omeprazole 20mg","lsp04", "Dạ dày","Thành phần 4", 212000, 324, true, "img1.jpg"));
+        list.add(new SanPham("sp05", "Acetylcystein (thuốc ho)","lsp05", "Thuốc ho","Thành phần 5", 42547, 1673, true, "img1.jpg"));
+        list.add(new SanPham("sp06", "Diphenhydramine (kem bôi)","lsp06", "Dị ứng","Thành phần 6", 32450, 219, true, "img1.jpg"));
+        list.add(new SanPham("sp07", "Băng gạc y tế","lsp07", "Vật tư y tế","Thành phần 7", 2000, 302, true, "img1.jpg"));
+        list.add(new SanPham("sp08", "Amoxicillin 500mg","lsp08", "Kháng sinh","Thành phần 8", 35000, 500, true, "img1.jpg"));
+        list.add(new SanPham("sp09", "Vitamin C 1000mg","lsp09", "Vitamin","Thành phần 9", 85000, 410, true, "img1.jpg"));
+        list.add(new SanPham("sp10", "Ibuprofen 400mg","lsp01", "Hạ sốt","Thành phần 10", 15000, 620, true, "img1.jpg"));
+        list.add(new SanPham("sp11", "Cetirizine 10mg","lsp06", "Dị ứng","Thành phần 11", 28000, 380, true, "img1.jpg"));
+        list.add(new SanPham("sp12", "Strepsils viêm họng","lsp10", "Viêm họng","Thành phần 12", 45000, 890, true, "img1.jpg"));
+        list.add(new SanPham("sp13", "Decolgen (cảm cúm)","lsp11", "Cảm cúm","Thành phần 13", 3500, 1500, true, "img1.jpg"));
         loadProducts(list);
         pnlContentTopLeft.revalidate();
         pnlContentTopLeft.repaint();
@@ -628,7 +630,7 @@ public class HoaDon_GUI extends JPanel {
         lblGia.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
         lblGia.setForeground(Colors.TEXT_PRIMARY);
 
-        JLabel lblTon = new JLabel("Tồn: " + sp.getSoLuongTon());
+        JLabel lblTon = new JLabel("Tồn: " + getTonKhoHienTai(sp));
         lblTon.setForeground(Colors.TEXT_SECONDARY);
         lblTon.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
 
@@ -638,6 +640,7 @@ public class HoaDon_GUI extends JPanel {
         Color btnBg = isSelected ? Colors.SUCCESS_LIGHT : Colors.PRIMARY;
         Color btnFg = isSelected ? Colors.SUCCESS_DARK : Colors.BACKGROUND;
         String btnText = isSelected ? "+ Thêm lần nữa" : "+ Thêm vào đơn";
+
 
         JButton btn = new RoundedButton(Integer.MAX_VALUE, 35, 20, btnText, btnBg);
         btn.setForeground(btnFg);
@@ -668,6 +671,13 @@ public class HoaDon_GUI extends JPanel {
         card.add(btn);
 
         return card;
+    }
+
+    private int getTonKhoHienTai(SanPham sanPham) {
+        if (sanPham == null) {
+            return 0;
+        }
+        return loSanPhamDAO.layTongSoLuongTonTheoMaSanPham(sanPham.getMaSanPham());
     }
 
     private void loadProducts(List<SanPham> list) {

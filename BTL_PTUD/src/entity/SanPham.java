@@ -14,13 +14,12 @@ public class SanPham {
 	private KhuyenMai khuyenMai;
 	private Thue thue;
 	private NhaCungCap nhaCungCap;
-	private int soLuong;
 	private String donViTinh;
 	private boolean trangThai;
 	private String hinhAnh;
 
 	public SanPham(String maSanPham, String tenSanPham, String maLoaiSanPham, String congDung, String thanhPhan,
-			int hanSuDung, double giaThanh, int soLuong, boolean trangThai, String hinhAnh) {
+			int hanSuDung, double giaThanh, boolean trangThai, String hinhAnh) {
 		setMaSanPham(maSanPham);
 		setTenSanPham(tenSanPham);
 		setLoaiSP(new LoaiSanPham(maLoaiSanPham));
@@ -28,19 +27,17 @@ public class SanPham {
 		setThanhPhan(thanhPhan);
 		setHanSuDungThang(hanSuDung);
 		setGiaThanh(giaThanh);
-		setSoLuong(soLuong);
 		setTrangThai(trangThai);
 		setHinhAnh(hinhAnh);
 	}
 
 	public SanPham(String maSanPham, String tenSanPham, NhaCungCap nhaCungCap, LoaiSanPham loaiSanPham,
-			double giaThanh, int soLuong, String donViTinh, String hanSuDung, String hinhAnh) {
+			double giaThanh, String donViTinh, String hanSuDung, String hinhAnh) {
 		setMaSanPham(maSanPham);
 		setTenSanPham(tenSanPham);
 		setNhaCungCap(nhaCungCap);
 		setLoaiSP(loaiSanPham);
 		setGiaThanh(giaThanh);
-		setSoLuong(soLuong);
 		setDonViTinh(donViTinh);
 		setHanSuDung(hanSuDung);
 		setHinhAnh(hinhAnh);
@@ -210,17 +207,6 @@ public class SanPham {
 
 	public void setnCC(NhaCungCap nCC) {
 		this.nhaCungCap = nCC;
-	}
-
-	public int getSoLuong() {
-		return soLuong;
-	}
-
-	public void setSoLuong(int soLuong) {
-		if (soLuong < 0) {
-			throw new IllegalArgumentException("So luong khong duoc am");
-		}
-		this.soLuong = soLuong;
 	}
 
 	public String getDonViTinh() {

@@ -169,4 +169,28 @@ public class SanPham_DAO {
         sp.setHinhAnh(rs.getString("HinhAnh"));
         return sp;
     }
+
+    /** Sinh mã sản phẩm tự động: SP + YYYY + 4 số (VD: SP20260001) */
+    public String sinhMaTuDong() {
+        String prefix = "SP";
+        int nam = java.time.LocalDate.now().getYear();
+        String pattern = prefix + nam;
+        String sql = "SELECT MAX(MaSanPham) FROM SanPham WHERE MaSanPham LIKE ?";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, pattern + "%");
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        String maxMa = rs.getString(1);
+                        if (maxMa != null && maxMa.length() >= pattern.length() + 4) {
+                            int stt = Integer.parseInt(maxMa.substring(pattern.length())) + 1;
+                            return pattern + String.format("%04d", stt);
+                        }
+                    }
+                }
+            }
+        } catch (java.sql.SQLException e) { e.printStackTrace(); }
+        return pattern + "0001";
+    }
 }
