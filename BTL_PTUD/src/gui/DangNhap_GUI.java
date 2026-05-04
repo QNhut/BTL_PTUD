@@ -265,7 +265,7 @@ public class DangNhap_GUI extends JFrame implements ActionListener {
 					return;
 				}
 				currentToken = token;
-				JOptionPane.showMessageDialog(this, "Xin chào " + taiKhoan.getNhanVien().getTenNV());
+				JOptionPane.showMessageDialog(this, "Xin chào " + taiKhoan.getNhanVien().getTenNhanVien());
 				Main_GUI mainFram = new Main_GUI(tkService, currentToken);
 				mainFram.setVisible(true);
 				this.dispose();

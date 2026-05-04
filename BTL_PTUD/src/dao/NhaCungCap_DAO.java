@@ -5,158 +5,110 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Types;
 import java.util.ArrayList;
 
 import ConnectDB.ConnectDB;
 import entity.NhaCungCap;
-import entity.NhanVien;
 
 public class NhaCungCap_DAO {
 	private Connection con = null;
-	private ArrayList<NhaCungCap> dsNCC;
-
-	public NhaCungCap_DAO() {
-		dsNCC = new ArrayList<NhaCungCap>();
-	}
 
 	public ArrayList<NhaCungCap> getDSNhaCungCap() {
-		dsNCC.clear();
-		String sql = "select * from NhaCungCap order by MaNCC";
+		ArrayList<NhaCungCap> dsNCC = new ArrayList<NhaCungCap>();
+		String sql = "SELECT MaNhaCungCap, TenNhaCungCap, DiaChi, Email, SoDienThoai, MoTa, TrangThai FROM NhaCungCap ORDER BY MaNhaCungCap";
 		try {
 			con = ConnectDB.getInstance().getConnection();
-			Statement statement = con.createStatement();
-			ResultSet rs = statement.executeQuery(sql);
-			while (rs.next()) {
-				String maNCC = rs.getString("MaNCC");
-				String tenNCC = rs.getString("TenNCC");
-				String diaChi = rs.getString("DiaChi");
-				String sDT = rs.getString("SoDienThoai");
-				String email = rs.getString("Email");
-				diaChi = (diaChi == null) ? "" : diaChi;
-				sDT = (sDT == null) ? "" : sDT;
-				email = (email == null) ? "" : email;
-				dsNCC.add(new NhaCungCap(maNCC, tenNCC, diaChi, sDT, email));
+			try (Statement statement = con.createStatement(); ResultSet rs = statement.executeQuery(sql)) {
+				while (rs.next()) {
+					dsNCC.add(mapNhaCungCap(rs));
+				}
 			}
-
 		} catch (SQLException e) {
-			// TODO: handle exception
 			e.printStackTrace();
 		}
 		return dsNCC;
 	}
-	
+
 	public NhaCungCap layNCCTheoMaNCC(String maNCC) {
-		NhaCungCap ncc = null;
+		String sql = "SELECT MaNhaCungCap, TenNhaCungCap, DiaChi, Email, SoDienThoai, MoTa, TrangThai FROM NhaCungCap WHERE MaNhaCungCap = ?";
 		try {
 			con = ConnectDB.getInstance().getConnection();
-			String sql = "select * from NhaCungCap where MaNCC = ?";
-			PreparedStatement stmt = con.prepareStatement(sql);
-			stmt.setString(1, maNCC);
-			ResultSet rs = stmt.executeQuery();
-			if (rs.next()) {
-				String tenNCC = rs.getString("TenNCC");
-				String diaChi = rs.getString("DiaChi");
-				String sDT = rs.getString("SoDienThoai");
-				String email = rs.getString("Email");
-				diaChi = (diaChi == null) ? "" : diaChi;
-				sDT = (sDT == null) ? "" : sDT;
-				email = (email == null) ? "" : email;
-				dsNCC.add(new NhaCungCap(maNCC, tenNCC, diaChi, sDT, email));
-
-				ncc = new NhaCungCap(maNCC, tenNCC, diaChi, sDT, email);
+			try (PreparedStatement stmt = con.prepareStatement(sql)) {
+				stmt.setString(1, maNCC);
+				try (ResultSet rs = stmt.executeQuery()) {
+					if (rs.next()) {
+						return mapNhaCungCap(rs);
+					}
 				}
-			rs.close();
-			stmt.close();
+			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		return ncc;
+		return null;
 	}
 
-//	Thêm nhà cung cấp
 	public boolean themNCC(NhaCungCap ncc) {
-		con = ConnectDB.getInstance().getConnection();
-		PreparedStatement stmt = null;
-		int n = 0;
-		String sql = "insert into NhaCungCap values(?,?,?,?,?)";
+		String sql = "INSERT INTO NhaCungCap (MaNhaCungCap, TenNhaCungCap, DiaChi, Email, SoDienThoai, MoTa, TrangThai) VALUES (?, ?, ?, ?, ?, ?, ?)";
 		try {
-			stmt = con.prepareStatement(sql);
-			stmt.setString(1, ncc.getMaNCC());
-			stmt.setString(2, ncc.getTenNCC());
-			if (ncc.getDiaChi() == null || ncc.getDiaChi().isEmpty()) {
-				stmt.setNull(3, Types.NVARCHAR);
-			} else {
+			con = ConnectDB.getInstance().getConnection();
+			try (PreparedStatement stmt = con.prepareStatement(sql)) {
+				stmt.setString(1, ncc.getMaNhaCungCap());
+				stmt.setString(2, ncc.getTenNhaCungCap());
 				stmt.setString(3, ncc.getDiaChi());
+				stmt.setString(4, ncc.getEmail());
+				stmt.setString(5, ncc.getSoDienThoai());
+				stmt.setString(6, ncc.getMoTa());
+				stmt.setBoolean(7, ncc.isTrangThai());
+				return stmt.executeUpdate() > 0;
 			}
-			if (ncc.getSoDienThoai() == null || ncc.getSoDienThoai().isEmpty()) {
-				stmt.setNull(4, Types.NVARCHAR);
-			} else {
-				stmt.setString(4, ncc.getSoDienThoai());
-			}
-
-			if (ncc.getEmail() == null || ncc.getEmail().isEmpty()) {
-				stmt.setNull(5, Types.NVARCHAR);
-			} else {
-				stmt.setString(5, ncc.getEmail());
-			}
-			n = stmt.executeUpdate();
-
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		return n > 0;
+		return false;
 	}
-
 
 	public boolean updateNCC(NhaCungCap ncc) {
-		con = ConnectDB.getInstance().getConnection();
-		PreparedStatement stmt = null;
-		int n = 0;
-		String sql = "update NhaCungCap set TenNCC = ?, DiaChi = ?, SoDienThoai = ?, Email = ? where MaNCC = ?";
+		String sql = "UPDATE NhaCungCap SET TenNhaCungCap = ?, DiaChi = ?, Email = ?, SoDienThoai = ?, MoTa = ?, TrangThai = ? WHERE MaNhaCungCap = ?";
 		try {
-			stmt = con.prepareStatement(sql);
-			stmt.setString(1, ncc.getTenNCC());
-			if (ncc.getDiaChi() == null || ncc.getDiaChi().isEmpty()) {
-				stmt.setNull(2, Types.NVARCHAR);
-			} else {
+			con = ConnectDB.getInstance().getConnection();
+			try (PreparedStatement stmt = con.prepareStatement(sql)) {
+				stmt.setString(1, ncc.getTenNhaCungCap());
 				stmt.setString(2, ncc.getDiaChi());
+				stmt.setString(3, ncc.getEmail());
+				stmt.setString(4, ncc.getSoDienThoai());
+				stmt.setString(5, ncc.getMoTa());
+				stmt.setBoolean(6, ncc.isTrangThai());
+				stmt.setString(7, ncc.getMaNhaCungCap());
+				return stmt.executeUpdate() > 0;
 			}
-
-			if (ncc.getSoDienThoai() == null || ncc.getSoDienThoai().isEmpty()) {
-				stmt.setNull(3, Types.NVARCHAR);
-			} else {
-				stmt.setString(3, ncc.getSoDienThoai());
-			}
-
-			if (ncc.getEmail() == null || ncc.getEmail().isEmpty()) {
-				stmt.setNull(4, Types.NVARCHAR);
-			} else {
-				stmt.setString(4, ncc.getEmail());
-			}
-
-			stmt.setString(5, ncc.getMaNCC());
-			n = stmt.executeUpdate();
-
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		return n > 0;
+		return false;
 	}
 
 	public boolean xoaNCC(String maNCC) {
-		con = ConnectDB.getInstance().getConnection();
-		PreparedStatement stmt = null;
-		int n = 0;
-		String sql = "delete from NhaCungCap where MaNCC = ?";
+		String sql = "DELETE FROM NhaCungCap WHERE MaNhaCungCap = ?";
 		try {
-			stmt = con.prepareStatement(sql);
-			stmt.setString(1, maNCC);
-			n = stmt.executeUpdate();
-
+			con = ConnectDB.getInstance().getConnection();
+			try (PreparedStatement stmt = con.prepareStatement(sql)) {
+				stmt.setString(1, maNCC);
+				return stmt.executeUpdate() > 0;
+			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		return n > 0;
+		return false;
+	}
+
+	private NhaCungCap mapNhaCungCap(ResultSet rs) throws SQLException {
+		String maNCC = rs.getString("MaNhaCungCap");
+		String tenNCC = rs.getString("TenNhaCungCap");
+		String diaChi = rs.getString("DiaChi");
+		String email = rs.getString("Email");
+		String soDienThoai = rs.getString("SoDienThoai");
+		String moTa = rs.getString("MoTa");
+		boolean trangThai = rs.getBoolean("TrangThai");
+		return new NhaCungCap(maNCC, tenNCC, diaChi, email, soDienThoai, moTa, trangThai);
 	}
 }

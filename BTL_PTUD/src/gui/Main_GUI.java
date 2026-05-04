@@ -13,7 +13,7 @@ import constants.FontStyle;
 import entity.TaiKhoan;
 import exception.MenuBarPanel;
 import service.TaiKhoan_Service;
-//import gui.DangKy_GUI;
+import gui.HoaDon_GUI;
 
 public class Main_GUI extends JFrame {
 
@@ -55,7 +55,7 @@ public class Main_GUI extends JFrame {
 			return;
 		}
 
-		setTitle("Quản lý cửa hàng tiện lợi");
+		setTitle("Quản lý bán hàng");
 		setSize(1450, 900);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setLocationRelativeTo(null);
@@ -102,14 +102,14 @@ public class Main_GUI extends JFrame {
 
 		String tenHienThi = "Nhân viên";
 		if (taiKhoanDangNhap != null && taiKhoanDangNhap.getNhanVien() != null) {
-			tenHienThi = taiKhoanDangNhap.getNhanVien().getTenNV();
+			tenHienThi = taiKhoanDangNhap.getNhanVien().getTenNhanVien();
 		}
 
 		String vaiTroHienThi = "Nhân viên";
 		if (taiKhoanDangNhap != null && taiKhoanDangNhap.getNhanVien() != null
-				&& taiKhoanDangNhap.getNhanVien().getVaiTro() != null
-				&& !taiKhoanDangNhap.getNhanVien().getVaiTro().trim().isEmpty()) {
-			vaiTroHienThi = taiKhoanDangNhap.getNhanVien().getVaiTro();
+				&& taiKhoanDangNhap.getNhanVien().getChucVu().getTenChucVu() != null
+				&& !taiKhoanDangNhap.getNhanVien().getChucVu().getTenChucVu().trim().isEmpty()) {
+			vaiTroHienThi = taiKhoanDangNhap.getNhanVien().getChucVu().getTenChucVu();
 		}
 
 		JPanel accountCard = new JPanel();
@@ -121,7 +121,7 @@ public class Main_GUI extends JFrame {
 
 		String linkAnhNhanVien = null;
 		if (taiKhoanDangNhap != null && taiKhoanDangNhap.getNhanVien() != null) {
-			linkAnhNhanVien = taiKhoanDangNhap.getNhanVien().getLinkAnh();
+			linkAnhNhanVien = taiKhoanDangNhap.getNhanVien().getHinhAnh();
 		}
 		ImageIcon userAvatar = loadNhanVienAvatar(linkAnhNhanVien, 28, 28);
 		if (userAvatar == null) {
@@ -173,7 +173,7 @@ public class Main_GUI extends JFrame {
 		contentPanel.add(createEmptyPage("KhuyenMai"), "KhuyenMai");
 
 //		Xử lý
-		contentPanel.add(createEmptyPage("BanHang"), "BanHang");
+		contentPanel.add(new HoaDon_GUI(), "BanHang");
 		contentPanel.add(new NhapHang_GUI(), "NhapHang");
 		contentPanel.add(createEmptyPage("DoiHang"), "DoiHang");
 		contentPanel.add(createEmptyPage("TraHang"), "TraHang");
@@ -194,7 +194,7 @@ public class Main_GUI extends JFrame {
 		contentPanel.add(createEmptyPage("TrangChu"), "TrangChu");
 		contentPanel.add(createEmptyPage("TroGiup"), "TroGiup");
 
-		cardLayout.show(contentPanel, "NhapHang");
+		cardLayout.show(contentPanel, "TrangChu");
 
 		addWindowListener(new WindowAdapter() {
 			@Override

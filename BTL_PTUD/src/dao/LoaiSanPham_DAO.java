@@ -12,71 +12,96 @@ import entity.LoaiSanPham;
 
 public class LoaiSanPham_DAO {
 	private Connection con;
-	private ArrayList<LoaiSanPham> dsLoaiSP;
 
-	public LoaiSanPham_DAO() {
-		dsLoaiSP = new ArrayList<LoaiSanPham>();
-	}
-
-//  Đọc dữ liệu từ bản LoaiSanPham
 	public ArrayList<LoaiSanPham> getDSLoaiSanPham() {
-		dsLoaiSP.clear();
-		String sql = "Select * from LoaiSanPham";
+		ArrayList<LoaiSanPham> dsLoaiSP = new ArrayList<LoaiSanPham>();
+		String sql = "SELECT MaLoaiSanPham, TenLoaiSanPham, MoTa FROM LoaiSanPham ORDER BY MaLoaiSanPham";
 		try {
 			con = ConnectDB.getInstance().getConnection();
-			Statement statement = con.createStatement();
-			ResultSet rs = statement.executeQuery(sql);
-			while (rs.next()) {
-				String maLoaiSP = rs.getString("MaLoaiSP");
-				String tenLoaiSP = rs.getString("TenLoaiSP");
-				String moTa = rs.getString("MoTa");
-				moTa = (moTa == null) ? "" : moTa;
-				dsLoaiSP.add(new LoaiSanPham(maLoaiSP, tenLoaiSP, moTa));
+			try (Statement statement = con.createStatement(); ResultSet rs = statement.executeQuery(sql)) {
+				while (rs.next()) {
+					dsLoaiSP.add(mapLoaiSanPham(rs));
+				}
 			}
-
 		} catch (SQLException e) {
-			// TODO: handle exception
 			e.printStackTrace();
 		}
 		return dsLoaiSP;
 	}
 
-//	Lấy tên loại sản phẩm dựa trên mã
 	public String layTenLoaiSP(String maLoaiSP) {
-		String tenLoaiSP = "";
-		String sql = "select TenLoaiSP from LoaiSanPham where MaLoaiSP = ?";
-		try {
-			con = ConnectDB.getInstance().getConnection();
-			PreparedStatement stmt = con.prepareStatement(sql);
-			stmt.setString(1, maLoaiSP);
-			ResultSet rs = stmt.executeQuery();
-			if (rs.next()) {
-				tenLoaiSP = rs.getString("TenLoaiSP");
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		return tenLoaiSP;
+		LoaiSanPham lsp = layLoaiSPTheoMaLSP(maLoaiSP);
+		return lsp == null ? "" : lsp.getTenLoaiSanPham();
 	}
-	
+
 	public LoaiSanPham layLoaiSPTheoMaLSP(String maLoaiSP) {
-		String sql = "select * from LoaiSanPham where MaLoaiSP = ?";
-		LoaiSanPham lsp = null;
+		String sql = "SELECT MaLoaiSanPham, TenLoaiSanPham, MoTa FROM LoaiSanPham WHERE MaLoaiSanPham = ?";
 		try {
 			con = ConnectDB.getInstance().getConnection();
-			PreparedStatement stmt = con.prepareStatement(sql);
-			stmt.setString(1, maLoaiSP);
-			ResultSet rs = stmt.executeQuery();
-			if (rs.next()) {
-				String tenLoaiSP = rs.getString("TenLoaiSP");
-				String moTa = rs.getString("MoTa");
-				moTa = (moTa == null) ? "" : moTa;
-				
-				lsp = new LoaiSanPham(maLoaiSP, tenLoaiSP, moTa);
+			try (PreparedStatement stmt = con.prepareStatement(sql)) {
+				stmt.setString(1, maLoaiSP);
+				try (ResultSet rs = stmt.executeQuery()) {
+					if (rs.next()) {
+						return mapLoaiSanPham(rs);
+					}
+				}
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		return lsp;
+		return null;
+	}
+
+	public boolean themLoaiSanPham(LoaiSanPham lsp) {
+		String sql = "INSERT INTO LoaiSanPham (MaLoaiSanPham, TenLoaiSanPham, MoTa) VALUES (?, ?, ?)";
+		try {
+			con = ConnectDB.getInstance().getConnection();
+			try (PreparedStatement stmt = con.prepareStatement(sql)) {
+				stmt.setString(1, lsp.getMaLoaiSanPham());
+				stmt.setString(2, lsp.getTenLoaiSanPham());
+				stmt.setString(3, lsp.getMoTa());
+				return stmt.executeUpdate() > 0;
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+
+	public boolean capNhatLoaiSanPham(LoaiSanPham lsp) {
+		String sql = "UPDATE LoaiSanPham SET TenLoaiSanPham = ?, MoTa = ? WHERE MaLoaiSanPham = ?";
+		try {
+			con = ConnectDB.getInstance().getConnection();
+			try (PreparedStatement stmt = con.prepareStatement(sql)) {
+				stmt.setString(1, lsp.getTenLoaiSanPham());
+				stmt.setString(2, lsp.getMoTa());
+				stmt.setString(3, lsp.getMaLoaiSanPham());
+				return stmt.executeUpdate() > 0;
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+
+	public boolean xoaLoaiSanPham(String maLoaiSanPham) {
+		String sql = "DELETE FROM LoaiSanPham WHERE MaLoaiSanPham = ?";
+		try {
+			con = ConnectDB.getInstance().getConnection();
+			try (PreparedStatement stmt = con.prepareStatement(sql)) {
+				stmt.setString(1, maLoaiSanPham);
+				return stmt.executeUpdate() > 0;
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+
+	private LoaiSanPham mapLoaiSanPham(ResultSet rs) throws SQLException {
+		String maLoai = rs.getString("MaLoaiSanPham");
+		String tenLoai = rs.getString("TenLoaiSanPham");
+		String moTa = rs.getString("MoTa");
+		return new LoaiSanPham(maLoai, tenLoai, moTa);
 	}
 }

@@ -5,10 +5,10 @@ public final class Colors {
     private Colors() {}
 
     // ===== CORE COLORS =====
-    public static final Color PRIMARY = hex("#18A67A");   // Nút chính
+    public static final Color PRIMARY = hex("#18B48D");   // Nút chính
     public static final Color ACCENT = hex("#ED5A2D");    // Highlight
     public static final Color SUCCESS = hex("#16A34A");   // Trạng thái OK
-    public static final Color DANGER = hex("#EF4444");    // Cảnh báo
+    public static final Color DANGER = hex("#F44725");    // Cảnh báo
 
     // ===== BACKGROUND =====
     public static final Color BACKGROUND = Color.WHITE;   // Nền chính
@@ -20,14 +20,16 @@ public final class Colors {
 
     // ===== TEXT =====
     public static final Color FOREGROUND = hex("#212121"); // text chính
+    public static final Color TEXT_LOGIN = hex("#0099FF"); // text đăng nhập
 
     // NEW (chuẩn theo UI bạn đang dùng)
     public static final Color TEXT_PRIMARY = hex("#111827");   // (17,24,39)
-    public static final Color TEXT_SECONDARY = hex("#6B7280");
-    public static final Color TEXT_LOGIN = hex("#0099FF");// (107,114,128)
+    public static final Color TEXT_SECONDARY = hex("#6B7280"); // (107,114,128)
 
     public static final Color MUTED = hex("#737373"); 
-
+    
+    //Thanh menu
+    public static final Color SELECTED_MENU = hex("#f44725"); // màu nền chức năng được chọn
     // ===== BORDER =====
     public static final Color BORDER = hex("#E0E0E0");
 
@@ -41,6 +43,12 @@ public final class Colors {
     // Button riêng 
     public static final Color PRIMARY_BUTTON = hex("#00A86B");
     
+    // Hover button
+    public static final Color BLUE_HOVER = hex("#dbeafe"); 
+    public static final Color GREEN_HOVER = hex("#DCFCE7");// hover trạng thái thành công
+    public static final Color PURPLE_HOVER = hex("#F3E8FF");
+    public static final Color BROWN_HOVER = hex("#ffedd5");
+    public static final Color YELLOW_HOVER = hex("#fefce8"); //hover trạng thái cảnh báo
     // ===== UTILS =====
     public static Color hex(String hex) {
         return Color.decode(hex);

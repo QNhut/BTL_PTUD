@@ -63,7 +63,7 @@ public class TaiKhoan_Service {
 			return null;
 		}
 
-		if (!taiKhoanDAO.capNhatTrangThaiOnline(taiKhoan.getTenDangNhap(), true)) {
+		if (!taiKhoanDAO.capNhatTrangThai(taiKhoan.getTenDangNhap(), true)) {
 			return null;
 		}
 
@@ -141,7 +141,7 @@ public class TaiKhoan_Service {
 		sessionsByToken.remove(token);
 		tokenByUsername.remove(tenDangNhap, token);
 		xoaFilePhienDaLuu();
-		return taiKhoanDAO.capNhatTrangThaiOnline(tenDangNhap, false);
+		return taiKhoanDAO.capNhatTrangThai(tenDangNhap, false);
 	}
 
 	public String layTokenDaLuu() {
@@ -185,14 +185,14 @@ public class TaiKhoan_Service {
 					Instant.ofEpochMilli(lastAccessAtEpoch), Instant.ofEpochMilli(absoluteExpiresAtEpoch));
 
 			if (phien.daHetHanToiDa() || phien.daHetHanKhongHoatDong(idleTimeoutMillis)) {
-				taiKhoanDAO.capNhatTrangThaiOnline(tenDangNhap, false);
+				taiKhoanDAO.capNhatTrangThai(tenDangNhap, false);
 				xoaFilePhienDaLuu();
 				return;
 			}
 
 			sessionsByToken.put(token, phien);
 			tokenByUsername.put(tenDangNhap, token);
-			taiKhoanDAO.capNhatTrangThaiOnline(tenDangNhap, true);
+			taiKhoanDAO.capNhatTrangThai(tenDangNhap, true);
 		} catch (IOException | NumberFormatException e) {
 			xoaFilePhienDaLuu();
 		}

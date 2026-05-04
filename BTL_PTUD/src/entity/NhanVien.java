@@ -4,224 +4,193 @@ import java.util.Objects;
 import java.util.regex.Pattern;
 
 public class NhanVien {
-	private String maNV;
-	private String tenNV;
-	private boolean gioiTinh;
-	private String sDT;
-	private String diaChi;
-	private String email;
-	private String cCCD;
-	private String vaiTro;
-	private double tienLuong;
-	private String caLam;
-	private String linkAnh;
+    private String maNhanVien;
+    private String tenNhanVien;
+    private boolean gioiTinh;
+    private String soDienThoai;
+    private String email;
+    private String cCCD;
+    private String diaChi;
+    private String hinhAnh;
+    private boolean trangThai;
+    private ChucVu chucVu;
 
-	private static final Pattern REGEX_SDT = Pattern.compile("\\d{10}");
-	private static final Pattern REGEX_CCCD = Pattern.compile("\\d{12}");
-	private static final Pattern REGEX_EMAIL = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    private static final Pattern REGEX_SDT = Pattern.compile("\\d{10}");
+    private static final Pattern REGEX_CCCD = Pattern.compile("\\d{12}");
+    private static final Pattern REGEX_EMAIL = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
 
-	public NhanVien(String maNV, String tenNV, boolean gioiTinh, String sDT, String diaChi, String email, String cCCD,
-			String vaiTro, double tienLuong, String caLam, String linkAnh) {
-		setMaNV(maNV);
-		setTenNV(tenNV);
-		setGioiTinh(gioiTinh);
-		setsDT(sDT);
-		setDiaChi(diaChi);
-		setEmail(email);
-		setcCCD(cCCD);
-		setVaiTro(vaiTro);
-		setTienLuong(tienLuong);
-		setCaLam(caLam);
-		setLinkAnh(linkAnh);
-	}
+    public NhanVien(String maNhanVien, String tenNhanVien, boolean gioiTinh, String soDienThoai, String diaChi,
+                    String email, String cCCD, ChucVu chucVu, String hinhAnh, boolean trangThai) {
+        setMaNhanVien(maNhanVien);
+        setTenNhanVien(tenNhanVien);
+        setGioiTinh(gioiTinh);
+        setSoDienThoai(soDienThoai);
+        setDiaChi(diaChi);
+        setEmail(email);
+        setCCCD(cCCD);
+        setChucVu(chucVu);
+        setHinhAnh(hinhAnh);
+        setTrangThai(trangThai);
+    }
 
-	public NhanVien(String maNV) {
-		setMaNV(maNV);
-	}
+    public NhanVien(String maNhanVien) {
+        setMaNhanVien(maNhanVien);
+    }
 
-	public NhanVien() {
-	}
+    public NhanVien() {
+    }
 
-	public String getMaNV() {
-		return maNV;
-	}
+    public String getMaNhanVien() {
+        return maNhanVien;
+    }
 
-	public void setMaNV(String maNV) {
-		maNV = normalizeRequired(maNV);
-		if (isBlank(maNV)) {
-			throw new IllegalArgumentException("Ma nhan vien khong duoc de trong");
-		}
-		this.maNV = maNV;
-	}
+    public void setMaNhanVien(String maNhanVien) {
+        maNhanVien = normalizeRequired(maNhanVien);
+        if (isBlank(maNhanVien)) {
+            throw new IllegalArgumentException("Ma nhan vien khong duoc de trong");
+        }
+        this.maNhanVien = maNhanVien;
+    }
 
-	public String getTenNV() {
-		return tenNV;
-	}
+    public String getTenNhanVien() {
+        return tenNhanVien;
+    }
 
-	public void setTenNV(String tenNV) {
-		tenNV = normalizeRequired(tenNV);
-		if (isBlank(tenNV)) {
-			throw new IllegalArgumentException("Ten nhan vien khong duoc de trong");
-		}
-		this.tenNV = tenNV;
-	}
+    public void setTenNhanVien(String tenNhanVien) {
+        tenNhanVien = normalizeRequired(tenNhanVien);
+        if (isBlank(tenNhanVien)) {
+            throw new IllegalArgumentException("Ten nhan vien khong duoc de trong");
+        }
+        this.tenNhanVien = tenNhanVien;
+    }
 
-	public boolean isGioiTinh() {
-		return gioiTinh;
-	}
+    public boolean isGioiTinh() {
+        return gioiTinh;
+    }
 
-	public void setGioiTinh(boolean gioiTinh) {
-		this.gioiTinh = gioiTinh;
-	}
+    public void setGioiTinh(boolean gioiTinh) {
+        this.gioiTinh = gioiTinh;
+    }
 
-	public String getsDT() {
-		return sDT;
-	}
+    public String getSoDienThoai() {
+        return soDienThoai;
+    }
 
-	public String getSoDienThoai() {
-		return sDT;
-	}
+    public void setSoDienThoai(String soDienThoai) {
+        soDienThoai = normalizeRequired(soDienThoai);
+        if (isBlank(soDienThoai) || !REGEX_SDT.matcher(soDienThoai).matches()) {
+            throw new IllegalArgumentException("So dien thoai phai gom 10 chu so");
+        }
+        this.soDienThoai = soDienThoai;
+    }
 
-	public void setsDT(String sDT) {
-		sDT = normalizeRequired(sDT);
-		if (isBlank(sDT) || !REGEX_SDT.matcher(sDT).matches()) {
-			throw new IllegalArgumentException("So dien thoai phai gom 10 chu so");
-		}
-		this.sDT = sDT;
-	}
+    public String getEmail() {
+        return email;
+    }
 
-	public void setSoDienThoai(String soDienThoai) {
-		setsDT(soDienThoai);
-	}
+    public void setEmail(String email) {
+        email = normalizeOptional(email);
+        if (!isBlank(email) && !REGEX_EMAIL.matcher(email).matches()) {
+            throw new IllegalArgumentException("Email khong hop le");
+        }
+        this.email = email;
+    }
 
-	public String getDiaChi() {
-		return diaChi;
-	}
+    public String getCCCD() {
+        return cCCD;
+    }
 
-	public void setDiaChi(String diaChi) {
-		this.diaChi = normalizeOptional(diaChi);
-	}
+    public void setCCCD(String cCCD) {
+        cCCD = normalizeRequired(cCCD);
+        if (isBlank(cCCD) || !REGEX_CCCD.matcher(cCCD).matches()) {
+            throw new IllegalArgumentException("CCCD phai gom 12 chu so");
+        }
+        this.cCCD = cCCD;
+    }
 
-	public String getEmail() {
-		return email;
-	}
+    public String getDiaChi() {
+        return diaChi;
+    }
 
-	public void setEmail(String email) {
-		email = normalizeOptional(email);
-		if (!isBlank(email) && !REGEX_EMAIL.matcher(email).matches()) {
-			throw new IllegalArgumentException("Email khong hop le");
-		}
-		this.email = email;
-	}
+    public void setDiaChi(String diaChi) {
+        this.diaChi = normalizeOptional(diaChi);
+    }
 
-	public String getcCCD() {
-		return cCCD;
-	}
+    public String getHinhAnh() {
+        return hinhAnh;
+    }
 
-	public String getCCCD() {
-		return cCCD;
-	}
+    public void setHinhAnh(String hinhAnh) {
+        this.hinhAnh = normalizeOptional(hinhAnh);
+    }
 
-	public void setcCCD(String cCCD) {
-		cCCD = normalizeRequired(cCCD);
-		if (isBlank(cCCD) || !REGEX_CCCD.matcher(cCCD).matches()) {
-			throw new IllegalArgumentException("CCCD phai gom 12 chu so");
-		}
-		this.cCCD = cCCD;
-	}
+    public boolean isTrangThai() {
+        return trangThai;
+    }
 
-	public void setCCCD(String cccd) {
-		setcCCD(cccd);
-	}
+    public void setTrangThai(boolean trangThai) {
+        this.trangThai = trangThai;
+    }
 
-	public String getVaiTro() {
-		return vaiTro;
-	}
+    public ChucVu getChucVu() {
+        return chucVu;
+    }
 
-	public void setVaiTro(String vaiTro) {
-		this.vaiTro = normalizeOptional(vaiTro);
-	}
+    public void setChucVu(ChucVu chucVu) {
+        this.chucVu = chucVu;
+    }
 
-	public double getTienLuong() {
-		return tienLuong;
-	}
+    @Override
+    public int hashCode() {
+        return Objects.hash(maNhanVien);
+    }
 
-	public void setTienLuong(double tienLuong) {
-		if (tienLuong < 0) {
-			throw new IllegalArgumentException("Tien luong khong duoc am");
-		}
-		this.tienLuong = tienLuong;
-	}
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null) return false;
+        if (getClass() != obj.getClass()) return false;
+        NhanVien other = (NhanVien) obj;
+        return Objects.equals(maNhanVien, other.maNhanVien);
+    }
 
-	public String getCaLam() {
-		return caLam;
-	}
+    @Override
+    public String toString() {
+        return "NhanVien{"
+                + "maNhanVien='" + maNhanVien + '\''
+                + ", tenNhanVien='" + tenNhanVien + '\''
+                + ", gioiTinh=" + gioiTinh
+                + ", soDienThoai='" + maskPhone(soDienThoai) + '\''
+                + ", diaChi='" + diaChi + '\''
+                + ", email='" + email + '\''
+                + ", cCCD='" + maskCCCD(cCCD) + '\''
+                + ", hinhAnh='" + hinhAnh + '\''
+                + ", trangThai=" + trangThai
+                + ", chucVu=" + chucVu
+                + '}';
+    }
 
-	public void setCaLam(String caLam) {
-		this.caLam = normalizeOptional(caLam);
-	}
+    private static boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
+    }
 
-	public String getLinkAnh() {
-		return linkAnh;
-	}
+    private static String normalizeRequired(String value) {
+        return value == null ? null : value.trim();
+    }
 
-	public void setLinkAnh(String linkAnh) {
-		this.linkAnh = normalizeOptional(linkAnh);
-	}
+    private static String normalizeOptional(String value) {
+        if (value == null) return null;
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(maNV);
-	}
+    private static String maskPhone(String value) {
+        if (isBlank(value) || value.length() < 4) return value;
+        return "******" + value.substring(value.length() - 4);
+    }
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		NhanVien other = (NhanVien) obj;
-		return Objects.equals(maNV, other.maNV);
-	}
-
-	@Override
-	public String toString() {
-		return "NhanVien{" + "maNV='" + maNV + '\'' + ", tenNV='" + tenNV + '\'' + ", gioiTinh=" + gioiTinh
-				+ ", sDT='" + maskPhone(sDT) + '\'' + ", diaChi='" + diaChi + '\'' + ", email='" + email + '\''
-				+ ", cCCD='" + maskCCCD(cCCD) + '\'' + ", vaiTro='" + vaiTro + '\'' + ", tienLuong=" + tienLuong
-				+ ", caLam='" + caLam + '\'' + ", linkAnh='" + linkAnh + '\'' + '}';
-	}
-
-	private static boolean isBlank(String value) {
-		return value == null || value.trim().isEmpty();
-	}
-
-	private static String normalizeRequired(String value) {
-		return value == null ? null : value.trim();
-	}
-
-	private static String normalizeOptional(String value) {
-		if (value == null) {
-			return null;
-		}
-		String normalized = value.trim();
-		return normalized.isEmpty() ? null : normalized;
-	}
-
-	private static String maskPhone(String value) {
-		if (isBlank(value) || value.length() < 4) {
-			return value;
-		}
-		return "******" + value.substring(value.length() - 4);
-	}
-
-	private static String maskCCCD(String value) {
-		if (isBlank(value) || value.length() < 4) {
-			return value;
-		}
-		return "********" + value.substring(value.length() - 4);
-	}
-
+    private static String maskCCCD(String value) {
+        if (isBlank(value) || value.length() < 4) return value;
+        return "********" + value.substring(value.length() - 4);
+    }
 }

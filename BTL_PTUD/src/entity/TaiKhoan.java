@@ -1,30 +1,34 @@
 package entity;
 
+import java.time.LocalDate;
 import java.util.Objects;
 
 public class TaiKhoan {
 	private String tenDangNhap;
 	private String matKhau;
-	private boolean trangThaiOnline;
+	private LocalDate ngayTao;
+	private boolean trangThai;
 	private NhanVien nhanVien;
 
-	public TaiKhoan(String tenDangNhap, String matKhau, boolean trangThaiOnline, NhanVien nhanVien) {
+	public TaiKhoan(String tenDangNhap, String matKhau, LocalDate ngayTao, boolean trangThai, NhanVien nhanVien) {
 		setTenDangNhap(tenDangNhap);
 		setMatKhau(matKhau);
-		setTrangThaiOnline(trangThaiOnline);
+		setNgayTao(ngayTao);
+		setTrangThai(trangThai);
 		setNhanVien(nhanVien);
 	}
 
-	public TaiKhoan(String tenDangNhap, String matKhau, NhanVien nhanVien) {
+	public TaiKhoan(String tenDangNhap, String matKhau, LocalDate ngayTao, NhanVien nhanVien) {
 		setTenDangNhap(tenDangNhap);
 		setMatKhau(matKhau);
-		setTrangThaiOnline(false);
+		setNgayTao(ngayTao);
+		setTrangThai(false);
 		setNhanVien(nhanVien);
 	}
 
-	public TaiKhoan(String tenDangNhap, boolean trangThaiOnline, NhanVien nhanVien) {
+	public TaiKhoan(String tenDangNhap, boolean trangThai, NhanVien nhanVien) {
 		setTenDangNhap(tenDangNhap);
-		setTrangThaiOnline(trangThaiOnline);
+		setTrangThai(trangThai);
 		setNhanVien(nhanVien);
 	}
 
@@ -39,12 +43,20 @@ public class TaiKhoan {
 		return tenDangNhap;
 	}
 
+	public String getTenTaiKhoan() {
+		return tenDangNhap;
+	}
+
 	public void setTenDangNhap(String tenDangNhap) {
 		tenDangNhap = normalizeRequired(tenDangNhap);
 		if (isBlank(tenDangNhap)) {
 			throw new IllegalArgumentException("Ten dang nhap khong duoc de trong");
 		}
 		this.tenDangNhap = tenDangNhap;
+	}
+
+	public void setTenTaiKhoan(String tenTaiKhoan) {
+		setTenDangNhap(tenTaiKhoan);
 	}
 
 	public String getMatKhau() {
@@ -58,12 +70,24 @@ public class TaiKhoan {
 		this.matKhau = matKhau;
 	}
 
-	public boolean isTrangThaiOnline() {
-		return trangThaiOnline;
+	public LocalDate getNgayTao() {
+		return ngayTao;
 	}
 
-	public void setTrangThaiOnline(boolean trangThaiOnline) {
-		this.trangThaiOnline = trangThaiOnline;
+	public void setNgayTao(LocalDate ngayTao) {
+		if (ngayTao == null || ngayTao.isAfter(LocalDate.now())) {
+			this.ngayTao = LocalDate.now();
+		} else {
+			this.ngayTao = ngayTao;
+		}
+	}
+
+	public boolean isTrangThai() {
+		return trangThai;
+	}
+
+	public void setTrangThai(boolean trangThai) {
+		this.trangThai = trangThai;
 	}
 
 	public NhanVien getNhanVien() {
@@ -93,15 +117,15 @@ public class TaiKhoan {
 
 	@Override
 	public String toString() {
-		return "TaiKhoan{" + "tenDangNhap='" + tenDangNhap + '\'' + ", trangThaiOnline=" + trangThaiOnline
-				+ ", nhanVien=" + nhanVien + '}';
+		return "TaiKhoan{" + "tenDangNhap='" + tenDangNhap + '\'' + ", trangThaiOnline=" + trangThai + ", nhanVien="
+				+ nhanVien + '}';
 	}
 
-	private boolean isBlank(String value) {
+	private static boolean isBlank(String value) {
 		return value == null || value.trim().isEmpty();
 	}
 
-	private String normalizeRequired(String value) {
+	private static String normalizeRequired(String value) {
 		return value == null ? null : value.trim();
 	}
 

@@ -5,186 +5,168 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Types;
 import java.util.ArrayList;
 
 import ConnectDB.ConnectDB;
+import entity.KhuyenMai;
 import entity.LoaiSanPham;
-import entity.NhaCungCap;
 import entity.SanPham;
+import entity.Thue;
 
 public class SanPham_DAO {
-	private Connection con;
-	private ArrayList<SanPham> dsSanPham;
-	private NhaCungCap_DAO ncc_DAO = new NhaCungCap_DAO();
-	private LoaiSanPham_DAO loaiSP_DAO = new LoaiSanPham_DAO();
+    private Connection con;
 
-	public SanPham_DAO() {
-		dsSanPham = new ArrayList<SanPham>();
-	}
+    public ArrayList<SanPham> getDSSanPham() {
+        ArrayList<SanPham> dsSanPham = new ArrayList<SanPham>();
+        String sql = "SELECT sp.MaSanPham, sp.TenSanPham, sp.CongDung, sp.ThanhPhan, sp.HanSuDung, sp.GiaThanh, "
+                + "sp.NoiSanXuat, sp.MaLoaiSanPham, sp.MaKhuyenMai, sp.MaThue, sp.TrangThai, sp.HinhAnh, "
+                + "lsp.TenLoaiSanPham, lsp.MoTa AS MoTaLoai, "
+                + "km.TenKhuyenMai, km.PhanTramGG, km.NgayBatDau, km.NgayKetThuc, km.TrangThai AS TrangThaiKM, "
+                + "t.TenThue, t.PhanTramThue, t.MoTa AS MoTaThue "
+                + "FROM SanPham sp "
+                + "JOIN LoaiSanPham lsp ON sp.MaLoaiSanPham = lsp.MaLoaiSanPham "
+                + "JOIN KhuyenMai km ON sp.MaKhuyenMai = km.MaKhuyenMai "
+                + "JOIN Thue t ON sp.MaThue = t.MaThue "
+                + "ORDER BY sp.MaSanPham";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (Statement statement = con.createStatement(); ResultSet rs = statement.executeQuery(sql)) {
+                while (rs.next()) {
+                    dsSanPham.add(mapSanPham(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return dsSanPham;
+    }
 
-//	Đọc dữ liệu từ bảng SanPham
-	public ArrayList<SanPham> getDSSanPham() {
-		// TODO Auto-generated method stub
-		dsSanPham.clear();
-		Statement statement = null;
-		String sql = "Select * from SanPham";
-		try {
-			con = ConnectDB.getInstance().getConnection();
-			statement = con.createStatement();
-			ResultSet rs = statement.executeQuery(sql);
+    public SanPham laySanPhamTheoMa(String maSP) {
+        String sql = "SELECT sp.MaSanPham, sp.TenSanPham, sp.CongDung, sp.ThanhPhan, sp.HanSuDung, sp.GiaThanh, "
+                + "sp.NoiSanXuat, sp.MaLoaiSanPham, sp.MaKhuyenMai, sp.MaThue, sp.TrangThai, sp.HinhAnh, "
+                + "lsp.TenLoaiSanPham, lsp.MoTa AS MoTaLoai, "
+                + "km.TenKhuyenMai, km.PhanTramGG, km.NgayBatDau, km.NgayKetThuc, km.TrangThai AS TrangThaiKM, "
+                + "t.TenThue, t.PhanTramThue, t.MoTa AS MoTaThue "
+                + "FROM SanPham sp "
+                + "JOIN LoaiSanPham lsp ON sp.MaLoaiSanPham = lsp.MaLoaiSanPham "
+                + "JOIN KhuyenMai km ON sp.MaKhuyenMai = km.MaKhuyenMai "
+                + "JOIN Thue t ON sp.MaThue = t.MaThue "
+                + "WHERE sp.MaSanPham = ?";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (PreparedStatement stmt = con.prepareStatement(sql)) {
+                stmt.setString(1, maSP);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        return mapSanPham(rs);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
-			while (rs.next()) {
-				String maSP = rs.getString("MaSP");
-				String tenSP = rs.getString("TenSP");
-				String maNhaCC = rs.getString("MaNCC");
-				String maLoaiSP = rs.getString("MaLoaiSP");
-				double giaBan = rs.getDouble("GiaBan");
-				int soLuongTon = rs.getInt("SoLuong");
-				String donViTinh = rs.getString("DonViTinh");
-				String hanSuDung = rs.getString("HanSuDung");
-				String hinhAnh = rs.getString("HinhAnh");
-				soLuongTon = (soLuongTon == 0) ? 0 : soLuongTon;
-				hanSuDung = (hanSuDung == null) ? "" : hanSuDung;
-				hinhAnh = (hinhAnh == null) ? "" : hinhAnh;
-				
-				NhaCungCap ncc = ncc_DAO.layNCCTheoMaNCC(maNhaCC);
-				LoaiSanPham lsp = loaiSP_DAO.layLoaiSPTheoMaLSP(maLoaiSP);
-				
-				dsSanPham.add(new SanPham(maSP, tenSP, ncc,lsp, giaBan, soLuongTon, donViTinh, hanSuDung, hinhAnh));
-			}
-			rs.close();
-			statement.close();
-		} catch (SQLException e) {
-			// TODO: handle exception
-			e.printStackTrace();
-		}
-		return dsSanPham;
-	}
-	
-	public SanPham laySanPhamTheoMa(String maSP) {
-		SanPham sp = null;
-		String sql = "select * from SanPham where MaSP = ?";
-		try {
-			con = ConnectDB.getInstance().getConnection();
-			PreparedStatement stmt = con.prepareStatement(sql);
-			stmt.setString(1, maSP);
-			ResultSet rs = stmt.executeQuery();
-			if (rs.next()) {
-				String tenSP = rs.getString("TenSP");
-				String maNhaCC = rs.getString("MaNCC");
-				String maLoaiSP = rs.getString("MaLoaiSP");
-				NhaCungCap_DAO ncc_DAO = new NhaCungCap_DAO();
-				LoaiSanPham_DAO loaiSP_DAO = new LoaiSanPham_DAO();
-				double giaBan = rs.getDouble("GiaBan");
-				int soLuongTon = rs.getInt("SoLuong");
-				String donViTinh = rs.getString("DonViTinh");
-				String hanSuDung = rs.getString("HanSuDung");
-				String hinhAnh = rs.getString("HinhAnh");
-				soLuongTon = (soLuongTon == 0) ? 0 : soLuongTon;
-				hanSuDung = (hanSuDung == null) ? "" : hanSuDung;
-				hinhAnh = (hinhAnh == null) ? "" : hinhAnh;
-				
-				NhaCungCap ncc = ncc_DAO.layNCCTheoMaNCC(maNhaCC);
-				LoaiSanPham lsp = loaiSP_DAO.layLoaiSPTheoMaLSP(maLoaiSP);
+    public boolean themSanPham(SanPham sp) {
+        String sql = "INSERT INTO SanPham (MaSanPham, TenSanPham, CongDung, ThanhPhan, HanSuDung, GiaThanh, NoiSanXuat, MaLoaiSanPham, MaKhuyenMai, MaThue, TrangThai, HinhAnh) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (PreparedStatement stmt = con.prepareStatement(sql)) {
+                stmt.setString(1, sp.getMaSanPham());
+                stmt.setString(2, sp.getTenSanPham());
+                stmt.setString(3, sp.getCongDung());
+                stmt.setString(4, sp.getThanhPhan());
+                stmt.setInt(5, sp.getHanSuDungThang());
+                stmt.setDouble(6, sp.getGiaThanh());
+                stmt.setString(7, sp.getNoiSanXuat());
+                stmt.setString(8, sp.getLoaiSanPham().getMaLoaiSanPham());
+                stmt.setString(9, sp.getKhuyenMai().getMaKhuyenMai());
+                stmt.setString(10, sp.getThue().getMaThue());
+                stmt.setBoolean(11, sp.isTrangThai());
+                stmt.setString(12, sp.getHinhAnh());
+                return stmt.executeUpdate() > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 
-				sp = new SanPham(maSP, tenSP, ncc, lsp, giaBan, soLuongTon, donViTinh, hanSuDung, hinhAnh);
-			}
-			rs.close();
-			stmt.close();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		return sp;
-	}
+    public boolean updateSanPham(SanPham sp) {
+        String sql = "UPDATE SanPham SET TenSanPham = ?, CongDung = ?, ThanhPhan = ?, HanSuDung = ?, GiaThanh = ?, NoiSanXuat = ?, "
+                + "MaLoaiSanPham = ?, MaKhuyenMai = ?, MaThue = ?, TrangThai = ?, HinhAnh = ? WHERE MaSanPham = ?";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (PreparedStatement stmt = con.prepareStatement(sql)) {
+                stmt.setString(1, sp.getTenSanPham());
+                stmt.setString(2, sp.getCongDung());
+                stmt.setString(3, sp.getThanhPhan());
+                stmt.setInt(4, sp.getHanSuDungThang());
+                stmt.setDouble(5, sp.getGiaThanh());
+                stmt.setString(6, sp.getNoiSanXuat());
+                stmt.setString(7, sp.getLoaiSanPham().getMaLoaiSanPham());
+                stmt.setString(8, sp.getKhuyenMai().getMaKhuyenMai());
+                stmt.setString(9, sp.getThue().getMaThue());
+                stmt.setBoolean(10, sp.isTrangThai());
+                stmt.setString(11, sp.getHinhAnh());
+                stmt.setString(12, sp.getMaSanPham());
+                return stmt.executeUpdate() > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 
-//	Thêm sản phẩm 
-	public boolean themSanPham(SanPham sp) {
-		// TODO Auto-generated method stub
-		int n = 0;
-		String sql = "insert into SanPham values(?,?,?,?,?,?,?,?,?)";
-		con = ConnectDB.getInstance().getConnection();
-		PreparedStatement stmt = null;
-		try {
-			stmt = con.prepareStatement(sql);
-			stmt.setString(1, sp.getMaSP());
-			stmt.setString(2, sp.getTenSP());
-			stmt.setString(3, sp.getnCC().getMaNCC());
-			stmt.setString(4, sp.getLoaiSP().getMaLoaiSP());
-			stmt.setDouble(5, sp.getGiaBan());
-			stmt.setInt(6, sp.getSoLuong());
-			stmt.setString(7, sp.getDonViTinh());
+    public boolean xoaSanPham(String maSP) {
+        String sql = "DELETE FROM SanPham WHERE MaSanPham = ?";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (PreparedStatement stmt = con.prepareStatement(sql)) {
+                stmt.setString(1, maSP);
+                return stmt.executeUpdate() > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 
-			if (sp.getHanSuDung() == null || sp.getHanSuDung().isEmpty()) {
-				stmt.setNull(8, Types.NVARCHAR);
-			} else {
-				stmt.setString(8, sp.getHanSuDung());
-			}
+    private SanPham mapSanPham(ResultSet rs) throws SQLException {
+        LoaiSanPham loai = new LoaiSanPham(
+                rs.getString("MaLoaiSanPham"),
+                rs.getString("TenLoaiSanPham"),
+                rs.getString("MoTaLoai"));
 
-			if (sp.getHinhAnh() == null || sp.getHinhAnh().isEmpty()) {
-				stmt.setNull(9, Types.NVARCHAR);
-			} else {
-				stmt.setString(9, sp.getHinhAnh());
-			}
+        KhuyenMai km = new KhuyenMai(
+                rs.getString("MaKhuyenMai"),
+                rs.getString("TenKhuyenMai"),
+                rs.getDouble("PhanTramGG"),
+                rs.getTimestamp("NgayBatDau").toLocalDateTime().toLocalDate(),
+                rs.getTimestamp("NgayKetThuc").toLocalDateTime().toLocalDate(),
+                rs.getBoolean("TrangThaiKM"));
 
-			n = stmt.executeUpdate();
-			stmt.close();
-		} catch (SQLException e) {
-			// TODO: handle exception
-			e.printStackTrace();
-		}
-		return n > 0;
-	}
+        Thue thue = new Thue(
+                rs.getString("MaThue"),
+                rs.getString("TenThue"),
+                rs.getDouble("PhanTramThue"),
+                rs.getString("MoTaThue"));
 
-//	Cập nhật sản phẩm
-	public boolean updateSanPham(SanPham sp) {
-		// TODO Auto-generated method stub
-		int n = 0;
-		String sql = "update SanPham set TenSP = ?, MaNCC = ?, MaLoaiSP = ?, GiaBan = ?, SoLuong = ?, DonViTinh = ?, HanSuDung = ?, HinhAnh = ? where MaSP = ?";
-		con = ConnectDB.getInstance().getConnection();
-		PreparedStatement stmt = null;
-		try {
-			stmt = con.prepareStatement(sql);
-			stmt.setString(1, sp.getTenSP());
-			stmt.setString(2, sp.getnCC().getMaNCC());
-			stmt.setString(3, sp.getLoaiSP().getMaLoaiSP());
-			stmt.setDouble(4, sp.getGiaBan());
-			stmt.setInt(5, sp.getSoLuong());
-			stmt.setString(6, sp.getDonViTinh());
-			if (sp.getHanSuDung() == null || sp.getHanSuDung().isEmpty()) {
-				stmt.setNull(7, Types.NVARCHAR);
-			} else {
-				stmt.setString(7, sp.getHanSuDung());
-			}
-			if (sp.getHinhAnh() == null || sp.getHinhAnh().isEmpty()) {
-				stmt.setNull(8, Types.NVARCHAR);
-			} else {
-				stmt.setString(8, sp.getHinhAnh());
-			}
-			stmt.setString(9, sp.getMaSP());
-			n = stmt.executeUpdate();
-			stmt.close();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		return n > 0;
-	}
-
-//	Xóa sản phẩm
-	public boolean xoaSanPham(String maSP) {
-		// TODO Auto-generated method stub
-		int n = 0;
-		String sql = "delete from SanPham where MaSP = ?";
-		con = ConnectDB.getInstance().getConnection();
-		PreparedStatement stmt = null;
-		try {
-			stmt = con.prepareStatement(sql);
-			stmt.setString(1, maSP);
-			n = stmt.executeUpdate();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		return n > 0;
-	}
+        SanPham sp = new SanPham();
+        sp.setMaSanPham(rs.getString("MaSanPham"));
+        sp.setTenSanPham(rs.getString("TenSanPham"));
+        sp.setCongDung(rs.getString("CongDung"));
+        sp.setThanhPhan(rs.getString("ThanhPhan"));
+        sp.setHanSuDungThang(rs.getInt("HanSuDung"));
+        sp.setGiaThanh(rs.getDouble("GiaThanh"));
+        sp.setNoiSanXuat(rs.getString("NoiSanXuat"));
+        sp.setLoaiSanPham(loai);
+        sp.setKhuyenMai(km);
+        sp.setThue(thue);
+        sp.setTrangThai(rs.getBoolean("TrangThai"));
+        sp.setHinhAnh(rs.getString("HinhAnh"));
+        return sp;
+    }
 }
-
