@@ -2,8 +2,6 @@ package gui;
 
 import constants.Colors;
 import constants.FontStyle;
-import dao.LoSanPham_DAO;
-import entity.NhaCungCap;
 import entity.SanPham;
 import exception.QuantityEditor;
 import exception.RoundedButton;
@@ -15,6 +13,7 @@ import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Frame;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.LocalDateTime;
@@ -35,9 +34,11 @@ import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
+import service.SanPham_Service;
 
 public class HoaDon_GUI extends JPanel {
     // === Dùng làm GUI Lập Hóa Đơn ===
@@ -95,7 +96,9 @@ public class HoaDon_GUI extends JPanel {
     private double totalPrice = 0;
     private JLabel lblTotal;
     private JLabel lblTotalPrice;
-    private final LoSanPham_DAO loSanPhamDAO = new LoSanPham_DAO();
+    private SanPham_Service sanPhamService;
+    private List<SanPham> fullList = new ArrayList<>();
+    private String currentCongDung = "Tất cả";
 
     public HoaDon_GUI() {
         setLayout(new BorderLayout(10, 10));
@@ -147,19 +150,35 @@ public class HoaDon_GUI extends JPanel {
         pnlSearchRow.setAlignmentX(Component.LEFT_ALIGNMENT);
         pnlSearchRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
 
-        txtSearch = new RoundedTextField(400, 35, 15, "Tìm kiếm sản phẩm...");
-        txtSearch.setMaximumSize(new Dimension(400, 35));
+        txtSearch = new RoundedTextField(450, 35, 15, "Tìm kiếm sản phẩm...");
+        txtSearch.setMaximumSize(new Dimension(450, 35));
         pnlSearchRow.add(txtSearch);
         pnlSearchRow.add(Box.createHorizontalStrut(10));
 
         JButton btnSearch = new RoundedButton(100, 35, 15, "Tìm", Colors.PRIMARY);
         btnSearch.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
         btnSearch.setMaximumSize(new Dimension(100, 35));
+        btnSearch.addActionListener(e -> filterAndLoad());
+        txtSearch.addActionListener(e -> filterAndLoad()); // Enter cũng tìm
         pnlSearchRow.add(btnSearch);
         pnlSearchRow.add(Box.createHorizontalStrut(10));
 
-//      Nút sổ xuống chọn công dụng
-        String[] congDungList = {"Tất cả", "Sốt", "Ho", "Nhức đầu", "Viêm họng", "Dạ dày", "Cảm cúm", "Dị ứng"};
+//      Nút sổ xuống chọn loại sản phẩm
+        String[] congDungList = {
+            "Tất cả",
+            // Thực phẩm chức năng
+            "Hỗ trợ sức khỏe", "Dinh dưỡng", "Làm đẹp",
+            // Dược mỹ phẩm
+            "Chăm sóc làn da", "Chăm sóc tóc", "Mỹ phẩm tổng hợp",
+            "Chăm sóc vùng mắt", "Sản phẩm tự nhiên",
+            // Thuốc
+            "Thuốc hô hấp - Tai mũi họng", "Thuốc tiêu hóa - Gan mật",
+            "Thuốc tim mạch", "Thuốc thần kinh", "Thuốc cơ xương khớp",
+            "Thuốc da liễu", "Khác",
+            // Chăm sóc cá nhân
+            "Thực phẩm - Đồ uống", "Vệ sinh cá nhân", "Chăm sóc răng miệng",
+            "Đồ dùng gia đình", "Hàng tổng hợp", "Tinh dầu các loại", "Thiết bị làm đẹp"
+        };
         JPopupMenu popupCongDung = new JPopupMenu();
         popupCongDung.setBackground(Colors.BACKGROUND);
         popupCongDung.setBorder(BorderFactory.createCompoundBorder(
@@ -180,6 +199,7 @@ public class HoaDon_GUI extends JPanel {
                 public void mouseEntered(MouseEvent e) {
                     item.setBackground(Colors.PRIMARY_LIGHT);
                 }
+
                 @Override
                 public void mouseExited(MouseEvent e) {
                     item.setBackground(Colors.BACKGROUND);
@@ -187,18 +207,20 @@ public class HoaDon_GUI extends JPanel {
             });
 
             item.addActionListener(ev -> {
-                btnCongDung.setText("▼ " + cd);
-                // TODO: lọc sản phẩm theo công dụng
+                String label = cd.equals("Tất cả") ? "▼ Danh mục" : "▼ " + (cd.length() > 16 ? cd.substring(0, 14) + "…" : cd);
+                btnCongDung.setText(label);
+                currentCongDung = cd;
+                filterAndLoad();
             });
             popupCongDung.add(item);
         }
 
-        btnCongDung = new RoundedButton(150, 35, 15, "▼ Công dụng", Colors.SECONDARY);
+        btnCongDung = new RoundedButton(170, 35, 15, "▼ Danh mục", Colors.SECONDARY);
         btnCongDung.setForeground(Colors.TEXT_PRIMARY);
         btnCongDung.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
-        btnCongDung.setMaximumSize(new Dimension(150, 35));
+        btnCongDung.setMaximumSize(new Dimension(170, 35));
         btnCongDung.addActionListener(e -> {
-            popupCongDung.setPreferredSize(new Dimension(180, popupCongDung.getPreferredSize().height));
+            popupCongDung.setPreferredSize(new Dimension(260, popupCongDung.getPreferredSize().height));
             popupCongDung.show(btnCongDung, 0, btnCongDung.getHeight() + 4);
         });
         pnlSearchRow.add(btnCongDung);
@@ -213,21 +235,10 @@ public class HoaDon_GUI extends JPanel {
         scrProduct.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
         scrProduct.setBorder(null);
 
-        List<SanPham> list = new ArrayList<>();
-        list.add(new SanPham("sp01", "Paracetamol 500mg","lsp01", "Hạ sốt","Thành phần 1", 15000, 620, true, "img1.jpg"));
-        list.add(new SanPham("sp02", "Miếng dán giảm đau Salonpas","lsp02", "Giảm đau","Thành phần 2", 430200, 252, true, "img1.jpg"));
-        list.add(new SanPham("sp03", "Berberin","lsp03", "Tiêu hóa","Thành phần 3", 2000, 302, true, "img1.jpg"));
-        list.add(new SanPham("sp04", "Omeprazole 20mg","lsp04", "Dạ dày","Thành phần 4", 212000, 324, true, "img1.jpg"));
-        list.add(new SanPham("sp05", "Acetylcystein (thuốc ho)","lsp05", "Thuốc ho","Thành phần 5", 42547, 1673, true, "img1.jpg"));
-        list.add(new SanPham("sp06", "Diphenhydramine (kem bôi)","lsp06", "Dị ứng","Thành phần 6", 32450, 219, true, "img1.jpg"));
-        list.add(new SanPham("sp07", "Băng gạc y tế","lsp07", "Vật tư y tế","Thành phần 7", 2000, 302, true, "img1.jpg"));
-        list.add(new SanPham("sp08", "Amoxicillin 500mg","lsp08", "Kháng sinh","Thành phần 8", 35000, 500, true, "img1.jpg"));
-        list.add(new SanPham("sp09", "Vitamin C 1000mg","lsp09", "Vitamin","Thành phần 9", 85000, 410, true, "img1.jpg"));
-        list.add(new SanPham("sp10", "Ibuprofen 400mg","lsp01", "Hạ sốt","Thành phần 10", 15000, 620, true, "img1.jpg"));
-        list.add(new SanPham("sp11", "Cetirizine 10mg","lsp06", "Dị ứng","Thành phần 11", 28000, 380, true, "img1.jpg"));
-        list.add(new SanPham("sp12", "Strepsils viêm họng","lsp10", "Viêm họng","Thành phần 12", 45000, 890, true, "img1.jpg"));
-        list.add(new SanPham("sp13", "Decolgen (cảm cúm)","lsp11", "Cảm cúm","Thành phần 13", 3500, 1500, true, "img1.jpg"));
-        loadProducts(list);
+        // Lấy sản phẩm từ data
+        sanPhamService = new SanPham_Service();
+        fullList = sanPhamService.getDSSanPham();
+        loadProducts(fullList);
         pnlContentTopLeft.revalidate();
         pnlContentTopLeft.repaint();
 
@@ -351,6 +362,18 @@ public class HoaDon_GUI extends JPanel {
 
 //		Trạng thái ban đầu: disabled
         setButtonState(false);
+
+        btnLapHoaDon.addActionListener(e -> {
+
+            Frame parent = (Frame) SwingUtilities.getWindowAncestor(HoaDon_GUI.this);
+            String tenKH = txtTenKH.getText().trim();
+            String sdt = txtSDT.getText().trim();
+            String nhanVien = lblNhanVienValue.getText();
+            String thoiGian = lblThoiGianValue.getText();
+            HoaDonPreviewDialog dialog = new HoaDonPreviewDialog(
+                    parent, tenKH, sdt, nhanVien, thoiGian, tableModel);
+            dialog.setVisible(true);
+        });
 
         pnlContentBottomRight.add(btnLapHoaDon);
         pnlContent.add(Box.createVerticalStrut(15));
@@ -600,10 +623,12 @@ public class HoaDon_GUI extends JPanel {
         top.setOpaque(false);
         top.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        int lblMaxWidth = isSelected ? CARD_WIDTH - 100 : CARD_WIDTH - 30;
-        JLabel lblTen = new JLabel("<html><div style='width:" + lblMaxWidth + "px'>" + sp.getTenSP() + "</div></html>");
-        lblTen.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
+        int lblMaxWidth = isSelected ? CARD_WIDTH - 130 : CARD_WIDTH - 40;
+        JLabel lblTen = new JLabel("<html>" + sp.getTenSP() + "</html>");
+        lblTen.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
         lblTen.setForeground(Colors.TEXT_PRIMARY);
+        lblTen.setPreferredSize(new Dimension(lblMaxWidth, 40));
+        lblTen.setVerticalAlignment(JLabel.TOP);
         top.add(lblTen, BorderLayout.CENTER);
 
         if (isSelected) {
@@ -612,11 +637,11 @@ public class HoaDon_GUI extends JPanel {
             badge.setBackground(Colors.SUCCESS_LIGHT);
             badge.setForeground(Colors.SUCCESS_DARK);
             badge.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
-            badge.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
+            badge.setBorder(BorderFactory.createEmptyBorder(1, 4, 1, 4));
             top.add(badge, BorderLayout.EAST);
         }
 
-        String loai = (sp.getLoaiSP() != null) ? sp.getLoaiSP().toString() : "Không rõ";
+        String loai = (sp.getLoaiSP().getTenLoaiSP() != null) ? sp.getLoaiSP().getTenLoaiSP().toString() : "Không rõ";
         JLabel lblLoai = new JLabel(loai);
         lblLoai.setForeground(Colors.TEXT_SECONDARY);
         lblLoai.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
@@ -630,7 +655,7 @@ public class HoaDon_GUI extends JPanel {
         lblGia.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
         lblGia.setForeground(Colors.TEXT_PRIMARY);
 
-        JLabel lblTon = new JLabel("Tồn: " + getTonKhoHienTai(sp));
+        JLabel lblTon = new JLabel("Tồn: " + sp.getSoLuong());
         lblTon.setForeground(Colors.TEXT_SECONDARY);
         lblTon.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
 
@@ -640,7 +665,6 @@ public class HoaDon_GUI extends JPanel {
         Color btnBg = isSelected ? Colors.SUCCESS_LIGHT : Colors.PRIMARY;
         Color btnFg = isSelected ? Colors.SUCCESS_DARK : Colors.BACKGROUND;
         String btnText = isSelected ? "+ Thêm lần nữa" : "+ Thêm vào đơn";
-
 
         JButton btn = new RoundedButton(Integer.MAX_VALUE, 35, 20, btnText, btnBg);
         btn.setForeground(btnFg);
@@ -673,13 +697,6 @@ public class HoaDon_GUI extends JPanel {
         return card;
     }
 
-    private int getTonKhoHienTai(SanPham sanPham) {
-        if (sanPham == null) {
-            return 0;
-        }
-        return loSanPhamDAO.layTongSoLuongTonTheoMaSanPham(sanPham.getMaSanPham());
-    }
-
     private void loadProducts(List<SanPham> list) {
         currentList = list;
         pnlProductList.removeAll();
@@ -699,6 +716,18 @@ public class HoaDon_GUI extends JPanel {
         pnlProductList.setPreferredSize(new Dimension(width, height));
         pnlProductList.revalidate();
         pnlProductList.repaint();
+    }
+
+    private void filterAndLoad() {
+        // Bước 1: lọc theo công dụng (O(n))
+        List<SanPham> filtered = sanPhamService.locTheoCongDung(fullList, currentCongDung);
+        // Bước 2: tìm kiếm theo từ khóa — hỗ trợ cả tên và mã sản phẩm
+        // Nếu keyword bắt đầu "SP" → binary search O(log n + k), ngược lại linear O(n)
+        String keyword = txtSearch.getText().trim();
+        if (!keyword.isEmpty()) {
+            filtered = sanPhamService.timKiem(filtered, keyword);
+        }
+        loadProducts(filtered);
     }
 
 }

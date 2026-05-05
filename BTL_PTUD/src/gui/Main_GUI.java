@@ -166,11 +166,11 @@ public class Main_GUI extends JFrame {
 		add(contentPanel, BorderLayout.CENTER);
 
 //		Danh mục
-		contentPanel.add(createEmptyPage("NhanVien"), "NhanVien");
-		contentPanel.add(createEmptyPage("KhachHang"), "KhachHang");
-		contentPanel.add(new SanPham_GUI(), "SanPham");
-		contentPanel.add(createEmptyPage("NhaCungCap"), "NhaCungCap");
-		contentPanel.add(createEmptyPage("KhuyenMai"), "KhuyenMai");
+		contentPanel.add(new NhanVien_GUI(), "NhanVien");
+		contentPanel.add(new KhachHang_GUI(), "KhachHang");
+		contentPanel.add(createEmptyPage("SanPham"), "SanPham");
+		contentPanel.add(new NhaCungCap_GUI(), "NhaCungCap");
+		contentPanel.add(new KhuyenMai_GUI(), "KhuyenMai");
 
 //		Xử lý
 		contentPanel.add(new HoaDon_GUI(), "BanHang");
