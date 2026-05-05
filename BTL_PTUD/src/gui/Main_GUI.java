@@ -183,14 +183,14 @@ public class Main_GUI extends JFrame {
         contentPanel.add(createEmptyPage("TraCuuTraHang"), "TraCuuTraHang");
 
 //		Thống kê
-        contentPanel.add(createEmptyPage("ThongKeDoanhThu"), "ThongKeDoanhThu");
-        contentPanel.add(createEmptyPage("ThongKeKhachHang"), "ThongKeKhachHang");
-        contentPanel.add(createEmptyPage("ThongKeSanPham"), "ThongKeSanPham");
+        contentPanel.add(new ThongKeDoanhThu_GUI(), "ThongKeDoanhThu");
+        contentPanel.add(new ThongKeKhachHang_GUI(), "ThongKeKhachHang");
+        contentPanel.add(new ThongKeSanPham_GUI(), "ThongKeSanPham");
 
 //		Hê thống
-        contentPanel.add(createEmptyPage("TaiKhoan"), "TaiKhoan");
-        contentPanel.add(createEmptyPage("TrangChu"), "TrangChu");
-        contentPanel.add(createEmptyPage("TroGiup"), "TroGiup");
+        contentPanel.add(new TaiKhoan_GUI(taiKhoanService, token), "TaiKhoan");
+        contentPanel.add(new TrangChu_GUI(), "TrangChu");
+        contentPanel.add(new TroGiup_GUI(), "TroGiup");
 
         cardLayout.show(contentPanel, "TrangChu");
 
