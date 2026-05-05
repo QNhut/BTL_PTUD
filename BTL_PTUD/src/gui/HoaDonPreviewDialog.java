@@ -2,22 +2,21 @@ package gui;
 
 import constants.Colors;
 import constants.FontStyle;
-import dao.PhuongThucThanhToan_DAO;
-import entity.PhuongThucThanhToan;
+import entity.HoaDon;
+import entity.NhanVien;
 import exception.RoundedButton;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.awt.print.*;
 import java.io.*;
 import java.text.NumberFormat;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
+import service.HoaDon_Service;
 
 /**
  * Dialog xem trước và in / xuất PDF hóa đơn. Không phụ thuộc thư viện ngoài –
@@ -25,12 +24,10 @@ import javax.swing.table.DefaultTableModel;
  */
 public class HoaDonPreviewDialog extends JDialog {
 
-    // --- Kích thước trang hóa đơn (px, dùng cho Graphics2D / in / PDF) ---
-    static final int PAGE_W = 559;   // A5 ngang: 148mm @ 96dpi
-    static final int PAGE_H = 794;   // A5 dọc: 210mm @ 96dpi
-    static final int PAGE_PAD = 28;
-    // Tỷ lệ hiển thị trong dialog (không ảnh hưởng PDF/in)
-    static final double DISPLAY_SCALE = 0.82;
+    // --- Kích thước trang hóa đơn (px, dùng cho Graphics2D) ---
+    static final int PAGE_W = 240;
+
+    static final int PAGE_PAD = 12;
 
     private final String tenKhachHang;
     private final String soDienThoai;
@@ -39,17 +36,19 @@ public class HoaDonPreviewDialog extends JDialog {
     private final DefaultTableModel tableModel;
     private final String maHoaDon;
 
+    // Trường bổ sung cho luồng xác nhận thanh toán
+    private final HoaDon_Service hoaDonService;
+    private final NhanVien nhanVienEntity;
+    private final String tenKHRaw;
+    private final String sdtRaw;
+    private final List<HoaDon_Service.CartItem> cartItems;
+    private final Runnable onThanhToanThanhCong;
+
     private InvoicePanel invoicePanel;
+    private JPanel pnlSouth; // thanh dưới – thay thế sau khi thanh toán
 
-    // --- Payment phase state ---
-    private ArrayList<PhuongThucThanhToan> dsPhuongThuc;
-    private PhuongThucThanhToan selectedPTTT = null;
-    private RoundedButton btnDropdownPTTT;   // dropdown button hiển thị PTTT đã chọn
-    private CardLayout cardLayout;
-    private JPanel southPanel;
-    private static final String PHASE_PAYMENT = "payment";
-    private static final String PHASE_PRINT = "print";
-
+    // =========================================================
+    // Constructor cũ: chỉ xem trước, không có nút thanh toán
     // =========================================================
     public HoaDonPreviewDialog(Frame parent,
             String tenKH, String sdt,
@@ -62,7 +61,40 @@ public class HoaDonPreviewDialog extends JDialog {
         this.thoiGian = thoiGian;
         this.tableModel = model;
         this.maHoaDon = "HD" + System.currentTimeMillis();
-        this.dsPhuongThuc = new PhuongThucThanhToan_DAO().getDSPhuongThuc();
+        this.hoaDonService = null;
+        this.nhanVienEntity = null;
+        this.tenKHRaw = tenKH;
+        this.sdtRaw = sdt;
+        this.cartItems = null;
+        this.onThanhToanThanhCong = null;
+        initUI();
+    }
+
+    // =========================================================
+    //==="Constructor đầy đủ: hiển thị hóa đơn + có nút xác nhận thanh toán"====
+    // =========================================================
+    public HoaDonPreviewDialog(Frame parent,
+            String tenKH, String sdt,
+            String tenNV, String thoiGian,
+            DefaultTableModel model,
+            String maHD,
+            HoaDon_Service service,
+            NhanVien nhanVien,
+            List<HoaDon_Service.CartItem> items,
+            Runnable onSuccess) {
+        super(parent, "Hóa đơn bán hàng", true);
+        this.tenKhachHang = (tenKH == null || tenKH.isBlank()) ? "Khách lẻ" : tenKH;
+        this.soDienThoai = (sdt == null || sdt.isBlank()) ? "---" : sdt;
+        this.tenNhanVien = (tenNV == null || tenNV.isBlank()) ? "---" : tenNV;
+        this.thoiGian = thoiGian;
+        this.tableModel = model;
+        this.maHoaDon = maHD;
+        this.hoaDonService = service;
+        this.nhanVienEntity = nhanVien;
+        this.tenKHRaw = tenKH;
+        this.sdtRaw = sdt;
+        this.cartItems = items;
+        this.onThanhToanThanhCong = onSuccess;
         initUI();
     }
 
@@ -79,163 +111,33 @@ public class HoaDonPreviewDialog extends JDialog {
         scroll.setBorder(null);
         add(scroll, BorderLayout.CENTER);
 
-        // ---- South: 2-phase panel via CardLayout ----
-        cardLayout = new CardLayout();
-        southPanel = new JPanel(cardLayout);
-        southPanel.setBackground(Colors.BACKGROUND);
-        southPanel.add(buildPaymentPhase(), PHASE_PAYMENT);
-        southPanel.add(buildPrintPhase(), PHASE_PRINT);
-        cardLayout.show(southPanel, PHASE_PAYMENT);
-        add(southPanel, BorderLayout.SOUTH);
+        // ---- Bottom bar (payment mode → action bar after success) ----
+        pnlSouth = new JPanel(new BorderLayout());
+        pnlSouth.setBackground(Colors.BACKGROUND);
+        pnlSouth.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Colors.BORDER_LIGHT));
 
-        setSize((int) (PAGE_W * DISPLAY_SCALE) + 80,
-                (int) (PAGE_H * DISPLAY_SCALE) + 200);
+        if (hoaDonService != null && cartItems != null) {
+            pnlSouth.add(buildPaymentBar(), BorderLayout.CENTER);
+        } else {
+            pnlSouth.add(buildActionBar(false), BorderLayout.CENTER);
+        }
+
+        add(pnlSouth, BorderLayout.SOUTH);
+
+        // --- Kích thước tự điều chỉnh theo màn hình ---
+        java.awt.Rectangle screen = java.awt.GraphicsEnvironment
+                .getLocalGraphicsEnvironment().getMaximumWindowBounds();
+        int dlgW = Math.min(400, screen.width - 40);
+        int dlgH = Math.min(800, screen.height - 40);
+        setSize(dlgW, dlgH);
+
+        // Căn giữa và đảm bảo hoàn toàn nằm trong màn hình
         setLocationRelativeTo(getParent());
+        java.awt.Point loc = getLocation();
+        int x = Math.max(screen.x, Math.min(loc.x, screen.x + screen.width - dlgW));
+        int y = Math.max(screen.y, Math.min(loc.y, screen.y + screen.height - dlgH));
+        setLocation(x, y);
         setResizable(true);
-    }
-
-    // =========================================================
-    //  Phase 1 – Chọn phương thức thanh toán
-    // =========================================================
-    private JPanel buildPaymentPhase() {
-        JPanel pnl = new JPanel(new BorderLayout(0, 8));
-        pnl.setBackground(Colors.BACKGROUND);
-        pnl.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, Colors.BORDER_LIGHT),
-                BorderFactory.createEmptyBorder(14, 16, 14, 16)));
-
-        // Popup menu chứa các PTTT
-        JPopupMenu popupPTTT = new JPopupMenu();
-        popupPTTT.setBackground(Colors.BACKGROUND);
-        popupPTTT.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Colors.BORDER_LIGHT, 1),
-                BorderFactory.createEmptyBorder(6, 0, 6, 0)));
-
-        for (PhuongThucThanhToan pt : dsPhuongThuc) {
-            if (!pt.isTrangThai()) {
-                continue;
-            }
-            JMenuItem item = new JMenuItem(pt.getTenPTTT());
-            item.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
-            item.setForeground(Colors.TEXT_PRIMARY);
-            item.setBackground(Colors.BACKGROUND);
-            item.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 30));
-            item.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            item.addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseEntered(MouseEvent e) {
-                    item.setBackground(Colors.PRIMARY_LIGHT);
-                }
-
-                @Override
-                public void mouseExited(MouseEvent e) {
-                    item.setBackground(Colors.BACKGROUND);
-                }
-            });
-            item.addActionListener(ev -> {
-                selectedPTTT = pt;
-                btnDropdownPTTT.setText("▼ " + pt.getTenPTTT());
-                btnDropdownPTTT.setBackground(Colors.PRIMARY);
-                btnDropdownPTTT.setForeground(Color.WHITE);
-            });
-            popupPTTT.add(item);
-        }
-
-        // Hàng chứa label + dropdown
-        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        row.setBackground(Colors.BACKGROUND);
-
-        JLabel lbl = new JLabel("Phương thức:");
-        lbl.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
-        lbl.setForeground(Colors.TEXT_PRIMARY);
-        row.add(lbl);
-
-        btnDropdownPTTT = new RoundedButton(200, 38, 15, "▼ Chọn hình thức", Colors.SECONDARY);
-        btnDropdownPTTT.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
-        btnDropdownPTTT.setForeground(Colors.TEXT_PRIMARY);
-        btnDropdownPTTT.addActionListener(e -> {
-            popupPTTT.setPreferredSize(new Dimension(btnDropdownPTTT.getWidth(),
-                    popupPTTT.getPreferredSize().height));
-            popupPTTT.show(btnDropdownPTTT, 0, btnDropdownPTTT.getHeight() + 4);
-        });
-        row.add(btnDropdownPTTT);
-        pnl.add(row, BorderLayout.CENTER);
-
-        // Bottom buttons
-        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        btnRow.setBackground(Colors.BACKGROUND);
-
-        JButton btnCancel = new RoundedButton(110, 40, 20, "Hủy", Colors.SECONDARY);
-        btnCancel.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
-        btnCancel.setForeground(Colors.TEXT_PRIMARY);
-        btnCancel.addActionListener(e -> dispose());
-
-        JButton btnConfirm = new RoundedButton(190, 40, 20, "Xác nhận thanh toán", Colors.PRIMARY);
-        btnConfirm.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
-        btnConfirm.setForeground(Color.WHITE);
-        btnConfirm.addActionListener(e -> confirmPayment());
-
-        btnRow.add(btnCancel);
-        btnRow.add(btnConfirm);
-        pnl.add(btnRow, BorderLayout.SOUTH);
-
-        return pnl;
-    }
-
-    // =========================================================
-    //  Phase 2 – Thanh toán thành công → in / xuất PDF
-    // =========================================================
-    private JPanel buildPrintPhase() {
-        JPanel pnl = new JPanel(new BorderLayout(0, 10));
-        pnl.setBackground(Colors.BACKGROUND);
-        pnl.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, Colors.BORDER_LIGHT),
-                BorderFactory.createEmptyBorder(14, 16, 14, 16)));
-
-        JLabel lblOk = new JLabel("✓  Thanh toán thành công!");
-        lblOk.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
-        lblOk.setForeground(Colors.SUCCESS_DARK);
-        pnl.add(lblOk, BorderLayout.NORTH);
-
-        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 14, 0));
-        btnRow.setBackground(Colors.BACKGROUND);
-
-        JButton btnPDF = new RoundedButton(160, 42, 21, "Xuất PDF", Colors.PRIMARY);
-        JButton btnPrint = new RoundedButton(120, 42, 21, "In", Colors.SUCCESS);
-        JButton btnClose = new RoundedButton(120, 42, 21, "Đóng", Colors.SECONDARY);
-
-        btnPDF.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
-        btnPDF.setForeground(Color.WHITE);
-        btnPrint.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
-        btnPrint.setForeground(Color.WHITE);
-        btnClose.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
-        btnClose.setForeground(Colors.TEXT_PRIMARY);
-
-        btnPDF.addActionListener(e -> exportPDF());
-        btnPrint.addActionListener(e -> printInvoice());
-        btnClose.addActionListener(e -> dispose());
-
-        btnRow.add(btnPDF);
-        btnRow.add(btnPrint);
-        btnRow.add(btnClose);
-        pnl.add(btnRow, BorderLayout.SOUTH);
-
-        return pnl;
-    }
-
-    // =========================================================
-    //  Xử lý chọn PTTT và xác nhận thanh toán
-    // =========================================================
-    private void confirmPayment() {
-        if (selectedPTTT == null) {
-            JOptionPane.showMessageDialog(this,
-                    "Vui lòng chọn phương thức thanh toán trước khi xác nhận.",
-                    "Chưa chọn phương thức", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        // TODO: lưu hóa đơn vào database
-        cardLayout.show(southPanel, PHASE_PRINT);
-        invoicePanel.repaint();
     }
 
     // =========================================================
@@ -244,10 +146,21 @@ public class HoaDonPreviewDialog extends JDialog {
     class InvoicePanel extends JPanel {
 
         InvoicePanel() {
-            int dw = (int) (PAGE_W * DISPLAY_SCALE) + 40;
-            int dh = (int) (PAGE_H * DISPLAY_SCALE) + 40;
-            setPreferredSize(new Dimension(dw, dh));
             setBackground(new Color(210, 210, 210));
+        }
+
+        /**
+         * Tính chiều cao thực tế của nội dung hóa đơn dựa trên số dòng.
+         */
+        int computePageHeight() {
+            int rows = (tableModel != null) ? tableModel.getRowCount() : 0;
+            // base: 58 header + nội dung cố định ~252 + mỗi dòng 20 + padding 30
+            return 310 + rows * 20;
+        }
+
+        @Override
+        public Dimension getPreferredSize() {
+            return new Dimension(PAGE_W + 80, computePageHeight() + 60);
         }
 
         @Override
@@ -255,19 +168,22 @@ public class HoaDonPreviewDialog extends JDialog {
             super.paintComponent(g);
             Graphics2D g2 = (Graphics2D) g.create();
             applyHints(g2);
-            g2.scale(DISPLAY_SCALE, DISPLAY_SCALE);
+
+            int pageH = computePageHeight();
+            int panelW = Math.max(getWidth(), PAGE_W + 40);
+            int cardX = (panelW - PAGE_W) / 2;
+            int cardY = 20;
 
             // Shadow
             g2.setColor(new Color(0, 0, 0, 35));
-            int margin = (int) (20 / DISPLAY_SCALE * DISPLAY_SCALE); // =20
-            g2.fillRoundRect(23, 23, PAGE_W + 4, PAGE_H + 4, 12, 12);
+            g2.fillRoundRect(cardX + 3, cardY + 3, PAGE_W, pageH, 12, 12);
 
             // White page
             g2.setColor(Color.WHITE);
-            g2.fillRoundRect(20, 20, PAGE_W, PAGE_H, 12, 12);
+            g2.fillRoundRect(cardX, cardY, PAGE_W, pageH, 12, 12);
 
-            g2.translate(20, 20);
-            drawInvoice(g2, PAGE_W, PAGE_H, PAGE_PAD);
+            g2.translate(cardX, cardY);
+            drawInvoice(g2, PAGE_W, pageH, PAGE_PAD);
             g2.dispose();
         }
 
@@ -282,60 +198,60 @@ public class HoaDonPreviewDialog extends JDialog {
 
             // ---- Header (màu nền xanh) ----
             g2.setColor(Colors.PRIMARY);
-            g2.fillRect(0, 0, width, 78);
+            g2.fillRect(0, 0, width, 58);
 
             g2.setColor(Color.WHITE);
-            g2.setFont(new Font("Arial", Font.BOLD, 22));
-            drawCentered(g2, "NHÀ THUỐC HTT", width, 30);
-            g2.setFont(new Font("Arial", Font.PLAIN, 11));
-            drawCentered(g2, "123 Đường ABC, Quận 1, TP.HCM   |   ĐT: 0901 234 567", width, 54);
+            g2.setFont(new Font("Arial", Font.BOLD, 14));
+            drawCentered(g2, "NHÀ THUỐC HTT", width, 20);
+            g2.setFont(new Font("Arial", Font.PLAIN, 8));
+            drawCentered(g2, "123 Đường ABC, Quận 1, TP.HCM", width, 34);
+            drawCentered(g2, "Điện thoại: 0901 234 567", width, 46);
 
-            int y = 92;
+            int y = 66;
 
             // ---- Tiêu đề hóa đơn ----
             g2.setColor(Colors.TEXT_PRIMARY);
-            g2.setFont(new Font("Arial", Font.BOLD, 19));
-            drawCentered(g2, "HÓA ĐƠN BÁN HÀNG", width, y + 18);
-            y += 38;
+            g2.setFont(new Font("Arial", Font.BOLD, 13));
+            drawCentered(g2, "HÓA ĐƠN BÁN HÀNG", width, y + 12);
+            y += 22;
 
             // ---- Mã & ngày ----
-            g2.setFont(new Font("Arial", Font.PLAIN, 12));
+            g2.setFont(new Font("Arial", Font.PLAIN, 8));
             g2.setColor(Colors.TEXT_SECONDARY);
-            drawCentered(g2, "Mã HĐ: " + maHoaDon + "     Ngày: " + thoiGian, width, y);
-            y += 22;
+            drawCentered(g2, "Mã HĐ: " + maHoaDon, width, y);
+            y += 12;
+            drawCentered(g2, "Ngày: " + thoiGian, width, y);
+            y += 12;
 
             // ---- Divider ----
             drawDivider(g2, x, y, contentW);
-            y += 16;
+            y += 10;
 
             // ---- Thông tin khách hàng / nhân viên ----
-            int col2 = x + contentW / 2 + 10;
-
-            drawLabel(g2, "Khách hàng:", x, y);
-            drawValue(g2, tenKhachHang, x + 100, y);
-            drawLabel(g2, "SĐT:", col2, y);
-            drawValue(g2, soDienThoai, col2 + 38, y);
-            y += 22;
-
-            drawLabel(g2, "Nhân viên:", x, y);
-            drawValue(g2, tenNhanVien, x + 85, y);
-            y += 20;
+            drawLabel(g2, "KH:", x, y);
+            drawValue(g2, tenKhachHang, x + 24, y);
+            y += 14;
+            drawLabel(g2, "SĐT:", x, y);
+            drawValue(g2, soDienThoai, x + 28, y);
+            drawLabel(g2, "NV:", x + contentW / 2 + 6, y);
+            drawValue(g2, tenNhanVien, x + contentW / 2 + 26, y);
+            y += 14;
 
             // ---- Divider ----
             drawDivider(g2, x, y, contentW);
-            y += 14;
+            y += 10;
 
             // ---- Bảng sản phẩm ----
-            // colW: STT | Tên sản phẩm | SL | Đơn giá | Thành tiền
-            int[] colW = {36, contentW - 36 - 55 - 115 - 115, 55, 115, 115};
-            String[] headers = {"STT", "Tên sản phẩm", "SL", "Đơn giá", "Thành tiền"};
-            int rowH = 30;
+            // colW: STT | Tên sản phẩm | SL | Thành tiền
+            int[] colW = {22, contentW - 22 - 28 - 70, 28, 70};
+            String[] headers = {"STT", "Tên sản phẩm", "SL", "Thành tiền"};
+            int rowH = 20;
 
             // Header
             g2.setColor(Colors.PRIMARY);
             g2.fillRect(x, y, contentW, rowH);
             g2.setColor(Color.WHITE);
-            g2.setFont(new Font("Arial", Font.BOLD, 12));
+            g2.setFont(new Font("Arial", Font.BOLD, 9));
             drawTableRow(g2, headers, colW, x, y, rowH, RowAlign.HEADER);
             y += rowH;
 
@@ -360,64 +276,52 @@ public class HoaDonPreviewDialog extends JDialog {
                     String.valueOf(r + 1),
                     tenSP,
                     String.valueOf(qty),
-                    nf.format(donGia) + "đ",
                     nf.format(thanhTien) + "đ"
                 };
 
-                g2.setFont(new Font("Arial", Font.PLAIN, 12));
+                g2.setFont(new Font("Arial", Font.PLAIN, 9));
                 g2.setColor(Colors.TEXT_PRIMARY);
                 drawTableRow(g2, vals, colW, x, y, rowH, RowAlign.DATA);
                 y += rowH;
             }
 
             // ---- Tổng tiền ----
-            y += 10;
+            y += 6;
             g2.setColor(Colors.BORDER);
-            g2.setStroke(new BasicStroke(1.2f));
+            g2.setStroke(new BasicStroke(1f));
             g2.drawLine(x, y, x + contentW, y);
-            y += 18;
+            y += 12;
 
             String totalStr = "TỔNG TIỀN: " + nf.format(grandTotal) + "đ";
-            g2.setFont(new Font("Arial", Font.BOLD, 15));
+            g2.setFont(new Font("Arial", Font.BOLD, 11));
             g2.setColor(Colors.PRIMARY);
             FontMetrics fm = g2.getFontMetrics();
-            g2.drawString(totalStr, x + contentW - fm.stringWidth(totalStr), y + 18);
-            y += 28;
-
-            // ---- Phương thức thanh toán ----
-            if (selectedPTTT != null) {
-                g2.setFont(new Font("Arial", Font.PLAIN, 12));
-                g2.setColor(Colors.TEXT_SECONDARY);
-                String ptttStr = "Phương thức thanh toán: " + selectedPTTT.getTenPTTT();
-                fm = g2.getFontMetrics();
-                g2.drawString(ptttStr, x + contentW - fm.stringWidth(ptttStr), y + 16);
-                y += 16;
-            }
-            y += 16;
+            g2.drawString(totalStr, x + contentW - fm.stringWidth(totalStr), y + 12);
+            y += 30;
 
             // ---- Footer ----
             drawDivider(g2, x, y, contentW);
-            y += 18;
-            g2.setFont(new Font("Arial", Font.ITALIC, 12));
+            y += 12;
+            g2.setFont(new Font("Arial", Font.ITALIC, 9));
             g2.setColor(Colors.TEXT_SECONDARY);
-            drawCentered(g2, "Cảm ơn quý khách đã mua hàng tại nhà thuốc HTT. Hẹn gặp lại!", width, y);
-            y += 42;
+            drawCentered(g2, "Cảm ơn quý khách đã mua hàng tại nhà thuốc HTT!", width, y);
+            y += 26;
 
             // ---- Chữ ký ----
-            g2.setFont(new Font("Arial", Font.BOLD, 12));
+            g2.setFont(new Font("Arial", Font.BOLD, 9));
             g2.setColor(Colors.TEXT_PRIMARY);
-            g2.drawString("Khách hàng", x + 20, y);
+            g2.drawString("Khách hàng", x + 10, y);
             fm = g2.getFontMetrics();
             String sigNV = "Nhân viên bán hàng";
-            g2.drawString(sigNV, x + contentW - fm.stringWidth(sigNV) - 20, y);
-            y += 14;
+            g2.drawString(sigNV, x + contentW - fm.stringWidth(sigNV) - 10, y);
+            y += 10;
 
-            g2.setFont(new Font("Arial", Font.ITALIC, 11));
+            g2.setFont(new Font("Arial", Font.ITALIC, 8));
             g2.setColor(Colors.TEXT_SECONDARY);
             String sigNote = "(Ký và ghi rõ họ tên)";
             fm = g2.getFontMetrics();
-            g2.drawString(sigNote, x + 10, y);
-            g2.drawString(sigNote, x + contentW - fm.stringWidth(sigNote) - 10, y);
+            g2.drawString(sigNote, x + 6, y);
+            g2.drawString(sigNote, x + contentW - fm.stringWidth(sigNote) - 6, y);
         }
 
         // ----- helpers vẽ -----
@@ -433,13 +337,13 @@ public class HoaDonPreviewDialog extends JDialog {
         }
 
         private void drawLabel(Graphics2D g2, String text, int x, int y) {
-            g2.setFont(new Font("Arial", Font.BOLD, 13));
+            g2.setFont(new Font("Arial", Font.BOLD, 9));
             g2.setColor(Colors.TEXT_PRIMARY);
             g2.drawString(text, x, y);
         }
 
         private void drawValue(Graphics2D g2, String text, int x, int y) {
-            g2.setFont(new Font("Arial", Font.PLAIN, 13));
+            g2.setFont(new Font("Arial", Font.PLAIN, 9));
             g2.setColor(Colors.TEXT_SECONDARY);
             g2.drawString(text, x, y);
         }
@@ -455,16 +359,16 @@ public class HoaDonPreviewDialog extends JDialog {
             for (int i = 0; i < vals.length; i++) {
                 String v = vals[i];
                 int cellRight = cx + colW[i] - 6;
-                if (i == 3 || i == 4) {
-                    // right-align numeric columns
-                    g2.drawString(v, cellRight - fm.stringWidth(v), y + 20);
+                if (i == 3) {
+                    // right-align numeric column
+                    g2.drawString(v, cellRight - fm.stringWidth(v), y + 14);
                 } else if (i == 2) {
                     // center quantity
-                    g2.drawString(v, cx + (colW[i] - fm.stringWidth(v)) / 2, y + 20);
+                    g2.drawString(v, cx + (colW[i] - fm.stringWidth(v)) / 2, y + 14);
                 } else if (i == 1 && mode == RowAlign.DATA) {
-                    g2.drawString(clipText(g2, v, colW[i] - 10), cx, y + 20);
+                    g2.drawString(clipText(g2, v, colW[i] - 6), cx, y + 14);
                 } else {
-                    g2.drawString(v, cx, y + 20);
+                    g2.drawString(v, cx, y + 14);
                 }
                 cx += colW[i];
             }
@@ -483,6 +387,140 @@ public class HoaDonPreviewDialog extends JDialog {
     }
 
     // =========================================================
+    //===="Thanh chọn phương thức thanh toán + nút xác nhận (trước khi thanh toán)"=====
+    // =========================================================
+    @SuppressWarnings("unchecked")
+    private JPanel buildPaymentBar() {
+        java.util.List<entity.PhuongThucThanhToan> dsPTTT = hoaDonService.getDSPhuongThucThanhToan();
+        JComboBox<entity.PhuongThucThanhToan> cmbPTTT = new JComboBox<>();
+        for (entity.PhuongThucThanhToan pt : dsPTTT) {
+            cmbPTTT.addItem(pt);
+        }
+        cmbPTTT.setRenderer((list, value, index, isSelected, cellHasFocus) -> {
+            JLabel lbl = new JLabel(value != null ? value.getTenPTTT() : "");
+            lbl.setOpaque(true);
+            lbl.setBackground(isSelected ? Colors.PRIMARY_LIGHT : Color.WHITE);
+            lbl.setForeground(Colors.TEXT_PRIMARY);
+            lbl.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
+            lbl.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+            return lbl;
+        });
+        cmbPTTT.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
+        cmbPTTT.setPreferredSize(new Dimension(140, 30));
+
+        JButton btnThanhToan = new RoundedButton(155, 34, 17, "✓ Xác nhận", Colors.SUCCESS);
+        btnThanhToan.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
+        btnThanhToan.setForeground(Color.WHITE);
+        btnThanhToan.addActionListener(e -> {
+            entity.PhuongThucThanhToan selected
+                    = (entity.PhuongThucThanhToan) cmbPTTT.getSelectedItem();
+            String maPTTT = (selected != null) ? selected.getMaPTTT() : null;
+            xuLyThanhToan(btnThanhToan, maPTTT);
+        });
+
+        JButton btnHuy = new RoundedButton(70, 34, 17, "Hủy", Colors.SECONDARY);
+        btnHuy.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
+        btnHuy.setForeground(Colors.TEXT_PRIMARY);
+        btnHuy.addActionListener(e -> dispose());
+
+        JLabel lblPTTT = new JLabel("Phương thức thanh toán:");
+        lblPTTT.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
+        lblPTTT.setForeground(Colors.TEXT_PRIMARY);
+
+        // Hàng 1: label + combobox
+        JPanel row1 = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 6));
+        row1.setBackground(Colors.BACKGROUND);
+        row1.add(lblPTTT);
+        row1.add(cmbPTTT);
+
+        // Hàng 2: nút xác nhận + hủy
+        JPanel row2 = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 4));
+        row2.setBackground(Colors.BACKGROUND);
+        row2.add(btnThanhToan);
+        row2.add(btnHuy);
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBackground(Colors.BACKGROUND);
+        panel.setBorder(BorderFactory.createEmptyBorder(4, 0, 4, 0));
+        panel.add(row1);
+        panel.add(row2);
+        return panel;
+    }
+
+    // =========================================================
+    //===="Thanh hành động (Xuất PDF / In / Đóng) sau khi thanh toán thành công"=====
+    // =========================================================
+    private JPanel buildActionBar(boolean callbackOnClose) {
+        JButton btnPDF = new RoundedButton(110, 34, 17, "Xuất PDF", Colors.PRIMARY);
+        JButton btnPrint = new RoundedButton(80, 34, 17, "In", Colors.SUCCESS);
+        JButton btnClose = new RoundedButton(80, 34, 17, callbackOnClose ? "Đóng" : "Hủy", Colors.SECONDARY);
+
+        btnPDF.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
+        btnPDF.setForeground(Color.WHITE);
+        btnPrint.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
+        btnPrint.setForeground(Color.WHITE);
+        btnClose.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
+        btnClose.setForeground(Colors.TEXT_PRIMARY);
+
+        btnPDF.addActionListener(e -> exportPDF());
+        btnPrint.addActionListener(e -> printInvoice());
+        btnClose.addActionListener(e -> {
+            dispose();
+            if (callbackOnClose && onThanhToanThanhCong != null) {
+                onThanhToanThanhCong.run();
+            }
+        });
+
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 8));
+        panel.setBackground(Colors.BACKGROUND);
+        panel.setBorder(BorderFactory.createEmptyBorder(4, 0, 4, 0));
+        panel.add(btnPDF);
+        panel.add(btnPrint);
+        panel.add(btnClose);
+        return panel;
+    }
+
+    // =========================================================
+    //===="Xử lý thanh toán: lưu hóa đơn vào DB, cập nhật tồn kho, đổi sang thanh hành động"=====
+    // =========================================================
+    private void xuLyThanhToan(JButton btnThanhToan, String maPTTT) {
+        btnThanhToan.setEnabled(false);
+        btnThanhToan.setText("Đang xử lý...");
+        SwingWorker<HoaDon, Void> worker = new SwingWorker<>() {
+            @Override
+            protected HoaDon doInBackground() {
+                return hoaDonService.taoHoaDon(
+                        maHoaDon, tenKHRaw, sdtRaw, nhanVienEntity, cartItems, maPTTT);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    HoaDon hd = get();
+                    JOptionPane.showMessageDialog(HoaDonPreviewDialog.this,
+                            "Thanh toán thành công!\nMã hóa đơn: " + hd.getMaHoaDon(),
+                            "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                    // Chuyển sang thanh hành động (Xuất PDF / In / Đóng)
+                    pnlSouth.removeAll();
+                    pnlSouth.add(buildActionBar(true), BorderLayout.CENTER);
+                    pnlSouth.revalidate();
+                    pnlSouth.repaint();
+                } catch (Exception ex) {
+                    btnThanhToan.setEnabled(true);
+                    btnThanhToan.setText("✓ Xác nhận");
+                    Throwable cause = ex.getCause();
+                    String msg = (cause != null) ? cause.getMessage() : ex.getMessage();
+                    JOptionPane.showMessageDialog(HoaDonPreviewDialog.this,
+                            "Lỗi khi thanh toán: " + msg,
+                            "Lỗi", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        };
+        worker.execute();
+    }
+
+    // =========================================================
     //  In hóa đơn
     // =========================================================
     private void printInvoice() {
@@ -494,11 +532,12 @@ public class HoaDonPreviewDialog extends JDialog {
             }
             Graphics2D g2 = (Graphics2D) graphics;
             g2.translate(pageFormat.getImageableX(), pageFormat.getImageableY());
+            int dynH = invoicePanel.computePageHeight();
             double sx = pageFormat.getImageableWidth() / PAGE_W;
-            double sy = pageFormat.getImageableHeight() / PAGE_H;
+            double sy = pageFormat.getImageableHeight() / dynH;
             double scale = Math.min(sx, sy);
             g2.scale(scale, scale);
-            invoicePanel.drawInvoice(g2, PAGE_W, PAGE_H, PAGE_PAD);
+            invoicePanel.drawInvoice(g2, PAGE_W, dynH, PAGE_PAD);
             return Printable.PAGE_EXISTS;
         });
         if (job.printDialog()) {
@@ -546,15 +585,16 @@ public class HoaDonPreviewDialog extends JDialog {
      */
     private BufferedImage renderToImage() {
         final int SCALE = 2;
+        int dynH = invoicePanel.computePageHeight();
         int w = PAGE_W * SCALE;
-        int h = PAGE_H * SCALE;
+        int h = dynH * SCALE;
         BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
         Graphics2D g2 = img.createGraphics();
         applyHints(g2);
         g2.setColor(Color.WHITE);
         g2.fillRect(0, 0, w, h);
         g2.scale(SCALE, SCALE);
-        invoicePanel.drawInvoice(g2, PAGE_W, PAGE_H, PAGE_PAD);
+        invoicePanel.drawInvoice(g2, PAGE_W, dynH, PAGE_PAD);
         g2.dispose();
         return img;
     }

@@ -1,6 +1,7 @@
 package dao;
 
-
+import ConnectDB.ConnectDB;
+import entity.KhachHang;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -8,10 +9,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 
-import ConnectDB.ConnectDB;
-import entity.KhachHang;
-
 public class KhachHang_DAO {
+
     private Connection con;
 
     // Lấy danh sách khách hàng
@@ -155,5 +154,32 @@ public class KhachHang_DAO {
             e.printStackTrace();
         }
         return false;
+    }
+
+    //===="Sinh mã khách hàng tự động: KH + 4 số (VD: KH0001)"=====
+    public String sinhMaTuDong() {
+        String prefix = "KH";
+        String sql = "SELECT MAX(MaKhachHang) FROM KhachHang WHERE MaKhachHang LIKE ?";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, prefix + "%");
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        String maxMa = rs.getString(1);
+                        if (maxMa != null && maxMa.length() > prefix.length()) {
+                            try {
+                                int stt = Integer.parseInt(maxMa.substring(prefix.length())) + 1;
+                                return prefix + String.format("%04d", stt);
+                            } catch (NumberFormatException ignored) {
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return prefix + "0001";
     }
 }

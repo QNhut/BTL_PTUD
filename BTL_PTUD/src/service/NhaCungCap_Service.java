@@ -1,48 +1,26 @@
 package service;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import dao.NhaCungCap_DAO;
 import entity.NhaCungCap;
-import java.text.Normalizer;
-import java.util.ArrayList;
 
 public class NhaCungCap_Service {
 
-    private final NhaCungCap_DAO nhaCungCapDao;
-
-    public NhaCungCap_Service() {
-        this.nhaCungCapDao = new NhaCungCap_DAO();
-    }
+    private final NhaCungCap_DAO nhaCungCapDAO = new NhaCungCap_DAO();
 
     public ArrayList<NhaCungCap> getDSNhaCungCap() {
-        return nhaCungCapDao.getDSNhaCungCap();
-    }
-
-    public NhaCungCap layNCCTheoMa(String maNCC) {
-        return nhaCungCapDao.layNCCTheoMaNCC(maNCC);
-    }
-
-    public boolean themNCC(NhaCungCap ncc) {
-        return nhaCungCapDao.themNCC(ncc);
-    }
-
-    public boolean capNhatNCC(NhaCungCap ncc) {
-        return nhaCungCapDao.updateNCC(ncc);
-    }
-
-    public boolean xoaNCC(String maNCC) {
-        return nhaCungCapDao.xoaNCC(maNCC);
+        return nhaCungCapDAO.getDSNhaCungCap();
     }
 
     public int getSoLuongNCC() {
-        return getDSNhaCungCap().size();
+        return nhaCungCapDAO.getDSNhaCungCap().size();
     }
 
-    /**
-     * Đang hợp tác: trangThai = true
-     */
     public int getSoLuongDangHopTac() {
         int count = 0;
-        for (NhaCungCap ncc : getDSNhaCungCap()) {
+        for (NhaCungCap ncc : nhaCungCapDAO.getDSNhaCungCap()) {
             if (ncc.isTrangThai()) {
                 count++;
             }
@@ -50,12 +28,9 @@ public class NhaCungCap_Service {
         return count;
     }
 
-    /**
-     * Ngừng hợp tác: trangThai = false
-     */
     public int getSoLuongNgungHopTac() {
         int count = 0;
-        for (NhaCungCap ncc : getDSNhaCungCap()) {
+        for (NhaCungCap ncc : nhaCungCapDAO.getDSNhaCungCap()) {
             if (!ncc.isTrangThai()) {
                 count++;
             }
@@ -63,53 +38,62 @@ public class NhaCungCap_Service {
         return count;
     }
 
-    /**
-     * Tìm kiếm trong danh sách: nếu keyword bắt đầu bằng "NCC" tra theo mã, nếu
-     * 10 chữ số tra theo SĐT, còn lại tìm kiếm không dấu theo tên/địa
-     * chỉ/email.
-     */
     public ArrayList<NhaCungCap> timKiem(ArrayList<NhaCungCap> ds, String keyword) {
-        if (keyword == null || keyword.trim().isEmpty()) {
-            return new ArrayList<>(ds);
-        }
-        String kw = keyword.trim();
         ArrayList<NhaCungCap> result = new ArrayList<>();
-
-        if (kw.toUpperCase().startsWith("NCC")) {
-            NhaCungCap found = layNCCTheoMa(kw.toUpperCase());
-            if (found != null) {
-                result.add(found);
-            }
+        if (keyword == null || keyword.trim().isEmpty()) {
+            result.addAll(ds);
             return result;
         }
-
-        if (kw.matches("\\d{10}")) {
-            for (NhaCungCap ncc : ds) {
-                if (kw.equals(ncc.getSoDienThoai())) {
-                    result.add(ncc);
-                    return result;
-                }
-            }
-        }
-
-        String kwNorm = normalize(kw);
+        String kw = keyword.trim().toLowerCase();
         for (NhaCungCap ncc : ds) {
-            if (normalize(ncc.getTenNhaCungCap()).contains(kwNorm)
-                    || ncc.getMaNhaCungCap().toUpperCase().contains(kw.toUpperCase())
-                    || (ncc.getDiaChi() != null && normalize(ncc.getDiaChi()).contains(kwNorm))
-                    || (ncc.getEmail() != null && ncc.getEmail().toLowerCase().contains(kw.toLowerCase()))
-                    || (ncc.getSoDienThoai() != null && ncc.getSoDienThoai().contains(kw))) {
+            boolean matchTen = ncc.getTenNhaCungCap() != null && ncc.getTenNhaCungCap().toLowerCase().contains(kw);
+            boolean matchMa = ncc.getMaNhaCungCap() != null && ncc.getMaNhaCungCap().toLowerCase().contains(kw);
+            boolean matchSDT = ncc.getSoDienThoai() != null && ncc.getSoDienThoai().contains(kw);
+            if (matchTen || matchMa || matchSDT) {
                 result.add(ncc);
             }
         }
         return result;
     }
 
-    public static String normalize(String s) {
-        if (s == null) {
-            return "";
+    public boolean themNCC(NhaCungCap ncc) {
+        return nhaCungCapDAO.themNCC(ncc);
+    }
+
+    public boolean capNhatNCC(NhaCungCap ncc) {
+        return nhaCungCapDAO.updateNCC(ncc);
+    }
+
+    public boolean xoaNCC(String maNCC) {
+        return nhaCungCapDAO.xoaNCC(maNCC);
+    }
+
+    public List<String> layDanhSachTenNhaCungCap() {
+        List<String> tenNhaCungCaps = new ArrayList<String>();
+        for (NhaCungCap nhaCungCap : nhaCungCapDAO.getDSNhaCungCap()) {
+            if (nhaCungCap == null || nhaCungCap.getTenNhaCungCap() == null) {
+                continue;
+            }
+
+            String tenNhaCungCap = nhaCungCap.getTenNhaCungCap().trim();
+            if (tenNhaCungCap.isEmpty() || tenNhaCungCaps.contains(tenNhaCungCap)) {
+                continue;
+            }
+            tenNhaCungCaps.add(tenNhaCungCap);
         }
-        String normalized = Normalizer.normalize(s, Normalizer.Form.NFD);
-        return normalized.replaceAll("\\p{InCombiningDiacriticalMarks}+", "").toLowerCase();
+        return tenNhaCungCaps;
+    }
+
+    public NhaCungCap layNhaCungCapTheoTen(String ten) {
+        if (ten == null || ten.trim().isEmpty()) {
+            return null;
+        }
+        String canTim = ten.trim();
+        for (NhaCungCap ncc : nhaCungCapDAO.getDSNhaCungCap()) {
+            if (ncc.getTenNhaCungCap() != null && ncc.getTenNhaCungCap().trim().equalsIgnoreCase(canTim)) {
+                return ncc;
+            }
+        }
+        return null;
     }
 }

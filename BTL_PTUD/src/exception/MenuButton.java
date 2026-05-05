@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 import constants.Colors;
+import constants.FontStyle;
 
 public class MenuButton extends JPanel {
 
@@ -45,7 +46,7 @@ public class MenuButton extends JPanel {
         // TEXT LABEL
         JLabel textLabel = new JLabel(text);
         textLabel.setForeground(TEXT_MAIN);
-        textLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        textLabel.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
 
         // ARROW ICON (không thêm ngay, chỉ thêm khi có sub-menu)
         arrowLabel = new JLabel();
@@ -104,7 +105,7 @@ public class MenuButton extends JPanel {
         if (arrowLabel != null) {
             arrowLabel.setIcon(loadIcon(
                     expanded ? "data/img/icons/up-chevron.png"
-                             : "data/img/icons/down-chevron.png",
+                            : "data/img/icons/down-chevron.png",
                     18, 18
             ));
         }
@@ -140,7 +141,7 @@ public class MenuButton extends JPanel {
         // TEXT
         JLabel textLabel = new JLabel(title);
         textLabel.setForeground(TEXT_SUB_NORMAL);
-        textLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        textLabel.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
 
         subBtn.add(iconLabel, BorderLayout.WEST);
         subBtn.add(textLabel, BorderLayout.CENTER);
@@ -190,6 +191,7 @@ public class MenuButton extends JPanel {
     }
 
     public interface MenuActionListener {
+
         void onMenuSelected(MenuButton source, String pageName);
     }
 
