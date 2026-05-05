@@ -25,20 +25,28 @@ public class LoSanPham_DAO {
             con = ConnectDB.getInstance().getConnection();
             try (Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sql)) {
                 while (rs.next()) {
-                    LoSanPham lo = new LoSanPham();
-                    lo.setMaLoSanPham(rs.getString("MaLoSanPham"));
-                    lo.setSanPham(new SanPham(rs.getString("MaSanPham")));
-                    lo.setPhieuNhap(new PhieuNhap(rs.getString("MaPhieuNhap")));
-                    lo.setKeSanPham(new KeSanPham(rs.getString("MaKeSanPham")));
-                    lo.setSoLuong(rs.getInt("SoLuong"));
-                    lo.setDonViTinh(rs.getString("DonViTinh"));
-                    Date hsd = rs.getDate("HanSuDung");
-                    lo.setHanSuDung(hsd == null ? null : hsd.toLocalDate());
-                    lo.setTrangThai(rs.getBoolean("TrangThai"));
-                    ds.add(lo);
+                    try {
+                        LoSanPham lo = new LoSanPham();
+                        lo.setMaLoSanPham(rs.getString("MaLoSanPham"));
+                        lo.setSanPham(new SanPham(rs.getString("MaSanPham")));
+                        String maPN = rs.getString("MaPhieuNhap");
+                        if (maPN != null && !maPN.trim().isEmpty())
+                            lo.setPhieuNhap(new PhieuNhap(maPN));
+                        String maKe = rs.getString("MaKeSanPham");
+                        if (maKe != null && !maKe.trim().isEmpty())
+                            lo.setKeSanPham(new KeSanPham(maKe));
+                        lo.setSoLuong(rs.getInt("SoLuong"));
+                        lo.setDonViTinh(rs.getString("DonViTinh"));
+                        Date hsd = rs.getDate("HanSuDung");
+                        lo.setHanSuDung(hsd == null ? null : hsd.toLocalDate());
+                        lo.setTrangThai(rs.getBoolean("TrangThai"));
+                        ds.add(lo);
+                    } catch (Exception rowEx) {
+                        rowEx.printStackTrace(); // log lỗi từng hàng nhưng tiếp tục
+                    }
                 }
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return ds;
@@ -111,24 +119,62 @@ public class LoSanPham_DAO {
                 ps.setString(1, maSanPham);
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
-                        LoSanPham lo = new LoSanPham();
-                        lo.setMaLoSanPham(rs.getString("MaLoSanPham"));
-                        lo.setSanPham(new SanPham(rs.getString("MaSanPham")));
-                        lo.setPhieuNhap(new PhieuNhap(rs.getString("MaPhieuNhap")));
-                        lo.setKeSanPham(new KeSanPham(rs.getString("MaKeSanPham")));
-                        lo.setSoLuong(rs.getInt("SoLuong"));
-                        lo.setDonViTinh(rs.getString("DonViTinh"));
-                        Date hsd = rs.getDate("HanSuDung");
-                        lo.setHanSuDung(hsd == null ? null : hsd.toLocalDate());
-                        lo.setTrangThai(rs.getBoolean("TrangThai"));
-                        ds.add(lo);
+                        try {
+                            LoSanPham lo = new LoSanPham();
+                            lo.setMaLoSanPham(rs.getString("MaLoSanPham"));
+                            lo.setSanPham(new SanPham(rs.getString("MaSanPham")));
+                            String maPN = rs.getString("MaPhieuNhap");
+                            if (maPN != null && !maPN.trim().isEmpty())
+                                lo.setPhieuNhap(new PhieuNhap(maPN));
+                            String maKe = rs.getString("MaKeSanPham");
+                            if (maKe != null && !maKe.trim().isEmpty())
+                                lo.setKeSanPham(new KeSanPham(maKe));
+                            lo.setSoLuong(rs.getInt("SoLuong"));
+                            lo.setDonViTinh(rs.getString("DonViTinh"));
+                            Date hsd = rs.getDate("HanSuDung");
+                            lo.setHanSuDung(hsd == null ? null : hsd.toLocalDate());
+                            lo.setTrangThai(rs.getBoolean("TrangThai"));
+                            ds.add(lo);
+                        } catch (Exception rowEx) {
+                            rowEx.printStackTrace();
+                        }
                     }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return ds;
+    }
+
+    /**
+     * Giảm số lượng tồn kho theo FEFO (lô gần hết hạn nhất bị trừ trước).
+     * Chỉ trừ các lô còn TrangThai=true và chưa hết hạn.
+     */
+    public void giamSoLuongTheoSanPham(String maSanPham, int soLuongCan) {
+        ArrayList<LoSanPham> dsLo = layTheoMaSanPham(maSanPham);
+        int conLai = soLuongCan;
+        String sqlCapNhat = "UPDATE LoSanPham SET SoLuong = ?, TrangThai = ? WHERE MaLoSanPham = ?";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (PreparedStatement ps = con.prepareStatement(sqlCapNhat)) {
+                for (LoSanPham lo : dsLo) {
+                    if (conLai <= 0) break;
+                    if (!lo.isTrangThai()) continue;
+                    if (lo.getHanSuDung() != null && lo.getHanSuDung().isBefore(LocalDate.now())) continue;
+                    int tru = Math.min(lo.getSoLuong(), conLai);
+                    int soLuongMoi = lo.getSoLuong() - tru;
+                    ps.setInt(1, soLuongMoi);
+                    ps.setBoolean(2, soLuongMoi > 0);
+                    ps.setString(3, lo.getMaLoSanPham());
+                    ps.executeUpdate();
+                    conLai -= tru;
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            throw new RuntimeException("Lỗi giảm tồn kho lô sản phẩm: " + e.getMessage());
         }
-        return ds;
     }
 
     /**
