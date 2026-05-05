@@ -98,6 +98,58 @@ public class LoSanPham_DAO {
     }
 
     /**
+     * Lấy tất cả lô theo mã sản phẩm (kể cả hết hạn), sắp xếp HSD tăng dần.
+     * Chỉ lấy dữ liệu trực tiếp từ bảng LoSanPham – Service sẽ enrich thêm.
+     */
+    public ArrayList<LoSanPham> layTheoMaSanPham(String maSanPham) {
+        ArrayList<LoSanPham> ds = new ArrayList<>();
+        String sql = "SELECT MaLoSanPham, MaSanPham, MaPhieuNhap, MaKeSanPham, SoLuong, DonViTinh, HanSuDung, TrangThai "
+                + "FROM LoSanPham WHERE MaSanPham = ? ORDER BY HanSuDung ASC";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, maSanPham);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        LoSanPham lo = new LoSanPham();
+                        lo.setMaLoSanPham(rs.getString("MaLoSanPham"));
+                        lo.setSanPham(new SanPham(rs.getString("MaSanPham")));
+                        lo.setPhieuNhap(new PhieuNhap(rs.getString("MaPhieuNhap")));
+                        lo.setKeSanPham(new KeSanPham(rs.getString("MaKeSanPham")));
+                        lo.setSoLuong(rs.getInt("SoLuong"));
+                        lo.setDonViTinh(rs.getString("DonViTinh"));
+                        Date hsd = rs.getDate("HanSuDung");
+                        lo.setHanSuDung(hsd == null ? null : hsd.toLocalDate());
+                        lo.setTrangThai(rs.getBoolean("TrangThai"));
+                        ds.add(lo);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return ds;
+    }
+
+    /**
+     * Cập nhật kệ chứa của một lô sản phẩm.
+     */
+    public boolean capNhatKe(String maLoSanPham, String maKeSanPham) {
+        String sql = "UPDATE LoSanPham SET MaKeSanPham = ? WHERE MaLoSanPham = ?";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, maKeSanPham);
+                ps.setString(2, maLoSanPham);
+                return ps.executeUpdate() > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
      * Sinh mã lô sản phẩm tự động: LSP + YYYY + 4 số (VD: LSP20260001)
      */
     public String sinhMaTuDong() {

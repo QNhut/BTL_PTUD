@@ -170,7 +170,7 @@ public class SanPham_DAO {
         return sp;
     }
 
-    /** Sinh mã sản phẩm tự động: SP + YYYY + 4 số (VD: SP20260001) */
+    /** Sinh mã sản phẩm tự động: SP + YYYY + 3 số (VD: SP2026001) */
     public String sinhMaTuDong() {
         String prefix = "SP";
         int nam = java.time.LocalDate.now().getYear();
@@ -183,14 +183,14 @@ public class SanPham_DAO {
                 try (java.sql.ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         String maxMa = rs.getString(1);
-                        if (maxMa != null && maxMa.length() >= pattern.length() + 4) {
+                        if (maxMa != null && maxMa.length() >= pattern.length() + 3) {
                             int stt = Integer.parseInt(maxMa.substring(pattern.length())) + 1;
-                            return pattern + String.format("%04d", stt);
+                            return pattern + String.format("%03d", stt);
                         }
                     }
                 }
             }
         } catch (java.sql.SQLException e) { e.printStackTrace(); }
-        return pattern + "0001";
+        return pattern + "001";
     }
 }

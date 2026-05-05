@@ -3,11 +3,15 @@ package service;
 import java.time.LocalDate;
 import java.util.List;
 
+import dao.KeSanPham_DAO;
 import dao.LoSanPham_DAO;
+import dao.NhaCungCap_DAO;
+import dao.PhieuNhap_DAO;
 import dao.SanPham_DAO;
 import entity.ChiTietPhieuNhap;
 import entity.KeSanPham;
 import entity.LoSanPham;
+import entity.NhaCungCap;
 import entity.PhieuNhap;
 import entity.SanPham;
 
@@ -23,6 +27,9 @@ public class LoSanPham_Service {
 	private final LoSanPham_DAO loDAO = new LoSanPham_DAO();
 	private final SanPham_DAO spDAO = new SanPham_DAO();
 	private final DonViTinhConverter converter = new DonViTinhConverter();
+	private final PhieuNhap_DAO pnDAO = new PhieuNhap_DAO();
+	private final KeSanPham_DAO keDAO = new KeSanPham_DAO();
+	private final NhaCungCap_DAO nccDAO = new NhaCungCap_DAO();
 
 	// ==================== NHẬP HÀNG ====================
 
@@ -158,5 +165,83 @@ public class LoSanPham_Service {
 			return a.getHanSuDung().compareTo(b.getHanSuDung());
 		});
 		return conHan;
+	}
+
+	// ==================== CHI TIẾT SẢN PHẨM ====================
+
+	public static class TrangThaiLo {
+		public static final String HET_HAN    = "HET_HAN";
+		public static final String SAP_HET_HAN = "SAP_HET_HAN"; // trong vòng 90 ngày
+		public static final String CON_HAN    = "CON_HAN";
+	}
+
+	/** Số ngày còn lại đến hết hạn; null nếu HSD không xác định */
+	public static Long soNgayConLai(LocalDate hanSuDung) {
+		if (hanSuDung == null) return null;
+		return java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), hanSuDung);
+	}
+
+	/** Trạng thái lô: HET_HAN / SAP_HET_HAN (≤90 ngày) / CON_HAN */
+	public static String trangThaiLo(LocalDate hanSuDung) {
+		if (hanSuDung == null) return TrangThaiLo.CON_HAN;
+		long ngay = java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), hanSuDung);
+		if (ngay < 0)  return TrangThaiLo.HET_HAN;
+		if (ngay <= 90) return TrangThaiLo.SAP_HET_HAN;
+		return TrangThaiLo.CON_HAN;
+	}
+
+	/**
+	 * Lấy tất cả lô của một sản phẩm (kể cả hết hạn).
+	 * Enrich thêm thông tin PhieuNhap (ngày nhập, NCC) và KeSanPham (tên kệ, vị trí).
+	 */
+	public List<LoSanPham> layDanhSachLoTheoSP(String maSanPham) {
+		if (maSanPham == null || maSanPham.isBlank()) return new java.util.ArrayList<>();
+		List<LoSanPham> ds = loDAO.layTheoMaSanPham(maSanPham);
+		for (LoSanPham lo : ds) {
+			// Enrich PhieuNhap: lấy ngayNhap và NCC
+			try {
+				if (lo.getPhieuNhap() != null) {
+					PhieuNhap pn = pnDAO.layPNTheoMa(lo.getPhieuNhap().getMaPhieuNhap());
+					if (pn != null) {
+						// Load tên NCC
+						if (pn.getNhaCungCap() != null) {
+							try {
+								NhaCungCap ncc = nccDAO.layNCCTheoMaNCC(pn.getNhaCungCap().getMaNhaCungCap());
+								if (ncc != null) pn.setNhaCungCap(ncc);
+							} catch (Exception ignored) {}
+						}
+						lo.setPhieuNhap(pn);
+					}
+				}
+			} catch (Exception ignored) {}
+			// Enrich KeSanPham: lấy tên kệ và vị trí
+			try {
+				if (lo.getKeSanPham() != null) {
+					KeSanPham ke = keDAO.layTheoMa(lo.getKeSanPham().getMaKeSanPham());
+					if (ke != null) lo.setKeSanPham(ke);
+				}
+			} catch (Exception ignored) {}
+		}
+		return ds;
+	}
+
+	/** Lấy tất cả kệ sản phẩm */
+	public List<KeSanPham> layTatCaKe() {
+		return keDAO.getDSKeSanPham();
+	}
+
+	/** Chuyển lô sang kệ khác */
+	public boolean chuyenKe(String maLoSanPham, String maKeSanPham) {
+		return loDAO.capNhatKe(maLoSanPham, maKeSanPham);
+	}
+
+	/** Đếm số lô hết hạn + sắp hết hạn trong danh sách */
+	public int demLoCanhBao(List<LoSanPham> dsLo) {
+		int count = 0;
+		for (LoSanPham lo : dsLo) {
+			String tt = trangThaiLo(lo.getHanSuDung());
+			if (TrangThaiLo.HET_HAN.equals(tt) || TrangThaiLo.SAP_HET_HAN.equals(tt)) count++;
+		}
+		return count;
 	}
 }

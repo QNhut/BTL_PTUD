@@ -23,7 +23,7 @@ public class SanPham_Service {
 		public final int tonKho;
 		public final int soLo;
 		public final int loHetHan;
-		public final String trangThai; // CON_HANG, SAP_HET, HET_HANG
+		public final String trangThai; 
 
 		public TonKhoInfo(int tonKho, int soLo, int loHetHan) {
 			this.tonKho = tonKho;
@@ -156,4 +156,14 @@ public class SanPham_Service {
 		}
 		return new ThongKe(ds.size(), con, sap, het);
 	}
+
+	// ── CRUD ─────────────────────────────────────────────────
+
+	public boolean themSanPham(SanPham sp) { return sanPhamDAO.themSanPham(sp); }
+
+	public boolean capNhatSanPham(SanPham sp) { return sanPhamDAO.updateSanPham(sp); }
+
+	public boolean xoaSanPham(String maSP) { return sanPhamDAO.xoaSanPham(maSP); }
+
+	public String sinhMaSanPhamMoi() { return sanPhamDAO.sinhMaTuDong(); }
 }
