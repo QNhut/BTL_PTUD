@@ -56,13 +56,14 @@ public class NhaCungCap_GUI extends JPanel implements ActionListener {
         pnlTitle.setPreferredSize(new Dimension(900, 0));
         pnlTitle.setBackground(Colors.BACKGROUND);
         pnlTitle.add(lblTitle = new JLabel("Nhà cung cấp"));
-        lblTitle.setFont(FontStyle.font(FontStyle.XL, FontStyle.BOLD));
+        lblTitle.setFont(FontStyle.font(FontStyle.XXL, FontStyle.BOLD));
+        lblTitle.setForeground(Colors.FOREGROUND);
         pnlTitle.add(lblNote = new JLabel("Quản lý danh sách nhà cung cấp và đối tác"));
         lblNote.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
-        lblNote.setForeground(Colors.TEXT_SECONDARY);
+        lblNote.setForeground(Colors.MUTED);
 
         pnlButtonAdd.setBackground(Colors.BACKGROUND);
-        pnlButtonAdd.add(btnAddNCC = new RoundedButton(210, 45, 20, "+ Thêm nhà cung cấp", Colors.PRIMARY));
+        pnlButtonAdd.add(btnAddNCC = new RoundedButton(170, 40, 10, "+ Thêm NCC", Colors.PRIMARY));
 
         // ===== CONTENT =====
         add(pnlContent = new JPanel(), BorderLayout.CENTER);
@@ -70,12 +71,14 @@ public class NhaCungCap_GUI extends JPanel implements ActionListener {
         pnlContent.setBackground(Colors.BACKGROUND);
 
         // Stat cards
-        pnlContent.add(pnlCategory = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10)));
-        pnlCategory.setBorder(BorderFactory.createEmptyBorder(30, 0, 0, 0));
+        pnlContent.add(pnlCategory = new JPanel(new GridLayout(1, 3, 16, 0)));
+        pnlCategory.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
         pnlCategory.setBackground(Colors.BACKGROUND);
-        pnlCategory.add(createPanelCategory(nhaCungCapSV.getSoLuongNCC(), "Tổng NCC"));
-        pnlCategory.add(createPanelCategory(nhaCungCapSV.getSoLuongDangHopTac(), "Đang hợp tác"));
-        pnlCategory.add(createPanelCategory(nhaCungCapSV.getSoLuongNgungHopTac(), "Ngừng hợp tác"));
+        pnlCategory.setMaximumSize(new Dimension(Integer.MAX_VALUE, 110));
+        pnlCategory.setPreferredSize(new Dimension(0, 110));
+        pnlCategory.add(statCard("Tổng NCC", nhaCungCapSV.getSoLuongNCC(), Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
+        pnlCategory.add(statCard("Đang hợp tác", nhaCungCapSV.getSoLuongDangHopTac(), Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
+        pnlCategory.add(statCard("Ngừng hợp tác", nhaCungCapSV.getSoLuongNgungHopTac(), Colors.SECONDARY, Colors.DANGER, Colors.DANGER));
 
         // Search bar
         pnlContent.add(pnlSearch = new JPanel());
@@ -88,6 +91,7 @@ public class NhaCungCap_GUI extends JPanel implements ActionListener {
         pnlSearch.add(txtSearch = new RoundedTextField(500, 40, 20, "Tìm theo tên công ty, mã NCC, SĐT..."));
         pnlSearch.add(btnFind = new RoundedButton(130, 40, 20, "Tìm kiếm", Colors.PRIMARY));
         pnlSearch.add(btnAll = new RoundedButton(100, 40, 20, "Tất cả", Colors.SECONDARY));
+        pnlSearch.setMaximumSize(new Dimension(Integer.MAX_VALUE, 56));
         btnAll.setForeground(Colors.TEXT_PRIMARY);
 
         // ===== TABLE =====
@@ -268,43 +272,32 @@ public class NhaCungCap_GUI extends JPanel implements ActionListener {
 
     private void updateCategory() {
         pnlCategory.removeAll();
-        pnlCategory.add(createPanelCategory(nhaCungCapSV.getSoLuongNCC(), "Tổng NCC"));
-        pnlCategory.add(createPanelCategory(nhaCungCapSV.getSoLuongDangHopTac(), "Đang hợp tác"));
-        pnlCategory.add(createPanelCategory(nhaCungCapSV.getSoLuongNgungHopTac(), "Ngừng hợp tác"));
+        pnlCategory.add(statCard("Tổng NCC", nhaCungCapSV.getSoLuongNCC(), Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
+        pnlCategory.add(statCard("Đang hợp tác", nhaCungCapSV.getSoLuongDangHopTac(), Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
+        pnlCategory.add(statCard("Ngừng hợp tác", nhaCungCapSV.getSoLuongNgungHopTac(), Colors.SECONDARY, Colors.DANGER, Colors.DANGER));
         pnlCategory.revalidate();
         pnlCategory.repaint();
         pnlContent.revalidate();
         pnlContent.repaint();
     }
 
-    public JPanel createPanelCategory(int number, String title) {
-        item = new RoundedPanel(250, 100, 25);
-        item.setLayout(new FlowLayout(FlowLayout.LEFT, 15, 15));
-        item.setBackground(Colors.BACKGROUND);
-
-        RoundedPanel pnlNumber = new RoundedPanel(50, 50, 12);
-        pnlNumber.setLayout(new GridBagLayout());
-        pnlNumber.setBackground(Colors.PRIMARY_LIGHT);
-        JLabel lblNumber = new JLabel(Integer.toString(number));
-        lblNumber.setFont(FontStyle.font(FontStyle.LG, FontStyle.BOLD));
-        lblNumber.setForeground(Colors.SUCCESS);
-        pnlNumber.add(lblNumber);
-
-        JPanel pnlInfo = new JPanel();
-        pnlInfo.setLayout(new BoxLayout(pnlInfo, BoxLayout.Y_AXIS));
-        pnlInfo.setOpaque(false);
-        JLabel lblTitle2 = new JLabel(title);
-        lblTitle2.setFont(FontStyle.font(FontStyle.LG, FontStyle.NORMAL));
-        lblTitle2.setForeground(new Color(160, 160, 160));
-        JLabel lblCount = new JLabel(Integer.toString(number));
-        lblCount.setFont(FontStyle.font(FontStyle.LG, FontStyle.BOLD));
-        pnlInfo.add(lblTitle2);
-        pnlInfo.add(Box.createVerticalStrut(4));
-        pnlInfo.add(lblCount);
-
-        item.add(pnlNumber);
-        item.add(pnlInfo);
-        return item;
+    private JPanel statCard(String title, int value, Color bg, Color valColor, Color titleColor) {
+        RoundedPanel c = new RoundedPanel(200, 90, 16);
+        c.setBackground(bg);
+        c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS));
+        c.setBorder(BorderFactory.createEmptyBorder(14, 18, 14, 18));
+        JLabel lblT = new JLabel(title);
+        lblT.setFont(FontStyle.font(FontStyle.XS, FontStyle.BOLD));
+        lblT.setForeground(titleColor);
+        lblT.setAlignmentX(LEFT_ALIGNMENT);
+        c.add(lblT);
+        c.add(Box.createVerticalStrut(6));
+        JLabel lblV = new JLabel(String.valueOf(value));
+        lblV.setFont(FontStyle.font(FontStyle.XXL, FontStyle.BOLD));
+        lblV.setForeground(valColor);
+        lblV.setAlignmentX(LEFT_ALIGNMENT);
+        c.add(lblV);
+        return c;
     }
 
     // ===== DIALOGS =====

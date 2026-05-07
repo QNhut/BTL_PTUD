@@ -109,4 +109,37 @@ public class KhuyenMai_DAO {
                 rs.getTimestamp("NgayKetThuc").toLocalDateTime().toLocalDate(),
                 rs.getBoolean("TrangThai"));
     }
+
+    /** Trả về map maKhuyenMai → số sản phẩm đang áp dụng, load 1 lần */
+    public java.util.Map<String, Integer> getDemSanPhamTheoKM() {
+        String sql = "SELECT MaKhuyenMai, COUNT(*) AS SoLuong FROM SanPham GROUP BY MaKhuyenMai";
+        java.util.Map<String, Integer> map = new java.util.HashMap<>();
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sql)) {
+                while (rs.next()) {
+                    map.put(rs.getString("MaKhuyenMai"), rs.getInt("SoLuong"));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return map;
+    }
+
+    /** Áp dụng (gán) khuyến mãi cho 1 sản phẩm */
+    public boolean apDungChoSanPham(String maSP, String maKM) {
+        String sql = "UPDATE SanPham SET MaKhuyenMai = ? WHERE MaSanPham = ?";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, maKM);
+                ps.setString(2, maSP);
+                return ps.executeUpdate() > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }

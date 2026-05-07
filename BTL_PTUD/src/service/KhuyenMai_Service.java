@@ -150,4 +150,14 @@ public class KhuyenMai_Service {
                 .replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
                 .toLowerCase();
     }
+
+    /** Trả về map maKhuyenMai → số sản phẩm đang áp dụng */
+    public java.util.Map<String, Integer> getDemSanPhamTheoKM() {
+        return khuyenMaiDao.getDemSanPhamTheoKM();
+    }
+
+    /** Áp dụng khuyến mãi cho 1 sản phẩm */
+    public boolean apDungChoSanPham(String maSP, String maKM) {
+        return khuyenMaiDao.apDungChoSanPham(maSP, maKM);
+    }
 }
