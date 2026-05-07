@@ -56,4 +56,9 @@ public class RoundedPanel extends JPanel {
 
         g2.dispose();
     }
+    public void setHeight(int height) {
+        this.height = height;
+        revalidate();
+        repaint();
+    }
 }

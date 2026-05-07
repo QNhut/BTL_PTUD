@@ -47,7 +47,7 @@ public class NhanVien {
     public void setMaNhanVien(String maNhanVien) {
         maNhanVien = normalizeRequired(maNhanVien);
         if (isBlank(maNhanVien)) {
-            throw new IllegalArgumentException("Ma nhan vien khong duoc de trong");
+            throw new IllegalArgumentException("Mã nhân viên không được để trống");
         }
         this.maNhanVien = maNhanVien;
     }
@@ -59,7 +59,7 @@ public class NhanVien {
     public void setTenNhanVien(String tenNhanVien) {
         tenNhanVien = normalizeRequired(tenNhanVien);
         if (isBlank(tenNhanVien)) {
-            throw new IllegalArgumentException("Ten nhan vien khong duoc de trong");
+            throw new IllegalArgumentException("Tên nhân viên không được để trống");
         }
         this.tenNhanVien = tenNhanVien;
     }
@@ -79,7 +79,7 @@ public class NhanVien {
     public void setSoDienThoai(String soDienThoai) {
         soDienThoai = normalizeRequired(soDienThoai);
         if (isBlank(soDienThoai) || !REGEX_SDT.matcher(soDienThoai).matches()) {
-            throw new IllegalArgumentException("So dien thoai phai gom 10 chu so");
+            throw new IllegalArgumentException("Số điện thoại phải gồm 10 chữ số");
         }
         this.soDienThoai = soDienThoai;
     }
@@ -91,7 +91,7 @@ public class NhanVien {
     public void setEmail(String email) {
         email = normalizeOptional(email);
         if (!isBlank(email) && !REGEX_EMAIL.matcher(email).matches()) {
-            throw new IllegalArgumentException("Email khong hop le");
+            throw new IllegalArgumentException("Email không hợp lệ");
         }
         this.email = email;
     }
@@ -103,7 +103,7 @@ public class NhanVien {
     public void setCCCD(String cCCD) {
         cCCD = normalizeRequired(cCCD);
         if (isBlank(cCCD) || !REGEX_CCCD.matcher(cCCD).matches()) {
-            throw new IllegalArgumentException("CCCD phai gom 12 chu so");
+            throw new IllegalArgumentException("CCCD phải gồm 12 chữ số");
         }
         this.cCCD = cCCD;
     }

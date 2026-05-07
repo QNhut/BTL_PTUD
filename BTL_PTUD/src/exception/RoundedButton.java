@@ -1,14 +1,13 @@
 package exception;
 
+import constants.Colors;
+import constants.FontStyle;
 import java.awt.*;
 import javax.swing.*;
-
-import constants.Colors;
 
 //======CÁCH DÙNG=======
 // Gọi JButton btnA = new RoundedButton(int width, int height, int radius, String text, Color bgColor)
 //Ví dụ: JButton btnSave = new RoundedButton(200, 30, 20, "Lưu", Colors.BackGround)
-
 public class RoundedButton extends JButton {
 
     private int radius;
@@ -40,7 +39,7 @@ public class RoundedButton extends JButton {
         setContentAreaFilled(false);
         setFocusPainted(false);
         setBorderPainted(false);
-        setFont(new Font("Arial", Font.BOLD, 14));
+        setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
         setCursor(new Cursor(Cursor.HAND_CURSOR));
         setForeground(foregroundColor);
 
@@ -92,8 +91,9 @@ public class RoundedButton extends JButton {
             g2.setColor(backgroundColor);
         }
 
-        // 🎨 Vẽ nền
-        g2.fillRoundRect(0, 0, getWidth(), getHeight(), radius, radius);
+        // 🎨 Vẽ nền (inset 1px tránh bị clip mép)
+        int inset = 1;
+        g2.fillRoundRect(inset, inset, getWidth() - 2 * inset, getHeight() - 2 * inset, radius, radius);
 
         g2.dispose();
 
@@ -106,7 +106,6 @@ public class RoundedButton extends JButton {
     }
 
     // ================== SETTER ==================
-
     public void setRadius(int radius) {
         this.radius = radius;
         repaint();

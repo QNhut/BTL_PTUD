@@ -1,9 +1,9 @@
 package exception;
 
-import javax.swing.*;
+import gui.Main_GUI;
 import java.awt.*;
 import java.util.ArrayList;
-import gui.Main_GUI;
+import javax.swing.*;
 
 public class MenuBarPanel extends JPanel {
 
@@ -41,7 +41,6 @@ public class MenuBarPanel extends JPanel {
         thongKe.addSubMenu("Doanh thu", "data/img/icons/up.png", "ThongKeDoanhThu");
         thongKe.addSubMenu("Khách hàng", "data/img/icons/people.png", "ThongKeKhachHang");
         thongKe.addSubMenu("Sản phẩm", "data/img/icons/stats.png", "ThongKeSanPham");
-
 
         // ===== CÀI ĐẶT (KHÔNG SUB) =====
         MenuButton heThong = createSingleMenu("HỆ THỐNG", "HeThong");

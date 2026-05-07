@@ -6,16 +6,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import dao.KhuyenMai_DAO;
 import dao.LoSanPham_DAO;
 import dao.SanPham_DAO;
+import dao.Thue_DAO;
+import entity.KhuyenMai;
 import entity.LoSanPham;
 import entity.SanPham;
+import entity.Thue;
 
 public class SanPham_Service {
 	public static final int NGUONG_SAP_HET = 50;
 
 	private final SanPham_DAO sanPhamDAO = new SanPham_DAO();
 	private final LoSanPham_DAO loSanPhamDAO = new LoSanPham_DAO();
+	private final KhuyenMai_DAO khuyenMaiDAO = new KhuyenMai_DAO();
+	private final Thue_DAO thueDAO = new Thue_DAO();
 	private final DonViTinhConverter converter = new DonViTinhConverter();
 
 	// ==================== DTO tồn kho ====================
@@ -23,7 +29,7 @@ public class SanPham_Service {
 		public final int tonKho;
 		public final int soLo;
 		public final int loHetHan;
-		public final String trangThai; // CON_HANG, SAP_HET, HET_HANG
+		public final String trangThai; 
 
 		public TonKhoInfo(int tonKho, int soLo, int loHetHan) {
 			this.tonKho = tonKho;
@@ -156,4 +162,84 @@ public class SanPham_Service {
 		}
 		return new ThongKe(ds.size(), con, sap, het);
 	}
+
+	// ==================== TỒN KHO (1 SP) ====================
+	/** Trả về tổng số lượng còn tồn (chưa hết hạn) của 1 sản phẩm — dùng cho HoaDon_GUI */
+	public int layTonKho(String maSP) {
+		return loSanPhamDAO.layTongSoLuongTonTheoMaSanPham(maSP);
+	}
+
+	// ── CRUD ─────────────────────────────────────────────────
+
+	/**
+	 * Thêm sản phẩm mới. Tự động gán KhuyenMai/Thue mặc định (record đầu tiên từ DB)
+	 * nếu sp không có để tránh NPE trong DAO.
+	 */
+	public boolean themSanPham(SanPham sp) {
+		if (sp.getKhuyenMai() == null) {
+			KhuyenMai km = layKhuyenMaiMacDinh();
+			if (km == null) throw new IllegalStateException("Không có khuyến mãi nào trong DB");
+			sp.setKhuyenMai(km);
+		}
+		if (sp.getThue() == null) {
+			Thue thue = layThueMacDinh();
+			if (thue == null) throw new IllegalStateException("Không có thuế nào trong DB");
+			sp.setThue(thue);
+		}
+		return sanPhamDAO.themSanPham(sp);
+	}
+
+	private KhuyenMai layKhuyenMaiMacDinh() {
+		java.util.ArrayList<KhuyenMai> ds = khuyenMaiDAO.getDSKhuyenMai();
+		return ds.isEmpty() ? null : ds.get(0);
+	}
+
+	private Thue layThueMacDinh() {
+		java.util.ArrayList<Thue> ds = thueDAO.getDSThue();
+		return ds.isEmpty() ? null : ds.get(0);
+	}
+
+	public boolean updateSanPham(SanPham sp) { return sanPhamDAO.updateSanPham(sp); }
+
+	public boolean xoaSanPham(String maSP) { return sanPhamDAO.xoaSanPham(maSP); }
+
+	public String sinhMaSanPhamMoi() { return sanPhamDAO.sinhMaTuDong(); }
+
+    // ==================== THỐNG KÊ (Cho Dashboard) ====================
+    public static class ThongKeSPTongHop {
+        public int tongSP;
+        public String spBanChay;
+        public int tonKho;
+        public int khuyenMai;
+    }
+
+    public ThongKeSPTongHop layThongKeTongHop(String tuNgay, String denNgay) {
+        ThongKeSPTongHop tk = new ThongKeSPTongHop();
+        tk.tongSP = sanPhamDAO.demTongSanPham();
+        tk.tonKho = sanPhamDAO.tongTonKho();
+        tk.khuyenMai = sanPhamDAO.demSanPhamKhuyenMai();
+
+        // Lấy SP bán chạy nhất trong kỳ
+        ArrayList<Object[]> dsBanChay = sanPhamDAO.layDanhSachSPBanChay(tuNgay, denNgay);
+        if (!dsBanChay.isEmpty()) {
+            tk.spBanChay = (String) dsBanChay.get(0)[1]; // Tên SP
+        } else {
+            tk.spBanChay = "Không có dữ liệu";
+        }
+
+        return tk;
+    }
+
+    public java.util.LinkedHashMap<String, Integer> laySoLuongBanTheoThang(Integer nam) {
+        int y = (nam != null) ? nam : LocalDate.now().getYear();
+        return sanPhamDAO.soLuongBanTheoThang(y);
+    }
+
+    public ArrayList<Object[]> layDanhSachSPBanChay(String tuNgay, String denNgay) {
+        return sanPhamDAO.layDanhSachSPBanChay(tuNgay, denNgay);
+    }
+
+    public ArrayList<Object[]> layDanhSachSPTonKhoThap() {
+        return sanPhamDAO.layDanhSachSPTonKhoThap();
+    }
 }

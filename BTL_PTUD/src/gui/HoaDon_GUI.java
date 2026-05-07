@@ -2,8 +2,7 @@ package gui;
 
 import constants.Colors;
 import constants.FontStyle;
-import dao.LoSanPham_DAO;
-import entity.NhaCungCap;
+import entity.NhanVien;
 import entity.SanPham;
 import exception.QuantityEditor;
 import exception.RoundedButton;
@@ -15,13 +14,16 @@ import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Frame;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import javax.swing.AbstractCellEditor;
 import javax.swing.BorderFactory;
@@ -30,14 +32,18 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
+import service.HoaDon_Service;
+import service.SanPham_Service;
 
 public class HoaDon_GUI extends JPanel {
     // === Dùng làm GUI Lập Hóa Đơn ===
@@ -95,12 +101,24 @@ public class HoaDon_GUI extends JPanel {
     private double totalPrice = 0;
     private JLabel lblTotal;
     private JLabel lblTotalPrice;
-    private final LoSanPham_DAO loSanPhamDAO = new LoSanPham_DAO();
+    private final HoaDon_Service hoaDonService = new HoaDon_Service();
+    private final SanPham_Service sanPhamService = new SanPham_Service();
+    private final service.KhachHang_Service khachHangService = new service.KhachHang_Service();
+    private final service.LoaiSanPham_Service loaiSanPhamService = new service.LoaiSanPham_Service();
+    private NhanVien nhanVien;
+    private JLabel lblTenKHError;
+    private JLabel lblSDTStatus;
 
     public HoaDon_GUI() {
+        this(null);
+    }
+
+    public HoaDon_GUI(NhanVien nhanVien) {
+        this.nhanVien = nhanVien;
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         setBackground(Colors.BACKGROUND);
+        // Gọi constructor phụ trước khi gọi setLayout
 
 //		Phần tiêu đề
         add(pnlTitle = new JPanel(), BorderLayout.NORTH);
@@ -158,8 +176,8 @@ public class HoaDon_GUI extends JPanel {
         pnlSearchRow.add(btnSearch);
         pnlSearchRow.add(Box.createHorizontalStrut(10));
 
-//      Nút sổ xuống chọn công dụng
-        String[] congDungList = {"Tất cả", "Sốt", "Ho", "Nhức đầu", "Viêm họng", "Dạ dày", "Cảm cúm", "Dị ứng"};
+//      Nút sổ xuống chọn công dụng — tải từ DB
+        java.util.List<entity.LoaiSanPham> dsLoai = loaiSanPhamService.layDanhSachLoaiSanPham();
         JPopupMenu popupCongDung = new JPopupMenu();
         popupCongDung.setBackground(Colors.BACKGROUND);
         popupCongDung.setBorder(BorderFactory.createCompoundBorder(
@@ -167,28 +185,66 @@ public class HoaDon_GUI extends JPanel {
                 BorderFactory.createEmptyBorder(6, 0, 6, 0)
         ));
 
-        for (String cd : congDungList) {
-            JMenuItem item = new JMenuItem(cd);
+        // Mục "Tất cả"
+        JMenuItem itemTatCa = new JMenuItem("Tất cả");
+        itemTatCa.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
+        itemTatCa.setForeground(Colors.TEXT_PRIMARY);
+        itemTatCa.setBackground(Colors.BACKGROUND);
+        itemTatCa.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 30));
+        itemTatCa.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        itemTatCa.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                itemTatCa.setBackground(Colors.PRIMARY_LIGHT);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                itemTatCa.setBackground(Colors.BACKGROUND);
+            }
+        });
+        itemTatCa.addActionListener(ev -> {
+            btnCongDung.setText("▼ Tất cả");
+            loadProducts(currentList);
+        });
+        popupCongDung.add(itemTatCa);
+
+        for (entity.LoaiSanPham loai : dsLoai) {
+            JMenuItem item = new JMenuItem(loai.getTenLoaiSP());
             item.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
             item.setForeground(Colors.TEXT_PRIMARY);
             item.setBackground(Colors.BACKGROUND);
             item.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 30));
             item.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
             item.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseEntered(MouseEvent e) {
                     item.setBackground(Colors.PRIMARY_LIGHT);
                 }
+
                 @Override
                 public void mouseExited(MouseEvent e) {
                     item.setBackground(Colors.BACKGROUND);
                 }
             });
-
             item.addActionListener(ev -> {
-                btnCongDung.setText("▼ " + cd);
-                // TODO: lọc sản phẩm theo công dụng
+                btnCongDung.setText("▼ " + loai.getTenLoaiSP());
+                // Lọc sản phẩm theo loại
+                List<SanPham> filtered = new ArrayList<>();
+                for (SanPham sp : currentList) {
+                    if (sp.getLoaiSP() != null
+                            && loai.getMaLoaiSP().equals(sp.getLoaiSP().getMaLoaiSP())) {
+                        filtered.add(sp);
+                    }
+                }
+                Map<String, SanPham_Service.TonKhoInfo> tonKhoMap = sanPhamService.tinhTonKhoTatCa(filtered);
+                pnlProductList.removeAll();
+                for (SanPham sp : filtered) {
+                    SanPham_Service.TonKhoInfo info = tonKhoMap.get(sp.getMaSanPham());
+                    int tonKho = (info != null) ? info.tonKho : 0;
+                    pnlProductList.add(createProductCard(sp, selectedList.contains(sp), tonKho));
+                }
+                updateLayout(filtered.size());
             });
             popupCongDung.add(item);
         }
@@ -213,23 +269,26 @@ public class HoaDon_GUI extends JPanel {
         scrProduct.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
         scrProduct.setBorder(null);
 
-        List<SanPham> list = new ArrayList<>();
-        list.add(new SanPham("sp01", "Paracetamol 500mg","lsp01", "Hạ sốt","Thành phần 1", 15000, 620, true, "img1.jpg"));
-        list.add(new SanPham("sp02", "Miếng dán giảm đau Salonpas","lsp02", "Giảm đau","Thành phần 2", 430200, 252, true, "img1.jpg"));
-        list.add(new SanPham("sp03", "Berberin","lsp03", "Tiêu hóa","Thành phần 3", 2000, 302, true, "img1.jpg"));
-        list.add(new SanPham("sp04", "Omeprazole 20mg","lsp04", "Dạ dày","Thành phần 4", 212000, 324, true, "img1.jpg"));
-        list.add(new SanPham("sp05", "Acetylcystein (thuốc ho)","lsp05", "Thuốc ho","Thành phần 5", 42547, 1673, true, "img1.jpg"));
-        list.add(new SanPham("sp06", "Diphenhydramine (kem bôi)","lsp06", "Dị ứng","Thành phần 6", 32450, 219, true, "img1.jpg"));
-        list.add(new SanPham("sp07", "Băng gạc y tế","lsp07", "Vật tư y tế","Thành phần 7", 2000, 302, true, "img1.jpg"));
-        list.add(new SanPham("sp08", "Amoxicillin 500mg","lsp08", "Kháng sinh","Thành phần 8", 35000, 500, true, "img1.jpg"));
-        list.add(new SanPham("sp09", "Vitamin C 1000mg","lsp09", "Vitamin","Thành phần 9", 85000, 410, true, "img1.jpg"));
-        list.add(new SanPham("sp10", "Ibuprofen 400mg","lsp01", "Hạ sốt","Thành phần 10", 15000, 620, true, "img1.jpg"));
-        list.add(new SanPham("sp11", "Cetirizine 10mg","lsp06", "Dị ứng","Thành phần 11", 28000, 380, true, "img1.jpg"));
-        list.add(new SanPham("sp12", "Strepsils viêm họng","lsp10", "Viêm họng","Thành phần 12", 45000, 890, true, "img1.jpg"));
-        list.add(new SanPham("sp13", "Decolgen (cảm cúm)","lsp11", "Cảm cúm","Thành phần 13", 3500, 1500, true, "img1.jpg"));
+        // Tải danh sách sản phẩm từ DB
+        List<SanPham> list = loadProductsFromDB();
         loadProducts(list);
         pnlContentTopLeft.revalidate();
         pnlContentTopLeft.repaint();
+
+        // Sự kiện tìm kiếm sản phẩm theo tên/mã
+        btnSearch.addActionListener(ev -> {
+            String kw = txtSearch.getText().trim();
+            List<SanPham> filtered = sanPhamService.timKiem(currentList, kw);
+            Map<String, SanPham_Service.TonKhoInfo> tonKhoMap = sanPhamService.tinhTonKhoTatCa(filtered);
+            pnlProductList.removeAll();
+            for (SanPham sp : filtered) {
+                SanPham_Service.TonKhoInfo info = tonKhoMap.get(sp.getMaSanPham());
+                int tonKho = (info != null) ? info.tonKho : 0;
+                pnlProductList.add(createProductCard(sp, selectedList.contains(sp), tonKho));
+            }
+            updateLayout(filtered.size());
+        });
+        txtSearch.addActionListener(ev -> btnSearch.doClick());
 
         pnlContentTop.add(Box.createHorizontalStrut(20));
 
@@ -253,7 +312,30 @@ public class HoaDon_GUI extends JPanel {
         pnlContentTopRight.add(txtTenKH = new RoundedTextField(Integer.MAX_VALUE, 35, 15, "Nhập tên khách hàng"));
         txtTenKH.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        pnlContentTopRight.add(Box.createVerticalStrut(10));
+        lblTenKHError = new JLabel();
+        lblTenKHError.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
+        lblTenKHError.setForeground(Colors.DANGER);
+        lblTenKHError.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lblTenKHError.setVisible(false);
+        pnlContentTopRight.add(lblTenKHError);
+
+        txtTenKH.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                lblTenKHError.setVisible(false);
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                lblTenKHError.setVisible(false);
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+            }
+        });
+
+        pnlContentTopRight.add(Box.createVerticalStrut(8));
         pnlContentTopRight.add(lblsubcontentRight2 = new JLabel("Số điện thoại"));
         lblsubcontentRight2.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
         lblsubcontentRight2.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -262,7 +344,38 @@ public class HoaDon_GUI extends JPanel {
         pnlContentTopRight.add(txtSDT = new RoundedTextField(Integer.MAX_VALUE, 35, 15, "Nhập số điện thoại"));
         txtSDT.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        pnlContentTopRight.add(Box.createVerticalStrut(10));
+        lblSDTStatus = new JLabel();
+        lblSDTStatus.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
+        lblSDTStatus.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lblSDTStatus.setVisible(false);
+        pnlContentTopRight.add(lblSDTStatus);
+
+        txtSDT.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                lblSDTStatus.setVisible(false);
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                lblSDTStatus.setVisible(false);
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+            }
+        });
+
+        // Khi rời ô SĐT: tra cứu KH theo số điện thoại, tự điền tên
+        txtSDT.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusLost(java.awt.event.FocusEvent e) {
+                timKhachHangTheoSDT();
+            }
+        });
+        txtSDT.addActionListener(e -> timKhachHangTheoSDT());
+
+        pnlContentTopRight.add(Box.createVerticalStrut(8));
 
 //      Nhân viên lập hóa đơn
         pnlContentTopRight.add(lblNhanVienLabel = new JLabel("Nhân viên"));
@@ -270,7 +383,8 @@ public class HoaDon_GUI extends JPanel {
         lblNhanVienLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         pnlContentTopRight.add(Box.createVerticalStrut(5));
-        pnlContentTopRight.add(lblNhanVienValue = new JLabel("--"));
+        String tenNV = (nhanVien != null) ? nhanVien.getTenNhanVien() : "--";
+        pnlContentTopRight.add(lblNhanVienValue = new JLabel(tenNV));
         lblNhanVienValue.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
         lblNhanVienValue.setForeground(Colors.TEXT_SECONDARY);
         lblNhanVienValue.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -352,6 +466,9 @@ public class HoaDon_GUI extends JPanel {
 //		Trạng thái ban đầu: disabled
         setButtonState(false);
 
+        // Xử lý thanh toán: xem trước hóa đơn rồi xác nhận
+        btnLapHoaDon.addActionListener(e -> moXemTruocHoaDon());
+
         pnlContentBottomRight.add(btnLapHoaDon);
         pnlContent.add(Box.createVerticalStrut(15));
 
@@ -418,8 +535,13 @@ public class HoaDon_GUI extends JPanel {
 
             @Override
             public Class<?> getColumnClass(int col) {
-                if (col == 1 || col == 2 || col == 3) {
-                    return Integer.class;
+                if (col == 1) {
+                    return Integer.class;   // Số lượng
+
+                }
+                if (col == 2 || col == 3) {
+                    return Double.class; // Giá / Thành tiền
+
                 }
                 return String.class;
             }
@@ -510,11 +632,12 @@ public class HoaDon_GUI extends JPanel {
 
 //	Thêm một hàng vào table cho sản phẩm sp
     private void addRowToTable(SanPham sp) {
+        double gia = sp.getGiaBan();
         tableModel.addRow(new Object[]{
             sp.getTenSP(),
             1,
-            (int) sp.getGiaBan(),
-            (int) sp.getGiaBan(),
+            gia,
+            gia,
             "✕"
         });
     }
@@ -563,8 +686,10 @@ public class HoaDon_GUI extends JPanel {
 
         if (tableModel != null) {
             for (int i = 0; i < tableModel.getRowCount(); i++) {
-                int qty = (int) tableModel.getValueAt(i, 1);
-                int total = (int) tableModel.getValueAt(i, 3);
+                Object qtyObj = tableModel.getValueAt(i, 1);
+                Object totalObj = tableModel.getValueAt(i, 3);
+                int qty = (qtyObj instanceof Number) ? ((Number) qtyObj).intValue() : 0;
+                double total = (totalObj instanceof Number) ? ((Number) totalObj).doubleValue() : 0;
                 tongSoLuong += qty;
                 tongTien += total;
             }
@@ -578,7 +703,7 @@ public class HoaDon_GUI extends JPanel {
         setButtonState(soMatHang > 0);
     }
 
-    private JPanel createProductCard(SanPham sp, boolean isSelected) {
+    private JPanel createProductCard(SanPham sp, boolean isSelected, int tonKho) {
         JPanel card = new RoundedPanel(200, 170, 20);
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setPreferredSize(new Dimension(CARD_WIDTH, CARD_HEIGHT));
@@ -616,7 +741,7 @@ public class HoaDon_GUI extends JPanel {
             top.add(badge, BorderLayout.EAST);
         }
 
-        String loai = (sp.getLoaiSP() != null) ? sp.getLoaiSP().toString() : "Không rõ";
+        String loai = (sp.getLoaiSP() != null) ? sp.getLoaiSP().getTenLoaiSP() : "Không rõ";
         JLabel lblLoai = new JLabel(loai);
         lblLoai.setForeground(Colors.TEXT_SECONDARY);
         lblLoai.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
@@ -630,7 +755,7 @@ public class HoaDon_GUI extends JPanel {
         lblGia.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
         lblGia.setForeground(Colors.TEXT_PRIMARY);
 
-        JLabel lblTon = new JLabel("Tồn: " + getTonKhoHienTai(sp));
+        JLabel lblTon = new JLabel("Tồn: " + tonKho);
         lblTon.setForeground(Colors.TEXT_SECONDARY);
         lblTon.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
 
@@ -640,7 +765,6 @@ public class HoaDon_GUI extends JPanel {
         Color btnBg = isSelected ? Colors.SUCCESS_LIGHT : Colors.PRIMARY;
         Color btnFg = isSelected ? Colors.SUCCESS_DARK : Colors.BACKGROUND;
         String btnText = isSelected ? "+ Thêm lần nữa" : "+ Thêm vào đơn";
-
 
         JButton btn = new RoundedButton(Integer.MAX_VALUE, 35, 20, btnText, btnBg);
         btn.setForeground(btnFg);
@@ -677,14 +801,151 @@ public class HoaDon_GUI extends JPanel {
         if (sanPham == null) {
             return 0;
         }
-        return loSanPhamDAO.layTongSoLuongTonTheoMaSanPham(sanPham.getMaSanPham());
+        return sanPhamService.layTonKho(sanPham.getMaSanPham());
+    }
+
+    //===="Tải danh sách sản phẩm đang hoạt động từ DB"=====
+    private List<SanPham> loadProductsFromDB() {
+        try {
+            List<SanPham> all = sanPhamService.layDanhSachSanPham();
+            List<SanPham> active = new ArrayList<>();
+            for (SanPham sp : all) {
+                if (sp.isTrangThai()) {
+                    active.add(sp);
+                }
+            }
+            return active;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
+    //===="Xây dựng danh sách CartItem từ bảng đã chọn và selectedList"=====
+    private List<HoaDon_Service.CartItem> buildCartItems() {
+        Map<String, SanPham> spMap = new HashMap<>();
+        for (SanPham sp : selectedList) {
+            spMap.put(sp.getTenSP(), sp);
+        }
+        List<HoaDon_Service.CartItem> items = new ArrayList<>();
+        for (int i = 0; i < tableModel.getRowCount(); i++) {
+            String ten = (String) tableModel.getValueAt(i, 0);
+            int sl = ((Number) tableModel.getValueAt(i, 1)).intValue();
+            double gia = ((Number) tableModel.getValueAt(i, 2)).doubleValue();
+            SanPham sp = spMap.get(ten);
+            if (sp != null && sl > 0) {
+                items.add(new HoaDon_Service.CartItem(sp, sl, gia));
+            }
+        }
+        return items;
+    }
+
+    //=="=="Tra cứu KH theo số điện thoại, tự điền tên nếu tìm thấy"====="
+    private void timKhachHangTheoSDT() {
+        String sdt = txtSDT.getText().trim();
+        if (sdt.isEmpty()) {
+            lblSDTStatus.setVisible(false);
+            return;
+        }
+        if (!sdt.matches("\\d{10}")) {
+            lblSDTStatus.setText("✗ Số điện thoại phải có đúng 10 chữ số");
+            lblSDTStatus.setForeground(Colors.DANGER);
+            lblSDTStatus.setVisible(true);
+            return;
+        }
+        entity.KhachHang kh = khachHangService.layKHTheoSDT(sdt);
+        if (kh != null) {
+            txtTenKH.setText(kh.getTenKhachHang());
+            lblSDTStatus.setText("✓ Đã tìm thấy: " + kh.getTenKhachHang());
+            lblSDTStatus.setForeground(Colors.SUCCESS_DARK);
+        } else {
+            lblSDTStatus.setText("ℹ Số mới – sẽ tạo khách hàng khi thanh toán");
+            lblSDTStatus.setForeground(Colors.TEXT_SECONDARY);
+        }
+        lblSDTStatus.setVisible(true);
+    }
+
+    //=="=="Mở dialog xem trước hóa đơn trước khi xác nhận thanh toán"====="
+    private void moXemTruocHoaDon() {
+        // Validate thông tin khách hàng
+        String tenKH = txtTenKH.getText().trim();
+        String sdt = txtSDT.getText().trim();
+        boolean hasError = false;
+
+        if (tenKH.isEmpty()) {
+            lblTenKHError.setText("✗ Vui lòng nhập tên khách hàng");
+            lblTenKHError.setVisible(true);
+            hasError = true;
+        } else {
+            lblTenKHError.setVisible(false);
+        }
+
+        if (!sdt.isEmpty() && !sdt.matches("\\d{10}")) {
+            lblSDTStatus.setText("✗ Số điện thoại phải có đúng 10 chữ số");
+            lblSDTStatus.setForeground(Colors.DANGER);
+            lblSDTStatus.setVisible(true);
+            hasError = true;
+        }
+
+        if (hasError) {
+            return;
+        }
+
+        List<HoaDon_Service.CartItem> items = buildCartItems();
+        if (items.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn ít nhất một sản phẩm.", "Thông báo", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        // Kiểm tra tồn kho trước khi mở dialog
+        String loi = hoaDonService.kiemTraTonKho(items);
+        if (loi != null) {
+            JOptionPane.showMessageDialog(this, loi, "Không đủ tồn kho", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String maHD = hoaDonService.sinhMaHoaDon();
+        String thoiGian = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
+        String tenNV = (nhanVien != null) ? nhanVien.getTenNhanVien() : "--";
+
+        Frame parentFrame = (Frame) SwingUtilities.getWindowAncestor(this);
+        HoaDonPreviewDialog dialog = new HoaDonPreviewDialog(
+                parentFrame,
+                txtTenKH.getText().trim(),
+                txtSDT.getText().trim(),
+                tenNV,
+                thoiGian,
+                tableModel,
+                maHD,
+                hoaDonService,
+                nhanVien,
+                items,
+                this::resetSauThanhToan
+        );
+        dialog.setVisible(true);
+    }
+
+    //===="Reset toàn bộ form về trạng thái ban đầu sau khi thanh toán thành công"=====
+    public void resetSauThanhToan() {
+        selectedList.clear();
+        tableModel.setRowCount(0);
+        txtTenKH.setText("");
+        txtSDT.setText("");
+        txtSearch.setText("");
+        lblsubTitleBottom.setText("0 sản phẩm đã chọn");
+        String thoiGianMoi = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
+        lblThoiGianValue.setText(thoiGianMoi);
+        List<SanPham> freshList = loadProductsFromDB();
+        loadProducts(freshList);
+        updateSummary();
     }
 
     private void loadProducts(List<SanPham> list) {
         currentList = list;
+        Map<String, SanPham_Service.TonKhoInfo> tonKhoMap = sanPhamService.tinhTonKhoTatCa(list);
         pnlProductList.removeAll();
         for (SanPham sp : list) {
-            pnlProductList.add(createProductCard(sp, selectedList.contains(sp)));
+            SanPham_Service.TonKhoInfo info = tonKhoMap.get(sp.getMaSanPham());
+            int tonKho = (info != null) ? info.tonKho : 0;
+            pnlProductList.add(createProductCard(sp, selectedList.contains(sp), tonKho));
         }
         updateLayout(list.size());
     }

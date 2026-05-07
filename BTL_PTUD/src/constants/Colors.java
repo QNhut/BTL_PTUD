@@ -49,6 +49,13 @@ public final class Colors {
     public static final Color PURPLE_HOVER = hex("#F3E8FF");
     public static final Color BROWN_HOVER = hex("#ffedd5");
     public static final Color YELLOW_HOVER = hex("#fefce8"); //hover trạng thái cảnh báo
+    // ===== WARNING / LOT STATUS =====
+    public static final Color WARNING_BG  = hex("#FFFBEB"); // nền cảnh báo vàng
+    public static final Color WARNING_FG  = hex("#92400E"); // chữ cảnh báo vàng
+    public static final Color WARNING_BD  = hex("#FDE68A"); // viền cảnh báo vàng
+    public static final Color DANGER_LIGHT  = hex("#FFF1F2"); // nền lô hết hạn
+    public static final Color DANGER_BORDER = hex("#FFC1C7"); // viền lô hết hạn
+
     // ===== UTILS =====
     public static Color hex(String hex) {
         return Color.decode(hex);

@@ -24,8 +24,16 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 
+import java.text.SimpleDateFormat;
+
+import dao.ChiTietPhieuNhap_DAO;
+import dao.PhieuNhap_DAO;
 import dao.SanPham_DAO;
 import entity.ChiTietPhieuNhap;
+import entity.KeSanPham;
+import entity.LoSanPham;
+import entity.NhanVien;
+import entity.PhieuNhap;
 import entity.SanPham;
 
 public class PhieuNhap_Service {
@@ -35,6 +43,9 @@ public class PhieuNhap_Service {
 			DateTimeFormatter.ISO_LOCAL_DATE };
 
 	private final SanPham_DAO sanPhamDAO = new SanPham_DAO();
+	private final PhieuNhap_DAO phieuNhapDAO = new PhieuNhap_DAO();
+	private final ChiTietPhieuNhap_DAO chiTietDAO = new ChiTietPhieuNhap_DAO();
+	private final LoSanPham_Service loSanPhamService = new LoSanPham_Service();
 
 	public static class DuLieuNhapHang {
 		private final List<ChiTietPhieuNhap> chiTietPhieuNhaps;
@@ -438,5 +449,56 @@ public class PhieuNhap_Service {
 			return normalized.replace(",", "");
 		}
 		return normalized.replace(',', '.');
+	}
+
+	// ==================== LƯU PHIẾU NHẬP ====================
+
+	/**
+	 * Sinh mã phiếu nhập tự động theo định dạng: prefix + số thứ tự 2 chữ số.
+	 * Ví dụ prefix = "PN20260506" → "PN2026050601", "PN2026050602", ...
+	 */
+	public String sinhMaPhieuNhap(String prefix) {
+		int stt = 1;
+		while (phieuNhapDAO.layPNTheoMa(prefix + String.format("%02d", stt)) != null) {
+			stt++;
+		}
+		return prefix + String.format("%02d", stt);
+	}
+
+	/**
+	 * Sinh prefix mã phiếu nhập theo ngày hiện tại: "PN" + yyyyMMdd.
+	 */
+	public String sinhPrefixHomNay() {
+		return "PN" + new SimpleDateFormat("yyyyMMdd").format(new java.util.Date());
+	}
+
+	/**
+	 * Lưu phiếu nhập + toàn bộ chi tiết + tạo lô sản phẩm.
+	 *
+	 * @param pn           Phiếu nhập đã điền mã, ngày, NCC, NV
+	 * @param dsChiTiet    Danh sách chi tiết (từ bảng GUI)
+	 * @param keSP         Kệ mặc định để đặt lô
+	 * @param taoMaLoFn    Hàm sinh mã lô theo index (có thể null → tự sinh)
+	 * @return số lô tạo thành công; -1 nếu không lưu được phiếu nhập
+	 */
+	public int luuPhieuNhapVaChiTiet(PhieuNhap pn, List<ChiTietPhieuNhap> dsChiTiet, KeSanPham keSP) {
+		if (!phieuNhapDAO.taoPhieuNhap(pn)) {
+			return -1;
+		}
+		int soLoTao = 0;
+		for (int i = 0; i < dsChiTiet.size(); i++) {
+			ChiTietPhieuNhap ct = dsChiTiet.get(i);
+			ct.setPhieuNhap(pn);
+			chiTietDAO.them(ct);
+			try {
+				String maLo = loSanPhamService.sinhMaLoTuDong();
+				LoSanPham lo = loSanPhamService.taoLoTuPhieuNhap(ct, pn, maLo, keSP);
+				loSanPhamService.luuLo(lo);
+				soLoTao++;
+			} catch (Exception ex) {
+				System.err.println("Lỗi tạo lô cho dòng " + i + ": " + ex.getMessage());
+			}
+		}
+		return soLoTao;
 	}
 }

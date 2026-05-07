@@ -14,6 +14,8 @@ public class FontStyle {
     public static final int NORMAL = Font.PLAIN;
     public static final int BOLD = Font.BOLD;
 
+	public static final int MD = 16;
+
     public static Font font(int size, int style) {
         return new Font(FONT_FAMILY, style, size);
     }

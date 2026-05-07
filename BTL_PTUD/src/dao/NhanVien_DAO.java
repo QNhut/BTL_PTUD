@@ -13,6 +13,7 @@ import entity.ChucVu;
 import entity.NhanVien;
 
 public class NhanVien_DAO {
+
     private Connection con;
     private ArrayList<NhanVien> dsNV;
 
@@ -26,9 +27,9 @@ public class NhanVien_DAO {
         try {
             con = ConnectDB.getInstance().getConnection();
             String sql = "SELECT nv.*, cv.MaChucVu, cv.TenChucVu, cv.MoTa "
-                       + "FROM NhanVien nv "
-                       + "LEFT JOIN ChucVu cv ON nv.MaChucVu = cv.MaChucVu "
-                       + "WHERE nv.MaNhanVien = ?";
+                    + "FROM NhanVien nv "
+                    + "LEFT JOIN ChucVu cv ON nv.MaChucVu = cv.MaChucVu "
+                    + "WHERE nv.MaNhanVien = ?";
             PreparedStatement stmt = con.prepareStatement(sql);
             stmt.setString(1, maNhanVien);
             ResultSet rs = stmt.executeQuery();
@@ -49,9 +50,9 @@ public class NhanVien_DAO {
         try {
             con = ConnectDB.getInstance().getConnection();
             String sql = "SELECT nv.*, cv.MaChucVu, cv.TenChucVu, cv.MoTa "
-                       + "FROM NhanVien nv "
-                       + "LEFT JOIN ChucVu cv ON nv.MaChucVu = cv.MaChucVu "
-                       + "ORDER BY nv.MaNhanVien";
+                    + "FROM NhanVien nv "
+                    + "LEFT JOIN ChucVu cv ON nv.MaChucVu = cv.MaChucVu "
+                    + "ORDER BY nv.MaNhanVien";
             Statement stmt = con.createStatement();
             ResultSet rs = stmt.executeQuery(sql);
             while (rs.next()) {
@@ -71,7 +72,7 @@ public class NhanVien_DAO {
         try {
             con = ConnectDB.getInstance().getConnection();
             String sql = "INSERT INTO NhanVien (MaNhanVien, TenNhanVien, GioiTinh, SoDienThoai, email, CCCD, DiaChi, TrangThai, MaChucVu, HinhAnh) "
-                       + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             PreparedStatement stmt = con.prepareStatement(sql);
             stmt.setString(1, nv.getMaNhanVien());
             stmt.setString(2, nv.getTenNhanVien());
@@ -114,7 +115,7 @@ public class NhanVien_DAO {
         try {
             con = ConnectDB.getInstance().getConnection();
             String sql = "UPDATE NhanVien SET TenNhanVien=?, GioiTinh=?, SoDienThoai=?, email=?, CCCD=?, DiaChi=?, TrangThai=?, MaChucVu=?, HinhAnh=? "
-                       + "WHERE MaNhanVien=?";
+                    + "WHERE MaNhanVien=?";
             PreparedStatement stmt = con.prepareStatement(sql);
             stmt.setString(1, nv.getTenNhanVien());
             stmt.setBoolean(2, nv.isGioiTinh());
@@ -166,27 +167,48 @@ public class NhanVien_DAO {
         return n > 0;
     }
 
+    // Lấy danh sách chức vụ
+    public ArrayList<ChucVu> getDSChucVu() {
+        ArrayList<ChucVu> ds = new ArrayList<>();
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            String sql = "SELECT MaChucVu, TenChucVu, MoTa FROM ChucVu ORDER BY TenChucVu";
+            try (Statement stmt = con.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+                while (rs.next()) {
+                    ds.add(new ChucVu(
+                            rs.getString("MaChucVu"),
+                            rs.getString("TenChucVu"),
+                            rs.getString("MoTa")
+                    ));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return ds;
+    }
+
     // ── private helpers ──────────────────────────────────────────────────────────
     private NhanVien mapResultSetToNhanVien(ResultSet rs) throws SQLException {
-        String maNhanVien  = rs.getString("MaNhanVien");
+        String maNhanVien = rs.getString("MaNhanVien");
         String tenNhanVien = rs.getString("TenNhanVien");
-        boolean gioiTinh   = rs.getBoolean("GioiTinh");
+        boolean gioiTinh = rs.getBoolean("GioiTinh");
         String soDienThoai = rs.getString("SoDienThoai");
-        String email       = rs.getString("email");
-        String cccd        = rs.getString("CCCD");
-        String diaChi      = rs.getString("DiaChi");
-        boolean trangThai  = rs.getBoolean("TrangThai");
-        String hinhAnh     = rs.getString("HinhAnh");
+        String email = rs.getString("email");
+        String cccd = rs.getString("CCCD");
+        String diaChi = rs.getString("DiaChi");
+        boolean trangThai = rs.getBoolean("TrangThai");
+        String hinhAnh = rs.getString("HinhAnh");
 
         ChucVu chucVu = null;
         String maChucVu = rs.getString("MaChucVu");
         if (maChucVu != null) {
             String tenChucVu = rs.getString("TenChucVu");
-            String moTa      = rs.getString("MoTa");
+            String moTa = rs.getString("MoTa");
             chucVu = new ChucVu(maChucVu, tenChucVu, moTa);
         }
 
         return new NhanVien(maNhanVien, tenNhanVien, gioiTinh, soDienThoai,
-                            diaChi, email, cccd, chucVu, hinhAnh, trangThai);
+                diaChi, email, cccd, chucVu, hinhAnh, trangThai);
     }
 }
