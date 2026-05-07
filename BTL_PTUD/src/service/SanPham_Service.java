@@ -199,9 +199,47 @@ public class SanPham_Service {
 		return ds.isEmpty() ? null : ds.get(0);
 	}
 
-	public boolean capNhatSanPham(SanPham sp) { return sanPhamDAO.updateSanPham(sp); }
+	public boolean updateSanPham(SanPham sp) { return sanPhamDAO.updateSanPham(sp); }
 
 	public boolean xoaSanPham(String maSP) { return sanPhamDAO.xoaSanPham(maSP); }
 
 	public String sinhMaSanPhamMoi() { return sanPhamDAO.sinhMaTuDong(); }
+
+    // ==================== THỐNG KÊ (Cho Dashboard) ====================
+    public static class ThongKeSPTongHop {
+        public int tongSP;
+        public String spBanChay;
+        public int tonKho;
+        public int khuyenMai;
+    }
+
+    public ThongKeSPTongHop layThongKeTongHop(String tuNgay, String denNgay) {
+        ThongKeSPTongHop tk = new ThongKeSPTongHop();
+        tk.tongSP = sanPhamDAO.demTongSanPham();
+        tk.tonKho = sanPhamDAO.tongTonKho();
+        tk.khuyenMai = sanPhamDAO.demSanPhamKhuyenMai();
+
+        // Lấy SP bán chạy nhất trong kỳ
+        ArrayList<Object[]> dsBanChay = sanPhamDAO.layDanhSachSPBanChay(tuNgay, denNgay);
+        if (!dsBanChay.isEmpty()) {
+            tk.spBanChay = (String) dsBanChay.get(0)[1]; // Tên SP
+        } else {
+            tk.spBanChay = "Không có dữ liệu";
+        }
+
+        return tk;
+    }
+
+    public java.util.LinkedHashMap<String, Integer> laySoLuongBanTheoThang(Integer nam) {
+        int y = (nam != null) ? nam : LocalDate.now().getYear();
+        return sanPhamDAO.soLuongBanTheoThang(y);
+    }
+
+    public ArrayList<Object[]> layDanhSachSPBanChay(String tuNgay, String denNgay) {
+        return sanPhamDAO.layDanhSachSPBanChay(tuNgay, denNgay);
+    }
+
+    public ArrayList<Object[]> layDanhSachSPTonKhoThap() {
+        return sanPhamDAO.layDanhSachSPTonKhoThap();
+    }
 }

@@ -19,7 +19,7 @@ public class SanPham_DAO {
     public ArrayList<SanPham> getDSSanPham() {
         ArrayList<SanPham> dsSanPham = new ArrayList<SanPham>();
         String sql = "SELECT sp.MaSanPham, sp.TenSanPham, sp.CongDung, sp.ThanhPhan, sp.HanSuDung, sp.GiaThanh, "
-                + "sp.NoiSanXuat, sp.MaLoaiSanPham, sp.MaKhuyenMai, sp.MaThue, sp.TrangThai, sp.HinhAnh, sp.DonViTinh, "
+                + "sp.NoiSanXuat, sp.MaLoaiSanPham, sp.MaKhuyenMai, sp.MaThue, sp.TrangThai, sp.HinhAnh, "
                 + "lsp.TenLoaiSanPham, lsp.MoTa AS MoTaLoai, "
                 + "km.TenKhuyenMai, km.PhanTramGG, km.NgayBatDau, km.NgayKetThuc, km.TrangThai AS TrangThaiKM, "
                 + "t.TenThue, t.PhanTramThue, t.MoTa AS MoTaThue "
@@ -69,8 +69,8 @@ public class SanPham_DAO {
     }
 
     public boolean themSanPham(SanPham sp) {
-        String sql = "INSERT INTO SanPham (MaSanPham, TenSanPham, CongDung, ThanhPhan, HanSuDung, GiaThanh, NoiSanXuat, MaLoaiSanPham, MaKhuyenMai, MaThue, TrangThai, HinhAnh, DonViTinh) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO SanPham (MaSanPham, TenSanPham, CongDung, ThanhPhan, HanSuDung, GiaThanh, NoiSanXuat, MaLoaiSanPham, MaKhuyenMai, MaThue, TrangThai, HinhAnh) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try {
             con = ConnectDB.getInstance().getConnection();
             try (PreparedStatement stmt = con.prepareStatement(sql)) {
@@ -86,7 +86,6 @@ public class SanPham_DAO {
                 stmt.setString(10, sp.getThue().getMaThue());
                 stmt.setBoolean(11, sp.isTrangThai());
                 stmt.setString(12, sp.getHinhAnh());
-                stmt.setString(13, sp.getDonViTinh());
                 return stmt.executeUpdate() > 0;
             }
         } catch (SQLException e) {
@@ -97,7 +96,7 @@ public class SanPham_DAO {
 
     public boolean updateSanPham(SanPham sp) {
         String sql = "UPDATE SanPham SET TenSanPham = ?, CongDung = ?, ThanhPhan = ?, HanSuDung = ?, GiaThanh = ?, NoiSanXuat = ?, "
-                + "MaLoaiSanPham = ?, MaKhuyenMai = ?, MaThue = ?, TrangThai = ?, HinhAnh = ?, DonViTinh = ? WHERE MaSanPham = ?";
+                + "MaLoaiSanPham = ?, MaKhuyenMai = ?, MaThue = ?, TrangThai = ?, HinhAnh = ? WHERE MaSanPham = ?";
         try {
             con = ConnectDB.getInstance().getConnection();
             try (PreparedStatement stmt = con.prepareStatement(sql)) {
@@ -112,8 +111,7 @@ public class SanPham_DAO {
                 stmt.setString(9, sp.getThue().getMaThue());
                 stmt.setBoolean(10, sp.isTrangThai());
                 stmt.setString(11, sp.getHinhAnh());
-                stmt.setString(12, sp.getDonViTinh());
-                stmt.setString(13, sp.getMaSanPham());
+                stmt.setString(12, sp.getMaSanPham());
                 return stmt.executeUpdate() > 0;
             }
         } catch (SQLException e) {
@@ -169,7 +167,8 @@ public class SanPham_DAO {
         sp.setThue(thue);
         sp.setTrangThai(rs.getBoolean("TrangThai"));
         sp.setHinhAnh(rs.getString("HinhAnh"));
-        sp.setDonViTinh(rs.getString("DonViTinh"));
+        // DonViTinh nằm trong LoSanPham, không có trong bảng SanPham
+        sp.setDonViTinh(null);
         return sp;
     }
 
@@ -195,5 +194,127 @@ public class SanPham_DAO {
             }
         } catch (java.sql.SQLException e) { e.printStackTrace(); }
         return pattern + "001";
+    }
+
+    // ==================== THỐNG KÊ ====================
+
+    public int demTongSanPham() {
+        String sql = "SELECT COUNT(*) FROM SanPham WHERE TrangThai = 1";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (Statement stmt = con.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return 0;
+    }
+
+    public int demSanPhamKhuyenMai() {
+        String sql = "SELECT COUNT(*) FROM SanPham sp "
+                   + "JOIN KhuyenMai km ON sp.MaKhuyenMai = km.MaKhuyenMai "
+                   + "WHERE sp.TrangThai = 1 AND km.TrangThai = 1 "
+                   + "AND km.PhanTramGG > 0 "
+                   + "AND CAST(GETDATE() AS DATE) BETWEEN km.NgayBatDau AND km.NgayKetThuc";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (Statement stmt = con.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return 0;
+    }
+
+    public int tongTonKho() {
+        String sql = "SELECT ISNULL(SUM(SoLuong), 0) FROM LoSanPham WHERE TrangThai = 1 AND HanSuDung > GETDATE()";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (Statement stmt = con.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return 0;
+    }
+
+    public java.util.LinkedHashMap<String, Integer> soLuongBanTheoThang(int nam) {
+        java.util.LinkedHashMap<String, Integer> map = new java.util.LinkedHashMap<>();
+        for (int i = 1; i <= 12; i++) map.put("T" + i, 0);
+        String sql = "SELECT MONTH(hd.NgayLap) AS Thang, SUM(ct.SoLuong) AS SL "
+                   + "FROM HoaDon hd JOIN ChiTietHoaDon ct ON hd.MaHoaDon = ct.MaHoaDon "
+                   + "WHERE YEAR(hd.NgayLap) = ? "
+                   + "GROUP BY MONTH(hd.NgayLap) ORDER BY Thang";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setInt(1, nam);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        map.put("T" + rs.getInt("Thang"), rs.getInt("SL"));
+                    }
+                }
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return map;
+    }
+
+    public ArrayList<Object[]> layDanhSachSPBanChay(String tuNgay, String denNgay) {
+        ArrayList<Object[]> rows = new ArrayList<>();
+        boolean hasDate = (tuNgay != null && denNgay != null);
+        String sql = "SELECT sp.MaSanPham, sp.TenSanPham, lsp.TenLoaiSanPham, "
+                   + "SUM(ct.SoLuong) AS SoLuongBan, "
+                   + "SUM(ct.SoLuong * ct.DonGia) AS DoanhThu "
+                   + "FROM SanPham sp "
+                   + "JOIN LoaiSanPham lsp ON sp.MaLoaiSanPham = lsp.MaLoaiSanPham "
+                   + "JOIN ChiTietHoaDon ct ON sp.MaSanPham = ct.MaSanPham "
+                   + "JOIN HoaDon hd ON ct.MaHoaDon = hd.MaHoaDon "
+                   + (hasDate ? "WHERE CAST(hd.NgayLap AS DATE) BETWEEN ? AND ? " : "")
+                   + "GROUP BY sp.MaSanPham, sp.TenSanPham, lsp.TenLoaiSanPham "
+                   + "ORDER BY SoLuongBan DESC";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                if (hasDate) {
+                    ps.setString(1, tuNgay);
+                    ps.setString(2, denNgay);
+                }
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        rows.add(new Object[]{
+                            rs.getString("MaSanPham"),
+                            rs.getString("TenSanPham"),
+                            rs.getString("TenLoaiSanPham"),
+                            rs.getInt("SoLuongBan"),
+                            rs.getDouble("DoanhThu")
+                        });
+                    }
+                }
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return rows;
+    }
+
+    public ArrayList<Object[]> layDanhSachSPTonKhoThap() {
+        ArrayList<Object[]> rows = new ArrayList<>();
+        String sql = "SELECT sp.TenSanPham, ISNULL(SUM(ls.SoLuong), 0) AS TonKho "
+                   + "FROM SanPham sp "
+                   + "LEFT JOIN LoSanPham ls ON sp.MaSanPham = ls.MaSanPham AND ls.TrangThai = 1 AND ls.HanSuDung > GETDATE() "
+                   + "WHERE sp.TrangThai = 1 "
+                   + "GROUP BY sp.MaSanPham, sp.TenSanPham "
+                   + "HAVING ISNULL(SUM(ls.SoLuong), 0) < 50 "
+                   + "ORDER BY TonKho ASC";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (Statement stmt = con.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+                while (rs.next()) {
+                    int tonKho = rs.getInt("TonKho");
+                    String trangThai = tonKho == 0 ? "Hết hàng" : "Sắp hết";
+                    rows.add(new Object[]{
+                        rs.getString("TenSanPham"),
+                        tonKho,
+                        trangThai
+                    });
+                }
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return rows;
     }
 }

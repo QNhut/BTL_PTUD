@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 
@@ -49,7 +50,7 @@ public class HoaDon_DAO {
             con = ConnectDB.getInstance().getConnection();
             try (PreparedStatement stmt = con.prepareStatement(sql)) {
                 stmt.setString(1, hd.getMaHoaDon());
-                stmt.setDate(2, Date.valueOf(hd.getNgayLap()));
+                stmt.setTimestamp(2, java.sql.Timestamp.valueOf(hd.getNgayLap()));
                 stmt.setString(3, hd.getKhachHang().getMaKhachHang());
                 stmt.setString(4, hd.getNhanVien().getMaNhanVien());
                 stmt.setString(5, hd.getMaPTTT());
@@ -95,7 +96,7 @@ public class HoaDon_DAO {
 
     private HoaDon mapHoaDon(ResultSet rs) throws SQLException {
         String maHoaDon = rs.getString("MaHoaDon");
-        LocalDate ngayLap = rs.getDate("NgayLap").toLocalDate();
+        LocalDateTime ngayLap = rs.getTimestamp("NgayLap").toLocalDateTime();
         KhachHang khachHang = new KhachHang(rs.getString("MaKhachHang"));
         NhanVien nhanVien = new NhanVien(rs.getString("MaNhanVien"));
         String maPTTT = rs.getString("MaPTTT");
@@ -241,7 +242,7 @@ public class HoaDon_DAO {
         LinkedHashMap<String, Double> result = new LinkedHashMap<>();
         String sql = "SELECT CONVERT(varchar, hd.NgayLap, 23) AS Ngay, COALESCE(SUM(c.SoLuong * c.DonGia), 0) AS DT "
                 + "FROM HoaDon hd LEFT JOIN ChiTietHoaDon c ON hd.MaHoaDon = c.MaHoaDon "
-                + "WHERE hd.NgayLap >= ? AND hd.NgayLap <= ? "
+                + "WHERE CAST(hd.NgayLap AS DATE) >= ? AND CAST(hd.NgayLap AS DATE) <= ? "
                 + "GROUP BY CONVERT(varchar, hd.NgayLap, 23) ORDER BY Ngay";
         try {
             con = ConnectDB.getInstance().getConnection();
@@ -268,16 +269,18 @@ public class HoaDon_DAO {
                 + "COALESCE(nv.TenNhanVien, hd.MaNhanVien) AS TenNhanVien, "
                 + "COALESCE(kh.TenKhachHang, hd.MaKhachHang) AS TenKhachHang, "
                 + "COALESCE(SUM(c.SoLuong), 0) AS TongSoLuong, "
-                + "COALESCE(SUM(c.SoLuong * c.DonGia), 0) AS TongTien, "
-                + "hd.MaPTTT "
+                + "CASE WHEN SUM(c.SoLuong) > 0 THEN SUM(c.SoLuong * c.DonGia) / SUM(c.SoLuong) ELSE 0 END AS DonGiaTB, "
+                + "COALESCE(pt.TenPTTT, hd.MaPTTT) AS TenPTTT, "
+                + "COALESCE(SUM(c.SoLuong * c.DonGia), 0) AS TongTien "
                 + "FROM HoaDon hd "
                 + "LEFT JOIN NhanVien nv ON hd.MaNhanVien = nv.MaNhanVien "
                 + "LEFT JOIN KhachHang kh ON hd.MaKhachHang = kh.MaKhachHang "
                 + "LEFT JOIN ChiTietHoaDon c ON hd.MaHoaDon = c.MaHoaDon "
+                + "LEFT JOIN PhuongThucThanhToan pt ON hd.MaPTTT = pt.MaPTTT "
                 + "WHERE 1=1");
         ArrayList<Object> params = new ArrayList<>();
         appendBoLocThoiGian(sql, params, nam, thang, ngay, tuNgay, denNgay);
-        sql.append(" GROUP BY hd.MaHoaDon, hd.NgayLap, nv.TenNhanVien, hd.MaNhanVien, kh.TenKhachHang, hd.MaKhachHang, hd.MaPTTT");
+        sql.append(" GROUP BY hd.MaHoaDon, hd.NgayLap, nv.TenNhanVien, hd.MaNhanVien, kh.TenKhachHang, hd.MaKhachHang, hd.MaPTTT, pt.TenPTTT");
         sql.append(" ORDER BY hd.NgayLap DESC");
         try {
             con = ConnectDB.getInstance().getConnection();
@@ -287,14 +290,41 @@ public class HoaDon_DAO {
                     while (rs.next()) {
                         result.add(new Object[] {
                             rs.getString("MaHoaDon"),
-                            rs.getDate("NgayLap").toLocalDate(),
+                            rs.getTimestamp("NgayLap").toLocalDateTime().toLocalDate(),
                             rs.getString("TenNhanVien"),
                             rs.getString("TenKhachHang"),
                             rs.getInt("TongSoLuong"),
-                            "-",
-                            rs.getString("MaPTTT"),
+                            rs.getDouble("DonGiaTB"),
+                            rs.getString("TenPTTT"),
                             rs.getDouble("TongTien")
                         });
+                    }
+                }
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return result;
+    }
+
+    /**
+     * Doanh thu theo từng giờ trong ngày (0h-23h).
+     * @return LinkedHashMap: "0h" .. "23h" → doanh thu
+     */
+    public LinkedHashMap<String, Double> thongKeTheoGio(int nam, int thang, int ngay) {
+        LinkedHashMap<String, Double> result = new LinkedHashMap<>();
+        for (int h = 0; h < 24; h++) result.put(h + "h", 0.0);
+        String sql = "SELECT DATEPART(HOUR, hd.NgayLap) AS Gio, COALESCE(SUM(c.SoLuong * c.DonGia), 0) AS DT "
+                + "FROM HoaDon hd LEFT JOIN ChiTietHoaDon c ON hd.MaHoaDon = c.MaHoaDon "
+                + "WHERE YEAR(hd.NgayLap) = ? AND MONTH(hd.NgayLap) = ? AND DAY(hd.NgayLap) = ? "
+                + "GROUP BY DATEPART(HOUR, hd.NgayLap) ORDER BY Gio";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setInt(1, nam);
+                ps.setInt(2, thang);
+                ps.setInt(3, ngay);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        result.put(rs.getInt("Gio") + "h", rs.getDouble("DT"));
                     }
                 }
             }
@@ -307,7 +337,7 @@ public class HoaDon_DAO {
             Integer nam, Integer thang, Integer ngay,
             LocalDate tuNgay, LocalDate denNgay) {
         if (tuNgay != null && denNgay != null) {
-            sql.append(" AND hd.NgayLap >= ? AND hd.NgayLap <= ?");
+            sql.append(" AND CAST(hd.NgayLap AS DATE) >= ? AND CAST(hd.NgayLap AS DATE) <= ?");
             params.add(Date.valueOf(tuNgay));
             params.add(Date.valueOf(denNgay));
         } else {

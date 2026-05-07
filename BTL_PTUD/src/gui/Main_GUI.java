@@ -34,6 +34,8 @@ public class Main_GUI extends JFrame {
     private Timer authTimer;
     private boolean daDangXuat = false;
     private JLabel lblSubLogo;
+    private ThongKeDoanhThu_GUI thongKeDoanhThuGUI;
+    private ThongKeKhachHang_GUI thongKeKhachHangGUI;
 
     public Main_GUI() {
         this(new TaiKhoan_Service(), null);
@@ -177,14 +179,16 @@ public class Main_GUI extends JFrame {
         contentPanel.add(createEmptyPage("TraHang"), "TraHang");
 
 //		Tra cứu
-        contentPanel.add(createEmptyPage("TraCuuHoaDon"), "TraCuuHoaDon");
+//        contentPanel.add(new TraCuuHoaDon_GUI(), "TraCuuHoaDon");
         contentPanel.add(createEmptyPage("TraCuuPhieuNhap"), "TraCuuPhieuNhap");
         contentPanel.add(createEmptyPage("TraCuuDoiHang"), "TraCuuDoiHang");
         contentPanel.add(createEmptyPage("TraCuuTraHang"), "TraCuuTraHang");
 
 //		Thống kê
-        contentPanel.add(new ThongKeDoanhThu_GUI(), "ThongKeDoanhThu");
-        contentPanel.add(new ThongKeKhachHang_GUI(), "ThongKeKhachHang");
+        thongKeDoanhThuGUI = new ThongKeDoanhThu_GUI();
+        contentPanel.add(thongKeDoanhThuGUI, "ThongKeDoanhThu");
+        thongKeKhachHangGUI = new ThongKeKhachHang_GUI();
+        contentPanel.add(thongKeKhachHangGUI, "ThongKeKhachHang");
         contentPanel.add(new ThongKeSanPham_GUI(), "ThongKeSanPham");
 
 //		Hê thống
@@ -218,6 +222,14 @@ public class Main_GUI extends JFrame {
             return;
         }
         cardLayout.show(contentPanel, pageName);
+
+        // Auto-refresh khi chuyển sang tab thống kê
+        if ("ThongKeDoanhThu".equals(pageName) && thongKeDoanhThuGUI != null) {
+            thongKeDoanhThuGUI.refresh();
+        }
+        if ("ThongKeKhachHang".equals(pageName) && thongKeKhachHangGUI != null) {
+            thongKeKhachHangGUI.refresh();
+        }
     }
 
     private void xacNhanDangXuat() {

@@ -9,6 +9,7 @@ import entity.NhanVien;
 import entity.PhuongThucThanhToan;
 import entity.SanPham;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -84,7 +85,7 @@ public class HoaDon_Service {
         int diemThem = tinhDiemTichLuy(tongTien);
 
         // 5. Tạo đối tượng HoaDon
-        HoaDon hd = new HoaDon(maHD, LocalDate.now(), tongTien, diemThem, maPTTTFinal, nhanVien, kh);
+        HoaDon hd = new HoaDon(maHD, LocalDateTime.now(), tongTien, diemThem, maPTTTFinal, nhanVien, kh);
 
         // 6. Lưu hóa đơn vào DB
         if (!hoaDonDAO.taoHoaDon(hd)) {
@@ -160,34 +161,85 @@ public class HoaDon_Service {
     public ArrayList<HoaDon> getDSHoaDon() {
         return hoaDonDAO.getDSHoaDon();
     }
-    // ==================== THỐNG KÊ (delegate to DAO) ====================
+    // ==================== THỐNG KÊ DOANH THU ====================
 
-    public double tinhDoanhThuKy(Integer nam, Integer thang, Integer ngay,
-            LocalDate tuNgay, LocalDate denNgay) {
-        return hoaDonDAO.tinhDoanhThuKy(nam, thang, ngay, tuNgay, denNgay);
+    /** DTO tổng hợp các chỉ số thống kê cho summary cards */
+    public static class ThongKeTongHop {
+        public final double doanhThuKy;
+        public final double tongDoanhThu;
+        public final int soGiaoDich;
+        public final double doanhThuTrungBinh;
+
+        public ThongKeTongHop(double doanhThuKy, double tongDoanhThu,
+                              int soGiaoDich, double doanhThuTrungBinh) {
+            this.doanhThuKy = doanhThuKy;
+            this.tongDoanhThu = tongDoanhThu;
+            this.soGiaoDich = soGiaoDich;
+            this.doanhThuTrungBinh = doanhThuTrungBinh;
+        }
     }
 
-    public double tinhTongDoanhThu() {
-        return hoaDonDAO.tinhTongDoanhThu();
+    /**
+     * Lấy tổng hợp thống kê cho summary cards.
+     * Tính toán doanh thu kỳ, tổng DT, số giao dịch, DT trung bình.
+     */
+    public ThongKeTongHop layThongKeTongHop(Integer nam, Integer thang, Integer ngay,
+                                             LocalDate tuNgay, LocalDate denNgay) {
+        double dtKy = hoaDonDAO.tinhDoanhThuKy(nam, thang, ngay, tuNgay, denNgay);
+        double tongDT = hoaDonDAO.tinhTongDoanhThu();
+        int soGD = hoaDonDAO.demSoGiaoDich(nam, thang, ngay, tuNgay, denNgay);
+        double dtTB = soGD > 0 ? dtKy / soGD : 0;
+        return new ThongKeTongHop(dtKy, tongDT, soGD, dtTB);
     }
 
-    public int demSoGiaoDich(Integer nam, Integer thang, Integer ngay,
-            LocalDate tuNgay, LocalDate denNgay) {
-        return hoaDonDAO.demSoGiaoDich(nam, thang, ngay, tuNgay, denNgay);
+    /**
+     * Lấy dữ liệu biểu đồ cột theo 3 mức:
+     * - Chỉ có năm → 12 tháng
+     * - Có năm + tháng → theo ngày trong tháng
+     * - Có năm + tháng + ngày → 24 giờ
+     */
+    public LinkedHashMap<String, Double> layDuLieuBieuDoCot(Integer nam, Integer thang, Integer ngay) {
+        if (ngay != null && thang != null && nam != null) {
+            return hoaDonDAO.thongKeTheoGio(nam, thang, ngay);
+        }
+        if (thang != null && nam != null) {
+            return hoaDonDAO.thongKeTheoNgay(nam, thang);
+        }
+        int barNam = nam != null ? nam : LocalDate.now().getYear();
+        return hoaDonDAO.thongKeTheoThang(barNam);
     }
 
-    public LinkedHashMap<String, Double> thongKeTheoThang(int nam) {
-        return hoaDonDAO.thongKeTheoThang(nam);
+    /**
+     * Lấy dữ liệu xu hướng (line chart) theo 3 mức tương tự.
+     */
+    public LinkedHashMap<String, Double> layDuLieuXuHuong(Integer nam, Integer thang, Integer ngay,
+                                                          LocalDate tuNgay, LocalDate denNgay) {
+        // Nếu có ngày cụ thể → dùng biểu đồ theo giờ
+        if (ngay != null && thang != null && nam != null) {
+            return hoaDonDAO.thongKeTheoGio(nam, thang, ngay);
+        }
+
+        LocalDate lineFrom = tuNgay;
+        LocalDate lineTo = denNgay;
+        if (lineFrom == null || lineTo == null) {
+            int y = nam != null ? nam : LocalDate.now().getYear();
+            if (thang != null) {
+                lineFrom = LocalDate.of(y, thang, 1);
+                lineTo = lineFrom.withDayOfMonth(lineFrom.lengthOfMonth());
+            } else {
+                lineFrom = LocalDate.of(y, 1, 1);
+                lineTo = LocalDate.of(y, 12, 31);
+            }
+        }
+        LinkedHashMap<String, Double> result = hoaDonDAO.xuHuongTheoNgay(lineFrom, lineTo);
+        if (result.isEmpty()) {
+            int y = nam != null ? nam : LocalDate.now().getYear();
+            result = hoaDonDAO.thongKeTheoThang(y);
+        }
+        return result;
     }
 
-    public LinkedHashMap<String, Double> thongKeTheoNgay(int nam, int thang) {
-        return hoaDonDAO.thongKeTheoNgay(nam, thang);
-    }
-
-    public LinkedHashMap<String, Double> xuHuongTheoNgay(LocalDate tuNgay, LocalDate denNgay) {
-        return hoaDonDAO.xuHuongTheoNgay(tuNgay, denNgay);
-    }
-
+    /** Lấy danh sách hóa đơn theo kỳ (đã JOIN tên PTTT và DonGiaTB) */
     public ArrayList<Object[]> layDanhSachTheoKy(Integer nam, Integer thang, Integer ngay,
             LocalDate tuNgay, LocalDate denNgay) {
         return hoaDonDAO.layDanhSachTheoKy(nam, thang, ngay, tuNgay, denNgay);

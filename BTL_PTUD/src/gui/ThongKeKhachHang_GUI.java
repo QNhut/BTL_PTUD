@@ -1,21 +1,28 @@
 package gui;
 
 import java.awt.*;
+import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import org.jfree.chart.*;
 import org.jfree.chart.axis.*;
 import org.jfree.chart.plot.*;
 import org.jfree.chart.renderer.category.*;
-import org.jfree.chart.renderer.category.BarRenderer;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.general.DefaultPieDataset;
-import org.jfree.chart.plot.PiePlot;
 import constants.Colors;
 import constants.FontStyle;
 import exception.RoundedButton;
+import service.KhachHang_Service;
 
 public class ThongKeKhachHang_GUI extends JPanel {
+
+    // ===== SERVICE =====
+    private final KhachHang_Service khachHangService = new KhachHang_Service();
 
     // ===== FILTER =====
     private JComboBox<String> cbKieu, cbNgay, cbThang, cbNam, cbQuy, cbLoaiKH, cbChiTieu;
@@ -39,6 +46,9 @@ public class ThongKeKhachHang_GUI extends JPanel {
     private JTable tableKhachHang;
     private DefaultTableModel tableModel;
 
+    private static final NumberFormat VND =
+            NumberFormat.getNumberInstance(new java.util.Locale("vi", "VN"));
+
     // ============================================================
     // CONSTRUCTOR
     // ============================================================
@@ -55,8 +65,33 @@ public class ThongKeKhachHang_GUI extends JPanel {
         add(chartsPanel);
         add(tablePanel);
 
-        loadMockData();
+        // Khởi tạo mặc định là ngày hiện tại
+        initializeDefaultFilter();
         updateViewMode();
+    }
+
+    private void initializeDefaultFilter() {
+        LocalDate now = LocalDate.now();
+        cbKieu.setSelectedItem("Theo thời gian cụ thể");
+        cbNam.setSelectedItem(String.valueOf(now.getYear()));
+        cbThang.setSelectedItem(String.valueOf(now.getMonthValue()));
+        updateNgayComboBox();
+        cbNgay.setSelectedItem(String.valueOf(now.getDayOfMonth()));
+        
+        // Đảm bảo UI đã render xong rồi mới lọc (giống nhấn "Xem" 1 lần)
+        SwingUtilities.invokeLater(() -> performFilter());
+    }
+
+    /** Được gọi từ Main_GUI khi chuyển sang tab này để reload data mới nhất */
+    public void refresh() {
+        LocalDate now = LocalDate.now();
+        cbKieu.setSelectedItem("Theo thời gian cụ thể");
+        cbNam.setSelectedItem(String.valueOf(now.getYear()));
+        cbThang.setSelectedItem(String.valueOf(now.getMonthValue()));
+        updateNgayComboBox();
+        cbNgay.setSelectedItem(String.valueOf(now.getDayOfMonth()));
+        
+        performFilter();
     }
 
     // ============================================================
@@ -75,12 +110,17 @@ public class ThongKeKhachHang_GUI extends JPanel {
         cbKieu.addActionListener(e -> updateVisibility());
 
         // Năm đầy đủ
-        cbNam = new JComboBox<>(new String[]{"Chọn năm", "2023", "2024", "2025", "2026"});
+        int currentYear = LocalDate.now().getYear();
+        cbNam = new JComboBox<>();
+        cbNam.addItem("Chọn năm");
+        for (int y = currentYear; y >= 2020; y--) cbNam.addItem(String.valueOf(y));
         cbNam.setPreferredSize(new Dimension(100, 30));
+        cbNam.addActionListener(e -> updateNgayComboBox());
 
         // Tháng đầy đủ
         cbThang = new JComboBox<>(new String[]{"Chọn tháng", "1","2","3","4","5","6","7","8","9","10","11","12"});
         cbThang.setPreferredSize(new Dimension(100, 30));
+        cbThang.addActionListener(e -> updateNgayComboBox());
 
         // Ngày
         cbNgay = new JComboBox<>(new String[]{"Chọn ngày"});
@@ -91,14 +131,6 @@ public class ThongKeKhachHang_GUI extends JPanel {
         cbQuy.setPreferredSize(new Dimension(100, 30));
 
         // Loại KH
-        /* 
-         * QUY TẮC PHÂN LOẠI KHÁCH HÀNG (Dùng cho DAO):
-         * CASE 
-         *   WHEN so_don <= 2 AND recency <= 30 THEN 'Khách hàng mới'
-         *   WHEN so_don >= 5 AND recency <= 60 THEN 'Thường xuyên'
-         *   ELSE 'Tiềm năng'
-         * END
-         */
         cbLoaiKH = new JComboBox<>(new String[]{"Tất cả", "Khách hàng mới", "Thường xuyên", "Tiềm năng"});
         cbLoaiKH.setPreferredSize(new Dimension(150, 30));
 
@@ -143,72 +175,190 @@ public class ThongKeKhachHang_GUI extends JPanel {
         return panel;
     }
 
+    // ============================================================
+    // LOAD — DB → Table → Summary Cards
+    // ============================================================
+    private void loadAll(String tuNgay, String denNgay, Integer nam, String loaiKH, String chiTieu) {
+
+        // 1. Lấy dữ liệu từ Service
+        ArrayList<Object[]> allRows = khachHangService.layDanhSachKHThongKe(tuNgay, denNgay);
+
+        // 2. Lọc theo loại KH / chi tiêu (nếu có)
+        ArrayList<Object[]> filteredRows = new ArrayList<>();
+        for (Object[] row : allRows) {
+            String phanLoai = (String) row[6]; // cột PhanLoai
+            double tongChi = (row[5] instanceof Number) ? ((Number) row[5]).doubleValue() : 0;
+
+            if (loaiKH != null && !"Tất cả".equals(loaiKH) && !loaiKH.equals(phanLoai))
+                continue;
+            if (chiTieu != null && !"Tất cả".equals(chiTieu)) {
+                if ("< 1 triệu".equals(chiTieu) && tongChi >= 1_000_000) continue;
+                if ("1 - 5 triệu".equals(chiTieu) && (tongChi < 1_000_000 || tongChi > 5_000_000)) continue;
+                if ("> 5 triệu".equals(chiTieu) && tongChi <= 5_000_000) continue;
+            }
+            filteredRows.add(row);
+        }
+
+        // 3. Đổ dữ liệu vào bảng
+        tableModel.setRowCount(0);
+        for (Object[] row : filteredRows) {
+            Object[] displayRow = row.clone();
+            if (displayRow[5] instanceof Number) {
+                displayRow[5] = VND.format(((Number) displayRow[5]).longValue()) + "đ";
+            }
+            tableModel.addRow(displayRow);
+        }
+
+        // 4. Tính summary cards TỪ dữ liệu đã lọc
+        int tongKH = filteredRows.size();
+        int khMoi = 0;
+        double doanhThu = 0;
+        int khQuayLai = 0;
+        for (Object[] row : filteredRows) {
+            String pl = (String) row[6];
+            if ("Khách hàng mới".equals(pl)) khMoi++;
+            doanhThu += ((Number) row[5]).doubleValue();
+            if (((Number) row[4]).intValue() >= 2) khQuayLai++;
+        }
+        double tiLeGiuChan = (tongKH > 0) ? (khQuayLai * 100.0 / tongKH) : 0;
+
+        lblTongKH.setText(String.valueOf(tongKH));
+        lblKHMoi.setText(String.valueOf(khMoi));
+        lblTiLeGiuChan.setText(String.format("%.0f%%", tiLeGiuChan));
+        lblDoanhThuKH.setText(VND.format((long) doanhThu) + "đ");
+
+        // 5. Pie chart — tính từ dữ liệu bảng
+        pieDataset.clear();
+        LinkedHashMap<String, Integer> phanLoaiMap = new LinkedHashMap<>();
+        for (Object[] row : filteredRows) {
+            String pl = (String) row[6];
+            phanLoaiMap.merge(pl, 1, Integer::sum);
+        }
+        for (Map.Entry<String, Integer> entry : phanLoaiMap.entrySet()) {
+            pieDataset.setValue(entry.getKey(), entry.getValue());
+        }
+
+        // 6. Bar chart (doanh thu theo tháng) + Line chart (xu hướng KH)
+        doanhThuDataset.clear();
+        LinkedHashMap<String, Double> dtThang = khachHangService.layDoanhThuTheoThang(nam);
+        for (Map.Entry<String, Double> entry : dtThang.entrySet()) {
+            doanhThuDataset.addValue(entry.getValue() / 1_000_000.0, "Doanh thu (triệu đ)", entry.getKey());
+        }
+
+        xuHuongDataset.clear();
+        LinkedHashMap<String, int[]> xuHuong = khachHangService.layXuHuongKH(nam);
+        for (Map.Entry<String, int[]> entry : xuHuong.entrySet()) {
+            int[] vals = entry.getValue();
+            xuHuongDataset.addValue(vals[0], "Thường xuyên", entry.getKey());
+            xuHuongDataset.addValue(vals[1], "Khách hàng mới", entry.getKey());
+            xuHuongDataset.addValue(vals[2], "Tiềm năng", entry.getKey());
+        }
+    }
+
+    /** Tính khoảng ngày từ các tham số lọc */
+    private String[] tinhKhoangNgay(Integer nam, Integer thang, Integer ngay) {
+        int y = (nam != null) ? nam : LocalDate.now().getYear();
+        String tuNgay, denNgay;
+        if (ngay != null && thang != null) {
+            LocalDate d = LocalDate.of(y, thang, ngay);
+            tuNgay = d.toString();
+            denNgay = d.toString();
+        } else if (thang != null) {
+            LocalDate first = LocalDate.of(y, thang, 1);
+            tuNgay = first.toString();
+            denNgay = first.withDayOfMonth(first.lengthOfMonth()).toString();
+        } else {
+            tuNgay = y + "-01-01";
+            denNgay = y + "-12-31";
+        }
+        return new String[]{tuNgay, denNgay};
+    }
+
+    // ============================================================
+    // ACTION — Nút "Xem" lọc dữ liệu
+    // ============================================================
     private void performFilter() {
         String kieu = (String) cbKieu.getSelectedItem();
         if (kieu == null) return;
-        
-        // Random số liệu trên các thẻ
-        long tongKH = Math.round(Math.random() * 500 + 100);
-        long khMoi = Math.round(Math.random() * 50 + 10);
-        long tiLe = Math.round(Math.random() * 20 + 70); // 70-90%
-        long doanhThu = Math.round(Math.random() * 1000000000 + 50000000);
-        
-        lblTongKH.setText(String.valueOf(tongKH));
-        lblKHMoi.setText(String.valueOf(khMoi));
-        lblTiLeGiuChan.setText(tiLe + "%");
-        lblDoanhThuKH.setText(String.format("%,dđ", doanhThu).replace(",", "."));
-        
-        // Update Chart
-        doanhThuDataset.clear();
-        xuHuongDataset.clear();
-        
-        int n = 6;
-        double[] dt = new double[n];
-        for (int i = 0; i < n; i++) {
-            dt[i] = Math.random() * 100000000 + 10000000;
-        }
-        java.util.Arrays.sort(dt); // Doanh thu từ thấp đến cao
-        
-        String[] cats = {"Mốc 1", "Mốc 2", "Mốc 3", "Mốc 4", "Mốc 5", "Mốc 6"};
-        for (int i = 0; i < n; i++) {
-            doanhThuDataset.addValue(dt[i], "Doanh thu", cats[i]);
-            
-            xuHuongDataset.addValue((int)(Math.random() * 40 + 10), "Thường xuyên", cats[i]);
-            xuHuongDataset.addValue((int)(Math.random() * 20 + 5), "Khách hàng mới", cats[i]);
-            xuHuongDataset.addValue((int)(Math.random() * 30 + 10), "Tiềm năng", cats[i]);
-        }
-        
-        pieDataset.clear();
-        if ("Theo loại khách hàng".equals(kieu)) {
-            String loai = (String) cbLoaiKH.getSelectedItem();
-            if ("Tất cả".equals(loai)) {
-                pieDataset.setValue("Thường xuyên", Math.random() * 100);
-                pieDataset.setValue("Khách hàng mới", Math.random() * 50);
-                pieDataset.setValue("Tiềm năng", Math.random() * 80);
-            } else {
-                pieDataset.setValue(loai, 100); // 100% loại đó
+
+        Integer nam = null;
+        String loaiKH = null;
+        String chiTieu = null;
+        String tuNgay, denNgay;
+
+        switch (kieu) {
+            case "Theo thời gian cụ thể": {
+                String namStr = (String) cbNam.getSelectedItem();
+                String thangStr = (String) cbThang.getSelectedItem();
+                String ngayStr = (String) cbNgay.getSelectedItem();
+                Integer n = null, t = null, d = null;
+                if (namStr != null && !namStr.startsWith("Chọn")) n = Integer.parseInt(namStr);
+                if (thangStr != null && !thangStr.startsWith("Chọn")) t = Integer.parseInt(thangStr);
+                if (ngayStr != null && !ngayStr.startsWith("Chọn")) d = Integer.parseInt(ngayStr);
+                
+                if (n == null) {
+                    JOptionPane.showMessageDialog(this, "Vui lòng chọn năm!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                nam = n;
+                String[] range = tinhKhoangNgay(n, t, d);
+                tuNgay = range[0];
+                denNgay = range[1];
+                loadAll(tuNgay, denNgay, nam, null, null);
+                return;
             }
-        } else {
-            pieDataset.setValue("Thường xuyên", Math.random() * 100);
-            pieDataset.setValue("Khách hàng mới", Math.random() * 50);
-            pieDataset.setValue("Tiềm năng", Math.random() * 80);
+            case "Theo quý": {
+                String namQuyStr = (String) cbNam.getSelectedItem();
+                String quyStr = (String) cbQuy.getSelectedItem();
+                Integer n = null;
+                if (namQuyStr != null && !namQuyStr.startsWith("Chọn")) n = Integer.parseInt(namQuyStr);
+                if (n == null || quyStr == null || quyStr.startsWith("Chọn")) {
+                    JOptionPane.showMessageDialog(this, "Vui lòng chọn năm và quý!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                nam = n;
+                int quy = Integer.parseInt(quyStr.replace("Quý ", ""));
+                int thangBD = (quy - 1) * 3 + 1;
+                int thangKT = quy * 3;
+                tuNgay = String.format("%d-%02d-01", nam, thangBD);
+                LocalDate lastDay = LocalDate.of(nam, thangKT, 1);
+                denNgay = lastDay.withDayOfMonth(lastDay.lengthOfMonth()).toString();
+                loadAll(tuNgay, denNgay, nam, null, null);
+                return;
+            }
+            case "Theo loại khách hàng":
+                loaiKH = (String) cbLoaiKH.getSelectedItem();
+                break;
+            case "Theo tổng chi tiêu":
+                chiTieu = (String) cbChiTieu.getSelectedItem();
+                break;
+        }
+
+        // Cho các filter không theo thời gian, dùng toàn bộ năm hiện tại
+        int y = LocalDate.now().getYear();
+        tuNgay = y + "-01-01";
+        denNgay = y + "-12-31";
+        loadAll(tuNgay, denNgay, y, loaiKH, chiTieu);
+    }
+
+    private void updateNgayComboBox() {
+        if (cbNam == null || cbThang == null || cbNgay == null) return;
+        
+        String selNam = (String) cbNam.getSelectedItem();
+        String selThang = (String) cbThang.getSelectedItem();
+        
+        Object oldNgay = cbNgay.getSelectedItem();
+        cbNgay.removeAllItems();
+        cbNgay.addItem("Chọn ngày");
+        
+        if (selNam != null && !selNam.startsWith("Chọn") && selThang != null && !selThang.startsWith("Chọn")) {
+            int y = Integer.parseInt(selNam);
+            int m = Integer.parseInt(selThang);
+            int days = LocalDate.of(y, m, 1).lengthOfMonth();
+            for (int d = 1; d <= days; d++) cbNgay.addItem(String.valueOf(d));
         }
         
-        // Update Table
-        tableModel.setRowCount(0);
-        int rows = (int)(Math.random() * 5 + 3);
-        String[] loai = {"Thường xuyên", "Khách hàng mới", "Tiềm năng"};
-        for (int i = 1; i <= rows; i++) {
-            int randomLoai = (int)(Math.random() * 3);
-            tableModel.addRow(new Object[]{
-                i, "KH" + (int)(Math.random()*1000 + 1000), 
-                "Khách hàng " + i, 
-                "0912" + (int)(Math.random()*899999 + 100000), 
-                (int)(Math.random()*20 + 1), 
-                String.format("%,dđ", (long)(Math.random()*10000000 + 500000)).replace(",", "."), 
-                loai[randomLoai]
-            });
-        }
+        if (oldNgay != null) cbNgay.setSelectedItem(oldNgay);
     }
 
     private void updateVisibility() {
@@ -352,15 +502,15 @@ public class ThongKeKhachHang_GUI extends JPanel {
         combinedPlot.setDataset(0, doanhThuDataset);
         combinedPlot.setRenderer(0, barRenderer);
 
-        CategoryAxis domainAxis = new CategoryAxis("Thời gian / Tiêu chí");
+        CategoryAxis domainAxis = new CategoryAxis("Tháng");
         combinedPlot.setDomainAxis(domainAxis);
 
-        NumberAxis rangeAxis1 = new NumberAxis("Doanh thu");
+        NumberAxis rangeAxis1 = new NumberAxis("Doanh thu (triệu đ)");
         combinedPlot.setRangeAxis(0, rangeAxis1);
         combinedPlot.mapDatasetToRangeAxis(0, 0);
 
         // Line (Xu hướng 3 loại KH)
-        org.jfree.chart.renderer.category.LineAndShapeRenderer lineRenderer = new org.jfree.chart.renderer.category.LineAndShapeRenderer();
+        LineAndShapeRenderer lineRenderer = new LineAndShapeRenderer();
         lineRenderer.setSeriesPaint(0, Colors.TEXT_LOGIN); // Thường xuyên
         lineRenderer.setSeriesPaint(1, Colors.SUCCESS); // Khách mới
         lineRenderer.setSeriesPaint(2, Colors.ACCENT); // Tiềm năng
@@ -400,7 +550,7 @@ public class ThongKeKhachHang_GUI extends JPanel {
                 BorderFactory.createTitledBorder("Danh sách khách hàng")));
         panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
 
-        String[] cols = {"STT", "Mã KH", "Tên khách hàng", "SĐT", "Số đơn", "Tổng chi tiêu (đ)", "Phân loại"};
+        String[] cols = {"Mã KH", "Tên khách hàng", "SĐT", "HĐ gần nhất", "Số đơn", "Tổng chi tiêu (đ)", "Phân loại"};
         tableModel = new DefaultTableModel(null, cols) {
             public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -416,49 +566,12 @@ public class ThongKeKhachHang_GUI extends JPanel {
         tableKhachHang.getTableHeader().setReorderingAllowed(false);
         tableKhachHang.getTableHeader().setResizingAllowed(false);
 
-        int[] widths = {40, 80, 160, 100, 65, 140, 100};
+        int[] widths = {90, 160, 100, 130, 55, 130, 110};
         for (int i = 0; i < widths.length; i++)
             tableKhachHang.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
 
         panel.add(new JScrollPane(tableKhachHang), BorderLayout.CENTER);
         return panel;
-    }
-
-    // ============================================================
-    // MOCK DATA
-    // ============================================================
-    private void loadMockData() {
-        // Cards
-        lblTongKH.setText("158");
-        lblKHMoi.setText("38");
-        lblTiLeGiuChan.setText("88%");
-        lblDoanhThuKH.setText("658.290.000đ");
-
-        // Pie chart
-        pieDataset.setValue("Thường xuyên",  75);
-        pieDataset.setValue("Khách hàng mới", 38);
-        pieDataset.setValue("Tiềm năng",      45);
-
-        // Combined chart
-        doanhThuDataset.clear();
-        xuHuongDataset.clear();
-        double[] dt = {15000000, 22000000, 31000000, 45000000, 58000000, 72000000};
-        String[] cats = {"Q1", "Q2", "Q3", "Q4", "Q5", "Q6"};
-        for (int i = 0; i < 6; i++) {
-            doanhThuDataset.addValue(dt[i], "Doanh thu", cats[i]);
-            
-            xuHuongDataset.addValue(20 + i*5, "Thường xuyên", cats[i]);
-            xuHuongDataset.addValue(10 + i*2, "Khách hàng mới", cats[i]);
-            xuHuongDataset.addValue(15 + i*3, "Tiềm năng", cats[i]);
-        }
-
-        // Table
-        tableModel.setRowCount(0);
-        tableModel.addRow(new Object[]{1, "KH000001", "Nguyễn Quốc Nhật", "0912 345 678", 12, "8.950.000đ",  "Thường xuyên"});
-        tableModel.addRow(new Object[]{2, "KH000002", "Trần Thị B",       "0987 654 321",  9, "7.500.000đ",  "Thường xuyên"});
-        tableModel.addRow(new Object[]{3, "KH000003", "Phạm Văn C",       "0901 234 567",  6, "6.200.000đ",  "Tiềm năng"});
-        tableModel.addRow(new Object[]{4, "KH000004", "Lê Thị D",         "0933 111 222",  2, "1.800.000đ",  "Khách hàng mới"});
-        tableModel.addRow(new Object[]{5, "KH000005", "Hoàng Văn E",      "0966 333 444",  1, "950.000đ",    "Khách hàng mới"});
     }
 
     private void updateViewMode() {

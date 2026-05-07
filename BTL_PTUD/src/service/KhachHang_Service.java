@@ -120,4 +120,53 @@ public class KhachHang_Service {
                 .replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
                 .toLowerCase();
     }
-}
+
+    // ============================================================
+    // THỐNG KÊ KHÁCH HÀNG
+    // ============================================================
+
+    /** DTO tổng hợp cho 4 summary cards */
+    public static class ThongKeKHTongHop {
+        public int tongKH;
+        public int khMoi;
+        public double tiLeGiuChan; // %
+        public double doanhThuKH;
+    }
+
+    /** Lấy thống kê tổng hợp cho summary cards */
+    public ThongKeKHTongHop layThongKeTongHop(String tuNgay, String denNgay) {
+        ThongKeKHTongHop tk = new ThongKeKHTongHop();
+        tk.tongKH = khachHangDao.demTongKH(); // Tổng KH hoạt động trong hệ thống
+        tk.khMoi = khachHangDao.demKHMoi(tuNgay, denNgay);
+        tk.doanhThuKH = khachHangDao.doanhThuKH(tuNgay, denNgay);
+
+        // Tỉ lệ giữ chân = KH có >= 2 đơn / tổng KH đã mua
+        int khDaMua = khachHangDao.demKHDaMua();
+        int khQuayLai = khachHangDao.demKHCoNhieuDon(2);
+        tk.tiLeGiuChan = (khDaMua > 0) ? (khQuayLai * 100.0 / khDaMua) : 0;
+
+        return tk;
+    }
+
+    /** Lấy phân loại KH cho Pie chart */
+    public java.util.LinkedHashMap<String, Integer> layPhanLoaiKH() {
+        return khachHangDao.thongKePhanLoai();
+    }
+
+    /** Lấy doanh thu theo tháng cho Bar chart */
+    public java.util.LinkedHashMap<String, Double> layDoanhThuTheoThang(Integer nam) {
+        int y = (nam != null) ? nam : java.time.LocalDate.now().getYear();
+        return khachHangDao.doanhThuTheoThang(y);
+    }
+
+    /** Lấy xu hướng KH theo tháng cho Line chart */
+    public java.util.LinkedHashMap<String, int[]> layXuHuongKH(Integer nam) {
+        int y = (nam != null) ? nam : java.time.LocalDate.now().getYear();
+        return khachHangDao.xuHuongKHTheoThang(y);
+    }
+
+    /** Lấy danh sách KH cho bảng thống kê (lọc theo khoảng thời gian) */
+    public ArrayList<Object[]> layDanhSachKHThongKe(String tuNgay, String denNgay) {
+        return khachHangDao.layDanhSachKHThongKe(tuNgay, denNgay);
+    }
+}

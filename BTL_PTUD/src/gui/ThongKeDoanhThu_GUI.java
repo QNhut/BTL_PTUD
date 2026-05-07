@@ -3,7 +3,6 @@ package gui;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.sql.Date;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -72,11 +71,26 @@ public class ThongKeDoanhThu_GUI extends JPanel implements ActionListener {
         add(chartsPanel);
         add(tablePanel);
 
-        // TODO: Bỏ comment dòng dưới sau khi fix DB
-        loadAll(null, null, null, null, null);
-        // loadMockData(); // Dùng tạm data mẫu để test GUI
+        // Default: set combobox về ngày hiện tại và load dữ liệu
+        LocalDate today = LocalDate.now();
+        cbNam.setSelectedItem(String.valueOf(today.getYear()));
+        cbThang.setSelectedItem(String.valueOf(today.getMonthValue()));
+        // fillNgay sẽ được trigger bởi onThangChanged, nhưng cần fill thủ công ở đây
+        fillNgay(today.getMonthValue(), today.getYear());
+        cbNgay.setSelectedItem(String.valueOf(today.getDayOfMonth()));
+        loadAll(today.getYear(), today.getMonthValue(), today.getDayOfMonth(), null, null);
         
         updateViewMode();
+    }
+
+    /** Được gọi từ Main_GUI khi chuyển sang tab này để reload data mới nhất */
+    public void refresh() {
+        LocalDate today = LocalDate.now();
+        cbNam.setSelectedItem(String.valueOf(today.getYear()));
+        cbThang.setSelectedItem(String.valueOf(today.getMonthValue()));
+        fillNgay(today.getMonthValue(), today.getYear());
+        cbNgay.setSelectedItem(String.valueOf(today.getDayOfMonth()));
+        loadAll(today.getYear(), today.getMonthValue(), today.getDayOfMonth(), null, null);
     }
 
     // ============================================================
@@ -310,7 +324,7 @@ public class ThongKeDoanhThu_GUI extends JPanel implements ActionListener {
     }
 
     // ============================================================
-    // LOAD — Gọi Service, không viết SQL ở đây
+    // LOAD — Gọi Service lấy dữ liệu, GUI chỉ hiển thị
     // ============================================================
     private void loadAll(Integer nam, Integer thang, Integer ngay,
                          java.util.Date tuNgayUtil, java.util.Date denNgayUtil) {
@@ -320,57 +334,78 @@ public class ThongKeDoanhThu_GUI extends JPanel implements ActionListener {
         LocalDate denNgay = denNgayUtil != null
                 ? denNgayUtil.toInstant().atZone(ZoneId.systemDefault()).toLocalDate() : null;
 
-        // --- Cards ---
-        double dtKy   = hoaDonService.tinhDoanhThuKy(nam, thang, ngay, tuNgay, denNgay);
-        double tongDT = hoaDonService.tinhTongDoanhThu();
-        int    soGD   = hoaDonService.demSoGiaoDich(nam, thang, ngay, tuNgay, denNgay);
-        double dtTB   = soGD > 0 ? dtKy / soGD : 0;
+        // --- Summary Cards (Service tính toán, GUI chỉ hiển thị) ---
+        HoaDon_Service.ThongKeTongHop tk = hoaDonService.layThongKeTongHop(nam, thang, ngay, tuNgay, denNgay);
+        lblDoanhThuKy.setText(VND.format((long) tk.doanhThuKy) + "đ");
+        lblTongDT.setText(VND.format((long) tk.tongDoanhThu)   + "đ");
+        lblSoGD.setText(String.valueOf(tk.soGiaoDich));
+        lblDTTB.setText(VND.format((long) tk.doanhThuTrungBinh) + "đ");
 
-        lblDoanhThuKy.setText(VND.format((long) dtKy) + "đ");
-        lblTongDT.setText(VND.format((long) tongDT)   + "đ");
-        lblSoGD.setText(String.valueOf(soGD));
-        lblDTTB.setText(VND.format((long) dtTB)       + "đ");
-
-        // --- Bar chart ---
+        // --- Bar chart (3 mức: năm→tháng, tháng→ngày, ngày→giờ) ---
         barDataset.clear();
-        LinkedHashMap<String, Double> barMap;
-        if (thang != null && nam != null) {
-            barMap = hoaDonService.thongKeTheoNgay(nam, thang);
+        LinkedHashMap<String, Double> barMap = hoaDonService.layDuLieuBieuDoCot(nam, thang, ngay);
+        String barLabel, barTitle, lineTitle, xAxisLabel, yAxisLabel;
+        java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        if (tuNgay != null && denNgay != null) {
+            // Chế độ khoảng thời gian
+            barLabel = "Doanh thu (triệu đ)";
+            barTitle = "Doanh thu — " + tuNgay.format(fmt) + " đến " + denNgay.format(fmt);
+            lineTitle = "Xu hướng doanh thu — " + tuNgay.format(fmt) + " đến " + denNgay.format(fmt);
+            xAxisLabel = "Ngày";
+            yAxisLabel = "Số tiền (triệu đ)";
+        } else if (ngay != null && thang != null && nam != null) {
+            barLabel = "Doanh thu (đ)";
+            barTitle = String.format("Doanh thu theo giờ — %02d/%02d/%d", ngay, thang, nam);
+            lineTitle = String.format("Xu hướng doanh thu — %02d/%02d/%d", ngay, thang, nam);
+            xAxisLabel = "Giờ";
+            yAxisLabel = "Số tiền (đ)";
+        } else if (thang != null && nam != null) {
+            barLabel = "Doanh thu (triệu đ)";
+            barTitle = String.format("Doanh thu theo ngày — Tháng %d/%d", thang, nam);
+            lineTitle = String.format("Xu hướng doanh thu — Tháng %d/%d", thang, nam);
+            xAxisLabel = "Ngày";
+            yAxisLabel = "Số tiền (triệu đ)";
+        } else if (nam != null) {
+            barLabel = "Doanh thu (triệu đ)";
+            barTitle = "Doanh thu theo tháng — Năm " + nam;
+            lineTitle = "Xu hướng doanh thu — Năm " + nam;
+            xAxisLabel = "Tháng";
+            yAxisLabel = "Số tiền (triệu đ)";
         } else {
-            int barNam = nam != null ? nam : LocalDate.now().getYear();
-            barMap = hoaDonService.thongKeTheoThang(barNam);
+            barLabel = "Doanh thu (triệu đ)";
+            int y = LocalDate.now().getYear();
+            barTitle = "Doanh thu theo tháng — Năm " + y;
+            lineTitle = "Xu hướng doanh thu — Năm " + y;
+            xAxisLabel = "Tháng";
+            yAxisLabel = "Số tiền (triệu đ)";
         }
-        for (Map.Entry<String, Double> entry : barMap.entrySet())
-            barDataset.addValue(entry.getValue() / 1_000_000.0, "Doanh thu (triệu đ)", entry.getKey());
+        boolean isDayLevel = (ngay != null && thang != null && nam != null);
+        for (Map.Entry<String, Double> entry : barMap.entrySet()) {
+            double val = isDayLevel ? entry.getValue() : entry.getValue() / 1_000_000.0;
+            barDataset.addValue(val, barLabel, entry.getKey());
+        }
+        barChart.setTitle(barTitle);
+        barChart.getCategoryPlot().getDomainAxis().setLabel(xAxisLabel);
+        barChart.getCategoryPlot().getRangeAxis().setLabel(yAxisLabel);
 
-        // --- Line chart ---
+        // --- Line chart (xu hướng, cùng mức với bar) ---
         lineDataset.clear();
-        LocalDate lineFrom = tuNgay;
-        LocalDate lineTo   = denNgay;
-        if (lineFrom == null || lineTo == null) {
-            // Compute range from nam/thang/ngay
-            int y = nam != null ? nam : LocalDate.now().getYear();
-            if (thang != null) {
-                lineFrom = LocalDate.of(y, thang, 1);
-                lineTo   = lineFrom.withDayOfMonth(lineFrom.lengthOfMonth());
-            } else {
-                lineFrom = LocalDate.of(y, 1, 1);
-                lineTo   = LocalDate.of(y, 12, 31);
-            }
+        LinkedHashMap<String, Double> lineMap = hoaDonService.layDuLieuXuHuong(nam, thang, ngay, tuNgay, denNgay);
+        for (Map.Entry<String, Double> entry : lineMap.entrySet()) {
+            double val = isDayLevel ? entry.getValue() : entry.getValue() / 1_000_000.0;
+            lineDataset.addValue(val, barLabel, entry.getKey());
         }
-        LinkedHashMap<String, Double> lineMap = hoaDonService.xuHuongTheoNgay(lineFrom, lineTo);
-        if (lineMap.isEmpty()) {
-            // Fallback: theo tháng
-            int y = nam != null ? nam : LocalDate.now().getYear();
-            lineMap = hoaDonService.thongKeTheoThang(y);
-        }
-        for (Map.Entry<String, Double> entry : lineMap.entrySet())
-            lineDataset.addValue(entry.getValue() / 1_000_000.0, "Doanh thu (triệu đ)", entry.getKey());
+        lineChart.setTitle(lineTitle);
+        lineChart.getCategoryPlot().getDomainAxis().setLabel(xAxisLabel);
+        lineChart.getCategoryPlot().getRangeAxis().setLabel(yAxisLabel);
 
-        // --- Table ---
+        // --- Table (Service trả về data đầy đủ, GUI chỉ format tiền VND) ---
         tableModel.setRowCount(0);
         ArrayList<Object[]> rows = hoaDonService.layDanhSachTheoKy(nam, thang, ngay, tuNgay, denNgay);
         for (Object[] row : rows) {
+            if (row[5] instanceof Number) {
+                row[5] = VND.format(((Number) row[5]).longValue()) + "đ";
+            }
             if (row[7] instanceof Number) {
                 row[7] = VND.format(((Number) row[7]).longValue()) + "đ";
             }
@@ -475,158 +510,7 @@ public class ThongKeDoanhThu_GUI extends JPanel implements ActionListener {
         for (int i = 1; i <= max; i++) cbNgay.addItem(String.valueOf(i));
     }
 
-    // ============================================================
-    // (Removed: generateMockDataForFilter — replaced by loadAll)
-    // ============================================================
-    @Deprecated private void generateMockDataForFilter() {
-        boolean isSpecific = "Theo thời gian cụ thể".equals(cbKieu.getSelectedItem());
-        
-        barDataset.clear();
-        lineDataset.clear();
-        tableModel.setRowCount(0);
-        
-        String chartTitle = "Doanh thu";
-        String xAxisLabel = "";
-        java.util.List<String> labels = new ArrayList<>();
-        java.util.List<Double> values = new ArrayList<>();
 
-        if (isSpecific) {
-            String namStr = (String) cbNam.getSelectedItem();
-            String thangStr = (String) cbThang.getSelectedItem();
-            String ngayStr = (String) cbNgay.getSelectedItem();
-            
-            boolean hasNam = namStr != null && !namStr.startsWith("Chọn");
-            boolean hasThang = thangStr != null && !thangStr.startsWith("Chọn");
-            boolean hasNgay = ngayStr != null && !ngayStr.startsWith("Chọn");
-
-            if (!hasNam && !hasThang && !hasNgay) {
-                JOptionPane.showMessageDialog(this, "Vui lòng chọn thời gian thống kê!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            if (hasNgay) {
-                // Biểu đồ trống
-                chartTitle = "Doanh thu ngày " + ngayStr + "/" + (hasThang ? thangStr : "") + "/" + namStr;
-                xAxisLabel = "Giờ";
-                // Không thêm data vào biểu đồ để trống
-            } else if (hasThang) {
-                chartTitle = "Doanh thu tháng " + thangStr + "/" + namStr;
-                xAxisLabel = "Ngày";
-                int maxDays = 30; 
-                try {
-                    int t = Integer.parseInt(thangStr);
-                    int n = Integer.parseInt(namStr);
-                    if (t==2) maxDays = ((n%4==0 && n%100!=0) || n%400==0) ? 29 : 28;
-                    else if (t==4||t==6||t==9||t==11) maxDays = 30;
-                    else maxDays = 31;
-                } catch(Exception ex) {}
-                for (int i = 1; i <= maxDays; i++) {
-                    labels.add(String.valueOf(i));
-                    values.add(Math.random() * 50 + 10);
-                }
-            } else if (hasNam) {
-                chartTitle = "Doanh thu năm " + namStr;
-                xAxisLabel = "Tháng";
-                for (int i = 1; i <= 12; i++) {
-                    labels.add("T" + i);
-                    values.add(Math.random() * 200 + 50);
-                }
-            }
-        } else {
-            java.util.Date from = dateFrom.getDate();
-            java.util.Date to = dateTo.getDate();
-            if (from == null || to == null) {
-                JOptionPane.showMessageDialog(this, "Vui lòng chọn đầy đủ Từ ngày và Đến ngày!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            if (from.after(to)) {
-                JOptionPane.showMessageDialog(this, "Từ ngày phải trước hoặc bằng Đến ngày!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            
-            long diffInMillis = to.getTime() - from.getTime();
-            long diffDays = diffInMillis / (1000 * 60 * 60 * 24);
-            
-            if (diffDays <= 31) {
-                chartTitle = "Doanh thu (" + (diffDays + 1) + " ngày)";
-                xAxisLabel = "Ngày";
-                for (int i = 1; i <= diffDays + 1; i++) {
-                    labels.add("N" + i);
-                    values.add(Math.random() * 50 + 10);
-                }
-            } else if (diffDays <= 90) {
-                chartTitle = "Doanh thu (" + (diffDays + 1) + " ngày)";
-                xAxisLabel = "Tuần";
-                int weeks = (int) Math.ceil((double)(diffDays + 1) / 7);
-                for (int i = 1; i <= weeks; i++) {
-                    labels.add("Tuần " + i);
-                    values.add(Math.random() * 300 + 100);
-                }
-            } else {
-                chartTitle = "Doanh thu (" + (diffDays + 1) + " ngày)";
-                xAxisLabel = "Tháng";
-                int months = (int) Math.ceil((double)(diffDays + 1) / 30);
-                for (int i = 1; i <= months; i++) {
-                    labels.add("T" + i);
-                    values.add(Math.random() * 1000 + 300);
-                }
-            }
-        }
-
-        // Cập nhật cấu hình biểu đồ
-        barChart.setTitle(chartTitle);
-        barChart.getCategoryPlot().getDomainAxis().setLabel(xAxisLabel);
-        lineChart.setTitle("Xu hướng " + chartTitle.toLowerCase());
-        lineChart.getCategoryPlot().getDomainAxis().setLabel(xAxisLabel);
-
-        double tongDoanhThu = 0;
-        int tongGD = 0;
-        
-        for (int i = 0; i < labels.size(); i++) {
-            barDataset.addValue(values.get(i), "Doanh thu (triệu đ)", labels.get(i));
-            lineDataset.addValue(values.get(i) * (0.9 + Math.random()*0.2), "Doanh thu (triệu đ)", labels.get(i));
-            tongDoanhThu += values.get(i);
-        }
-
-        // Tạo dữ liệu bảng
-        int numRows = (int) (Math.random() * 25 + 10); // 10 to 35 rows
-        if (labels.isEmpty()) {
-            numRows = (int) (Math.random() * 15 + 5); // Có giao dịch nhưng biểu đồ ngày trống theo yêu cầu
-            tongDoanhThu = 0; // Tính lại từ table
-        }
-
-        String[] nhanViens = {"Nguyễn Văn A", "Trần Thị B", "Lê Hoàng C", "Phạm Văn D", "Vũ Minh Tuấn", "Phạm Thái Bình"};
-        String[] khachHangs = {"Khách lẻ", "Nguyễn Quốc Nhật", "Hoàng Văn E", "Lý Thị F", "Lê Phương Thảo", "Trương Vô Kỵ"};
-        String[] pttts = {"Tiền mặt", "Chuyển khoản", "Quẹt thẻ", "Momo", "VNPay"};
-
-        for (int i = 1; i <= numRows; i++) {
-            String maHD = String.format("HD%06d", (int)(Math.random() * 999999));
-            String ngayLap = "2025-10-" + String.format("%02d", (int)(Math.random() * 28 + 1));
-            String nv = nhanViens[(int)(Math.random() * nhanViens.length)];
-            String kh = khachHangs[(int)(Math.random() * khachHangs.length)];
-            int sl = (int)(Math.random() * 5 + 1);
-            long donGia = (long)(Math.random() * 500 + 50) * 1000;
-            String pttt = pttts[(int)(Math.random() * pttts.length)];
-            long tongTien = sl * donGia;
-
-            if (labels.isEmpty()) { // Chỉ lấy doanh thu từ table nếu là ngày cụ thể
-                tongDoanhThu += (tongTien / 1_000_000.0);
-            }
-
-            tableModel.addRow(new Object[]{
-                maHD, ngayLap, nv, kh, sl, 
-                VND.format(donGia) + "đ", pttt, VND.format(tongTien) + "đ"
-            });
-        }
-        
-        tongGD = numRows;
-        
-        // Cập nhật card summary
-        lblDoanhThuKy.setText(VND.format((long)(tongDoanhThu * 1_000_000)) + "đ");
-        lblTongDT.setText(VND.format(2500000000L + (long)(Math.random()*500000000L)) + "đ"); 
-        lblSoGD.setText(String.valueOf(tongGD));
-        lblDTTB.setText(tongGD > 0 ? VND.format((long)((tongDoanhThu * 1_000_000) / tongGD)) + "đ" : "0đ");
-    }
     private void updateViewMode() {
         if (isChartView) {
             btnViewChart.setBackground(Colors.TEXT_PRIMARY);
@@ -650,14 +534,5 @@ public class ThongKeDoanhThu_GUI extends JPanel implements ActionListener {
         this.repaint();
     }
 
-    private void loadMockData() {
-        // Khởi tạo bảng trống khi chưa có dữ liệu (fallback)
-        tableModel.setRowCount(0);
-        barDataset.clear();
-        lineDataset.clear();
-        lblDoanhThuKy.setText("Đang tải...");
-        lblTongDT.setText("Đang tải...");
-        lblSoGD.setText("Đang tải...");
-        lblDTTB.setText("Đang tải...");
-    }
 }
+

@@ -1122,7 +1122,7 @@ public class ChiTietSanPham_GUI extends JDialog {
 			sp.setMaSanPham(maMoi);
 			ok = spService.themSanPham(sp);
 		} else {
-			ok = spService.capNhatSanPham(sp);
+			ok = spService.updateSanPham(sp);
 		}
 
 		if (ok) {

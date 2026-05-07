@@ -1,18 +1,19 @@
 package entity;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 public class HoaDon {
     private String maHoaDon;
-    private LocalDate ngayLap;
+    private LocalDateTime ngayLap;
     private double tongTien;
     private int diemTichLuy;
     private String maPTTT;
     private NhanVien nhanVien;
     private KhachHang khachHang;
 
-    public HoaDon(String maHoaDon, LocalDate ngayLap, double tongTien, int diemTichLuy, String maPTTT,
+    public HoaDon(String maHoaDon, LocalDateTime ngayLap, double tongTien, int diemTichLuy, String maPTTT,
                   NhanVien nhanVien, KhachHang khachHang) {
         setMaHoaDon(maHoaDon);
         setNgayLap(ngayLap);
@@ -50,12 +51,17 @@ public class HoaDon {
         setMaHoaDon(maHD);
     }
 
-    public LocalDate getNgayLap() {
+    public LocalDateTime getNgayLap() {
         return ngayLap;
     }
 
+    public void setNgayLap(LocalDateTime ngayLap) {
+        this.ngayLap = ngayLap == null ? LocalDateTime.now() : ngayLap;
+    }
+
+    /** Convenience: set từ LocalDate (tự thêm giờ 00:00) */
     public void setNgayLap(LocalDate ngayLap) {
-        this.ngayLap = ngayLap == null ? LocalDate.now() : ngayLap;
+        this.ngayLap = ngayLap == null ? LocalDateTime.now() : ngayLap.atStartOfDay();
     }
 
     public double getTongTien() {
