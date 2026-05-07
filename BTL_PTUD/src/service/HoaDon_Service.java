@@ -10,6 +10,7 @@ import entity.PhuongThucThanhToan;
 import entity.SanPham;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -159,7 +160,38 @@ public class HoaDon_Service {
     public ArrayList<HoaDon> getDSHoaDon() {
         return hoaDonDAO.getDSHoaDon();
     }
+    // ==================== THỐNG KÊ (delegate to DAO) ====================
 
+    public double tinhDoanhThuKy(Integer nam, Integer thang, Integer ngay,
+            LocalDate tuNgay, LocalDate denNgay) {
+        return hoaDonDAO.tinhDoanhThuKy(nam, thang, ngay, tuNgay, denNgay);
+    }
+
+    public double tinhTongDoanhThu() {
+        return hoaDonDAO.tinhTongDoanhThu();
+    }
+
+    public int demSoGiaoDich(Integer nam, Integer thang, Integer ngay,
+            LocalDate tuNgay, LocalDate denNgay) {
+        return hoaDonDAO.demSoGiaoDich(nam, thang, ngay, tuNgay, denNgay);
+    }
+
+    public LinkedHashMap<String, Double> thongKeTheoThang(int nam) {
+        return hoaDonDAO.thongKeTheoThang(nam);
+    }
+
+    public LinkedHashMap<String, Double> thongKeTheoNgay(int nam, int thang) {
+        return hoaDonDAO.thongKeTheoNgay(nam, thang);
+    }
+
+    public LinkedHashMap<String, Double> xuHuongTheoNgay(LocalDate tuNgay, LocalDate denNgay) {
+        return hoaDonDAO.xuHuongTheoNgay(tuNgay, denNgay);
+    }
+
+    public ArrayList<Object[]> layDanhSachTheoKy(Integer nam, Integer thang, Integer ngay,
+            LocalDate tuNgay, LocalDate denNgay) {
+        return hoaDonDAO.layDanhSachTheoKy(nam, thang, ngay, tuNgay, denNgay);
+    }
     //===""=""Lấy danh sách phương thức thanh toán đang hoạt động"====="
     public List<PhuongThucThanhToan> getDSPhuongThucThanhToan() {
         List<PhuongThucThanhToan> ds = pttDAO.getDSPhuongThuc();

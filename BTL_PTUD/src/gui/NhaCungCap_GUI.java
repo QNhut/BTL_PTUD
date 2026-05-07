@@ -493,6 +493,8 @@ public class NhaCungCap_GUI extends JPanel implements ActionListener {
         pnlMain.add(createFormField("Mã NCC (tự động)", txtMaNCC));
         pnlMain.add(Box.createVerticalStrut(10));
         pnlMain.add(createFormField("Tên nhà cung cấp *", txtTenNCC));
+        JLabel errNCC = errLabel();
+        pnlMain.add(errNCC);
         pnlMain.add(Box.createVerticalStrut(10));
         pnlMain.add(createFormField("Số điện thoại *", txtSDT));
         pnlMain.add(Box.createVerticalStrut(10));
@@ -536,7 +538,8 @@ public class NhaCungCap_GUI extends JPanel implements ActionListener {
                     JOptionPane.showMessageDialog(dialog, "Thêm thất bại. Vui lòng thử lại.", "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             } catch (IllegalArgumentException ex) {
-                JOptionPane.showMessageDialog(dialog, ex.getMessage(), "Dữ liệu không hợp lệ", JOptionPane.WARNING_MESSAGE);
+                errNCC.setText("✗ " + ex.getMessage());
+                errNCC.setVisible(true);
             }
         });
         pnlFooter.add(btnHuy);
@@ -591,6 +594,8 @@ public class NhaCungCap_GUI extends JPanel implements ActionListener {
         pnlMain.add(createFormField("Mã NCC", txtMaNCC));
         pnlMain.add(Box.createVerticalStrut(10));
         pnlMain.add(createFormField("Tên nhà cung cấp *", txtTenNCC));
+        JLabel errNCC = errLabel();
+        pnlMain.add(errNCC);
         pnlMain.add(Box.createVerticalStrut(10));
         pnlMain.add(createFormField("Số điện thoại *", txtSDT));
         pnlMain.add(Box.createVerticalStrut(10));
@@ -640,7 +645,8 @@ public class NhaCungCap_GUI extends JPanel implements ActionListener {
                     JOptionPane.showMessageDialog(dialog, "Cập nhật thất bại. Vui lòng thử lại.", "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             } catch (IllegalArgumentException ex) {
-                JOptionPane.showMessageDialog(dialog, ex.getMessage(), "Dữ liệu không hợp lệ", JOptionPane.WARNING_MESSAGE);
+                errNCC.setText("✗ " + ex.getMessage());
+                errNCC.setVisible(true);
             }
         });
         pnlFooter.add(btnHuy);
@@ -651,6 +657,15 @@ public class NhaCungCap_GUI extends JPanel implements ActionListener {
     }
 
     // ===== HELPERS =====
+    private JLabel errLabel() {
+        JLabel l = new JLabel();
+        l.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
+        l.setForeground(Colors.DANGER);
+        l.setAlignmentX(Component.LEFT_ALIGNMENT);
+        l.setVisible(false);
+        return l;
+    }
+
     private JPanel createFormField(String labelText, JComponent field) {
         JPanel row = new JPanel();
         row.setLayout(new BoxLayout(row, BoxLayout.Y_AXIS));

@@ -557,8 +557,17 @@ public class KhuyenMai_GUI extends JPanel implements ActionListener {
         pnlRow.add(Box.createHorizontalGlue());
         pnlMain.add(pnlRow, BorderLayout.CENTER);
 
-        JPanel pnlFooter = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        JPanel pnlFooter = new JPanel();
+        pnlFooter.setLayout(new BoxLayout(pnlFooter, BoxLayout.Y_AXIS));
         pnlFooter.setOpaque(false);
+        JLabel errChung = new JLabel();
+        errChung.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
+        errChung.setForeground(Colors.DANGER);
+        errChung.setAlignmentX(Component.CENTER_ALIGNMENT);
+        errChung.setVisible(false);
+        pnlFooter.add(errChung);
+        JPanel pnlBtns = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        pnlBtns.setOpaque(false);
         JButton btnHuy = new RoundedButton(100, 40, 15, "Hủy", Colors.SECONDARY);
         btnHuy.setForeground(Colors.TEXT_PRIMARY);
         JButton btnThem = new RoundedButton(170, 40, 15, "Thêm khuyến mãi", Colors.PRIMARY);
@@ -584,15 +593,19 @@ public class KhuyenMai_GUI extends JPanel implements ActionListener {
                     JOptionPane.showMessageDialog(dialog, "Thêm thất bại. Vui lòng thử lại.", "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(dialog, "Phần trăm giảm giá phải là số hợp lệ (0-100).", "Dữ liệu không hợp lệ", JOptionPane.WARNING_MESSAGE);
+                errChung.setText("✗ Phần trăm giảm giá phải là số hợp lệ (0-100).");
+                errChung.setVisible(true);
             } catch (DateTimeParseException ex) {
-                JOptionPane.showMessageDialog(dialog, "Ngày không đúng định dạng dd/MM/yyyy.", "Dữ liệu không hợp lệ", JOptionPane.WARNING_MESSAGE);
+                errChung.setText("✗ Ngày không đúng định dạng dd/MM/yyyy.");
+                errChung.setVisible(true);
             } catch (IllegalArgumentException ex) {
-                JOptionPane.showMessageDialog(dialog, ex.getMessage(), "Dữ liệu không hợp lệ", JOptionPane.WARNING_MESSAGE);
+                errChung.setText("✗ " + ex.getMessage());
+                errChung.setVisible(true);
             }
         });
-        pnlFooter.add(btnHuy);
-        pnlFooter.add(btnThem);
+        pnlBtns.add(btnHuy);
+        pnlBtns.add(btnThem);
+        pnlFooter.add(pnlBtns);
         pnlMain.add(pnlFooter, BorderLayout.SOUTH);
 
         dialog.add(pnlMain, BorderLayout.CENTER);
@@ -693,6 +706,13 @@ public class KhuyenMai_GUI extends JPanel implements ActionListener {
         pnlMain.add(pnlRow);
         pnlMain.add(Box.createVerticalStrut(20));
 
+        JLabel errChung = new JLabel();
+        errChung.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
+        errChung.setForeground(Colors.DANGER);
+        errChung.setAlignmentX(Component.LEFT_ALIGNMENT);
+        errChung.setVisible(false);
+        pnlMain.add(errChung);
+
         JPanel pnlFooter = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         pnlFooter.setOpaque(false);
         pnlFooter.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -716,11 +736,14 @@ public class KhuyenMai_GUI extends JPanel implements ActionListener {
                     JOptionPane.showMessageDialog(dialog, "Cập nhật thất bại. Vui lòng thử lại.", "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(dialog, "Phần trăm giảm giá phải là số hợp lệ (0-100).", "Dữ liệu không hợp lệ", JOptionPane.WARNING_MESSAGE);
+                errChung.setText("✗ Phần trăm giảm giá phải là số hợp lệ (0-100).");
+                errChung.setVisible(true);
             } catch (DateTimeParseException ex) {
-                JOptionPane.showMessageDialog(dialog, "Ngày không đúng định dạng dd/MM/yyyy.", "Dữ liệu không hợp lệ", JOptionPane.WARNING_MESSAGE);
+                errChung.setText("✗ Ngày không đúng định dạng dd/MM/yyyy.");
+                errChung.setVisible(true);
             } catch (IllegalArgumentException ex) {
-                JOptionPane.showMessageDialog(dialog, ex.getMessage(), "Dữ liệu không hợp lệ", JOptionPane.WARNING_MESSAGE);
+                errChung.setText("✗ " + ex.getMessage());
+                errChung.setVisible(true);
             }
         });
         pnlFooter.add(btnHuy);

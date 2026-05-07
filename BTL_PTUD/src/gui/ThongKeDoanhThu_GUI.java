@@ -5,6 +5,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.Date;
 import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.ArrayList;
@@ -21,13 +23,13 @@ import com.toedter.calendar.JDateChooser;
 
 import constants.Colors;
 import constants.FontStyle;
-import dao.HoaDon_DAO;
 import exception.RoundedButton;
+import service.HoaDon_Service;
 
 public class ThongKeDoanhThu_GUI extends JPanel implements ActionListener {
 
-    // ===== DAO =====
-    private final HoaDon_DAO hoaDonDAO = new HoaDon_DAO();
+    // ===== SERVICE =====
+    private final HoaDon_Service hoaDonService = new HoaDon_Service();
 
     // ===== FILTER =====
     private JComboBox<String> cbKieu, cbNgay, cbThang, cbNam;
@@ -71,8 +73,8 @@ public class ThongKeDoanhThu_GUI extends JPanel implements ActionListener {
         add(tablePanel);
 
         // TODO: Bỏ comment dòng dưới sau khi fix DB
-        // loadAll(null, null, null, null, null);
-        loadMockData(); // Dùng tạm data mẫu để test GUI
+        loadAll(null, null, null, null, null);
+        // loadMockData(); // Dùng tạm data mẫu để test GUI
         
         updateViewMode();
     }
@@ -308,55 +310,73 @@ public class ThongKeDoanhThu_GUI extends JPanel implements ActionListener {
     }
 
     // ============================================================
-    // LOAD — Gọi DAO, không viết SQL ở đây
+    // LOAD — Gọi Service, không viết SQL ở đây
     // ============================================================
-//    private void loadAll(Integer nam, Integer thang, Integer ngay,
-//                         java.util.Date tuNgayUtil, java.util.Date denNgayUtil) {
-//
-//        Date tuNgay  = tuNgayUtil  != null ? new Date(tuNgayUtil.getTime())  : null;
-//        Date denNgay = denNgayUtil != null ? new Date(denNgayUtil.getTime()) : null;
-//
-//        // --- Cards ---
-//        double dtKy    = hoaDonDAO.tinhDoanhThuKy(nam, thang, ngay, tuNgay, denNgay);
-//        double tongDT  = hoaDonDAO.tinhTongDoanhThu();
-//        int    soGD    = hoaDonDAO.demSoGiaoDich(nam, thang, ngay, tuNgay, denNgay);
-//        double dtTB    = soGD > 0 ? dtKy / soGD : 0;
-//
-//        lblDoanhThuKy.setText(VND.format((long) dtKy)   + "đ");
-//        lblTongDT.setText(VND.format((long) tongDT)     + "đ");
-//        lblSoGD.setText(String.valueOf(soGD));
-//        lblDTTB.setText(VND.format((long) dtTB)         + "đ");
-//
-//        // --- Bar chart ---
-//        barDataset.clear();
-//        LinkedHashMap<String, Double> barMap;
-//        if (thang != null) {
-//            barMap = hoaDonDAO.thongKeTheoNgay(nam, thang);
-//        } else {
-//            barMap = hoaDonDAO.thongKeTheoThang(nam);
-//        }
-//        for (Map.Entry<String, Double> e : barMap.entrySet())
-//            barDataset.addValue(e.getValue(), "Doanh thu (nghìn đ)", e.getKey());
-//
-//        // --- Line chart ---
-//        lineDataset.clear();
-//        LinkedHashMap<String, Double> lineMap =
-//                hoaDonDAO.xuHuongTheoNgay(nam, thang, ngay, tuNgay, denNgay);
-//        if (lineMap.isEmpty()) {
-//            // Fallback: theo tháng
-//            lineMap = hoaDonDAO.thongKeTheoThang(nam);
-//        }
-//        for (Map.Entry<String, Double> e : lineMap.entrySet())
-//            lineDataset.addValue(e.getValue(), "Doanh thu (nghìn đ)", e.getKey());
-//
-//        // --- Table ---
-//        tableModel.setRowCount(0);
-//        ArrayList<Object[]> rows = hoaDonDAO.layDanhSachTheoKy(nam, thang, ngay, tuNgay, denNgay);
-//        for (Object[] row : rows) {
-//            row[3] = VND.format((Long) row[3]) + "đ"; // format TongTien
-//            tableModel.addRow(row);
-//        }
-//    }
+    private void loadAll(Integer nam, Integer thang, Integer ngay,
+                         java.util.Date tuNgayUtil, java.util.Date denNgayUtil) {
+
+        LocalDate tuNgay  = tuNgayUtil  != null
+                ? tuNgayUtil.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()  : null;
+        LocalDate denNgay = denNgayUtil != null
+                ? denNgayUtil.toInstant().atZone(ZoneId.systemDefault()).toLocalDate() : null;
+
+        // --- Cards ---
+        double dtKy   = hoaDonService.tinhDoanhThuKy(nam, thang, ngay, tuNgay, denNgay);
+        double tongDT = hoaDonService.tinhTongDoanhThu();
+        int    soGD   = hoaDonService.demSoGiaoDich(nam, thang, ngay, tuNgay, denNgay);
+        double dtTB   = soGD > 0 ? dtKy / soGD : 0;
+
+        lblDoanhThuKy.setText(VND.format((long) dtKy) + "đ");
+        lblTongDT.setText(VND.format((long) tongDT)   + "đ");
+        lblSoGD.setText(String.valueOf(soGD));
+        lblDTTB.setText(VND.format((long) dtTB)       + "đ");
+
+        // --- Bar chart ---
+        barDataset.clear();
+        LinkedHashMap<String, Double> barMap;
+        if (thang != null && nam != null) {
+            barMap = hoaDonService.thongKeTheoNgay(nam, thang);
+        } else {
+            int barNam = nam != null ? nam : LocalDate.now().getYear();
+            barMap = hoaDonService.thongKeTheoThang(barNam);
+        }
+        for (Map.Entry<String, Double> entry : barMap.entrySet())
+            barDataset.addValue(entry.getValue() / 1_000_000.0, "Doanh thu (triệu đ)", entry.getKey());
+
+        // --- Line chart ---
+        lineDataset.clear();
+        LocalDate lineFrom = tuNgay;
+        LocalDate lineTo   = denNgay;
+        if (lineFrom == null || lineTo == null) {
+            // Compute range from nam/thang/ngay
+            int y = nam != null ? nam : LocalDate.now().getYear();
+            if (thang != null) {
+                lineFrom = LocalDate.of(y, thang, 1);
+                lineTo   = lineFrom.withDayOfMonth(lineFrom.lengthOfMonth());
+            } else {
+                lineFrom = LocalDate.of(y, 1, 1);
+                lineTo   = LocalDate.of(y, 12, 31);
+            }
+        }
+        LinkedHashMap<String, Double> lineMap = hoaDonService.xuHuongTheoNgay(lineFrom, lineTo);
+        if (lineMap.isEmpty()) {
+            // Fallback: theo tháng
+            int y = nam != null ? nam : LocalDate.now().getYear();
+            lineMap = hoaDonService.thongKeTheoThang(y);
+        }
+        for (Map.Entry<String, Double> entry : lineMap.entrySet())
+            lineDataset.addValue(entry.getValue() / 1_000_000.0, "Doanh thu (triệu đ)", entry.getKey());
+
+        // --- Table ---
+        tableModel.setRowCount(0);
+        ArrayList<Object[]> rows = hoaDonService.layDanhSachTheoKy(nam, thang, ngay, tuNgay, denNgay);
+        for (Object[] row : rows) {
+            if (row[7] instanceof Number) {
+                row[7] = VND.format(((Number) row[7]).longValue()) + "đ";
+            }
+            tableModel.addRow(row);
+        }
+    }
 
     // ============================================================
     // ACTION
@@ -364,8 +384,40 @@ public class ThongKeDoanhThu_GUI extends JPanel implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() != btnLoc) return;
-        
-        generateMockDataForFilter();
+
+        boolean isSpecific = "Theo thời gian cụ thể".equals(cbKieu.getSelectedItem());
+
+        if (isSpecific) {
+            String namStr   = (String) cbNam.getSelectedItem();
+            String thangStr = (String) cbThang.getSelectedItem();
+            String ngayStr  = (String) cbNgay.getSelectedItem();
+
+            boolean hasNam   = namStr   != null && !namStr.startsWith("Chọn");
+            boolean hasThang = thangStr != null && !thangStr.startsWith("Chọn");
+            boolean hasNgay  = ngayStr  != null && !ngayStr.startsWith("Chọn");
+
+            if (!hasNam && !hasThang && !hasNgay) {
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn thời gian thống kê!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            Integer nam   = hasNam   ? Integer.parseInt(namStr)   : null;
+            Integer thang = hasThang ? Integer.parseInt(thangStr) : null;
+            Integer ngay  = hasNgay  ? Integer.parseInt(ngayStr)  : null;
+            loadAll(nam, thang, ngay, null, null);
+        } else {
+            java.util.Date from = dateFrom.getDate();
+            java.util.Date to   = dateTo.getDate();
+            if (from == null || to == null) {
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn đầy đủ Từ ngày và Đến ngày!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            if (from.after(to)) {
+                JOptionPane.showMessageDialog(this, "Từ ngày phải trước hoặc bằng Đến ngày!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            loadAll(null, null, null, from, to);
+        }
     }
 
     // ============================================================
@@ -424,9 +476,9 @@ public class ThongKeDoanhThu_GUI extends JPanel implements ActionListener {
     }
 
     // ============================================================
-    // MOCK DATA GENERATOR — Xử lý logic lọc giả lập
+    // (Removed: generateMockDataForFilter — replaced by loadAll)
     // ============================================================
-    private void generateMockDataForFilter() {
+    @Deprecated private void generateMockDataForFilter() {
         boolean isSpecific = "Theo thời gian cụ thể".equals(cbKieu.getSelectedItem());
         
         barDataset.clear();
@@ -599,8 +651,13 @@ public class ThongKeDoanhThu_GUI extends JPanel implements ActionListener {
     }
 
     private void loadMockData() {
-        // Gọi hàm giả lập mặc định lần đầu (năm 2025)
-        cbNam.setSelectedItem("2025");
-        generateMockDataForFilter();
+        // Khởi tạo bảng trống khi chưa có dữ liệu (fallback)
+        tableModel.setRowCount(0);
+        barDataset.clear();
+        lineDataset.clear();
+        lblDoanhThuKy.setText("Đang tải...");
+        lblTongDT.setText("Đang tải...");
+        lblSoGD.setText("Đang tải...");
+        lblDTTB.setText("Đang tải...");
     }
 }

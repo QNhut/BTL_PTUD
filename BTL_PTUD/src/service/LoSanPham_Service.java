@@ -244,4 +244,9 @@ public class LoSanPham_Service {
 		}
 		return count;
 	}
+
+	/** Sinh mã lô tự động — dùng cho PhieuNhap_Service */
+	public String sinhMaLoTuDong() {
+		return loDAO.sinhMaTuDong();
+	}
 }

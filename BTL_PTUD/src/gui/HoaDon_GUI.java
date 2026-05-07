@@ -2,7 +2,6 @@ package gui;
 
 import constants.Colors;
 import constants.FontStyle;
-import dao.LoSanPham_DAO;
 import entity.NhanVien;
 import entity.SanPham;
 import exception.QuantityEditor;
@@ -102,7 +101,6 @@ public class HoaDon_GUI extends JPanel {
     private double totalPrice = 0;
     private JLabel lblTotal;
     private JLabel lblTotalPrice;
-    private final LoSanPham_DAO loSanPhamDAO = new LoSanPham_DAO();
     private final HoaDon_Service hoaDonService = new HoaDon_Service();
     private final SanPham_Service sanPhamService = new SanPham_Service();
     private final service.KhachHang_Service khachHangService = new service.KhachHang_Service();
@@ -803,7 +801,7 @@ public class HoaDon_GUI extends JPanel {
         if (sanPham == null) {
             return 0;
         }
-        return loSanPhamDAO.layTongSoLuongTonTheoMaSanPham(sanPham.getMaSanPham());
+        return sanPhamService.layTonKho(sanPham.getMaSanPham());
     }
 
     //===="Tải danh sách sản phẩm đang hoạt động từ DB"=====

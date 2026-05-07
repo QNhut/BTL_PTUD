@@ -6,16 +6,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import dao.KhuyenMai_DAO;
 import dao.LoSanPham_DAO;
 import dao.SanPham_DAO;
+import dao.Thue_DAO;
+import entity.KhuyenMai;
 import entity.LoSanPham;
 import entity.SanPham;
+import entity.Thue;
 
 public class SanPham_Service {
 	public static final int NGUONG_SAP_HET = 50;
 
 	private final SanPham_DAO sanPhamDAO = new SanPham_DAO();
 	private final LoSanPham_DAO loSanPhamDAO = new LoSanPham_DAO();
+	private final KhuyenMai_DAO khuyenMaiDAO = new KhuyenMai_DAO();
+	private final Thue_DAO thueDAO = new Thue_DAO();
 	private final DonViTinhConverter converter = new DonViTinhConverter();
 
 	// ==================== DTO tồn kho ====================
@@ -157,9 +163,41 @@ public class SanPham_Service {
 		return new ThongKe(ds.size(), con, sap, het);
 	}
 
+	// ==================== TỒN KHO (1 SP) ====================
+	/** Trả về tổng số lượng còn tồn (chưa hết hạn) của 1 sản phẩm — dùng cho HoaDon_GUI */
+	public int layTonKho(String maSP) {
+		return loSanPhamDAO.layTongSoLuongTonTheoMaSanPham(maSP);
+	}
+
 	// ── CRUD ─────────────────────────────────────────────────
 
-	public boolean themSanPham(SanPham sp) { return sanPhamDAO.themSanPham(sp); }
+	/**
+	 * Thêm sản phẩm mới. Tự động gán KhuyenMai/Thue mặc định (record đầu tiên từ DB)
+	 * nếu sp không có để tránh NPE trong DAO.
+	 */
+	public boolean themSanPham(SanPham sp) {
+		if (sp.getKhuyenMai() == null) {
+			KhuyenMai km = layKhuyenMaiMacDinh();
+			if (km == null) throw new IllegalStateException("Không có khuyến mãi nào trong DB");
+			sp.setKhuyenMai(km);
+		}
+		if (sp.getThue() == null) {
+			Thue thue = layThueMacDinh();
+			if (thue == null) throw new IllegalStateException("Không có thuế nào trong DB");
+			sp.setThue(thue);
+		}
+		return sanPhamDAO.themSanPham(sp);
+	}
+
+	private KhuyenMai layKhuyenMaiMacDinh() {
+		java.util.ArrayList<KhuyenMai> ds = khuyenMaiDAO.getDSKhuyenMai();
+		return ds.isEmpty() ? null : ds.get(0);
+	}
+
+	private Thue layThueMacDinh() {
+		java.util.ArrayList<Thue> ds = thueDAO.getDSThue();
+		return ds.isEmpty() ? null : ds.get(0);
+	}
 
 	public boolean capNhatSanPham(SanPham sp) { return sanPhamDAO.updateSanPham(sp); }
 

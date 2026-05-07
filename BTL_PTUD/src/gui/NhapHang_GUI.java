@@ -45,8 +45,6 @@ import com.toedter.calendar.JDateChooser;
 
 import constants.Colors;
 import constants.FontStyle;
-import dao.ChiTietPhieuNhap_DAO;
-import dao.PhieuNhap_DAO;
 import entity.ChiTietPhieuNhap;
 import entity.KeSanPham;
 import entity.NhaCungCap;
@@ -62,8 +60,6 @@ public class NhapHang_GUI extends JPanel {
 	private final PhieuNhap_Service phieuNhapService = new PhieuNhap_Service();
 	private final NhaCungCap_Service nhaCungCapService = new NhaCungCap_Service();
 	private final LoSanPham_Service loSanPhamService = new LoSanPham_Service();
-	private final PhieuNhap_DAO phieuNhapDAO = new PhieuNhap_DAO();
-	private final ChiTietPhieuNhap_DAO chiTietDAO = new ChiTietPhieuNhap_DAO();
 	private boolean dangCapNhatBang;
 	private List<ChiTietPhieuNhap> danhSachChiTiet = new ArrayList<ChiTietPhieuNhap>();
 	private File selectedFile;
@@ -86,6 +82,7 @@ public class NhapHang_GUI extends JPanel {
 	private JLabel lblSubTitle6;
 	private JLabel lblcontentRight;
 	private JComboBox<String> cboNCC;
+	private JLabel errNCC;
 	private JLabel lblsubcontentRight1;
 	private JLabel lblsubcontentRight2;
 	private JDateChooser dtcNgayNhap;
@@ -211,6 +208,13 @@ public class NhapHang_GUI extends JPanel {
 		cboNCC.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
 		cboNCC.setAlignmentX(Component.LEFT_ALIGNMENT);
 		napDanhSachNhaCungCap();
+		errNCC = new JLabel();
+		errNCC.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
+		errNCC.setForeground(Colors.DANGER);
+		errNCC.setAlignmentX(Component.LEFT_ALIGNMENT);
+		errNCC.setVisible(false);
+		pnlContentTopRight.add(errNCC);
+		cboNCC.addActionListener(e -> { if (errNCC != null) errNCC.setVisible(false); });
 		
 		pnlContentTopRight.add(Box.createVerticalStrut(10));
 		pnlContentTopRight.add(lblsubcontentRight2 = new JLabel("Ngày nhập hàng"));
@@ -999,7 +1003,7 @@ public class NhapHang_GUI extends JPanel {
 			String tenNCC = docNhaCungCapDangChon();
 			NhaCungCap ncc = nhaCungCapService.layNhaCungCapTheoTen(tenNCC);
 			if (ncc == null) {
-				JOptionPane.showMessageDialog(this, "Vui lòng chọn nhà cung cấp.", "Thiếu thông tin", JOptionPane.WARNING_MESSAGE);
+				if (errNCC != null) { errNCC.setText("✗ Vui lòng chọn nhà cung cấp."); errNCC.setVisible(true); }
 				return;
 			}
 
@@ -1009,40 +1013,24 @@ public class NhapHang_GUI extends JPanel {
 			}
 
 			// 2. Sinh mã phiếu nhập tự động
-			String maPN = taoMaPhieuNhapTuDong();
+			String maPN = phieuNhapService.sinhMaPhieuNhap(phieuNhapService.sinhPrefixHomNay());
 
-			// 3. Tạo và lưu PhieuNhap
+			// 3. Tạo PhieuNhap
 			PhieuNhap pn = new PhieuNhap(maPN, ngayNhap, ncc, new NhanVien("NV001"), docGhiChuDangNhap());
-			boolean luuPN = phieuNhapDAO.taoPhieuNhap(pn);
-			if (!luuPN) {
+
+			// 4. Lưu chi tiết + tạo lô sản phẩm qua Service
+			// Đồng bộ số lượng từ bảng vào danh sách
+			for (int i = 0; i < tableModel.getRowCount(); i++) {
+				if (i < danhSachChiTiet.size()) {
+					int soLuongMoi = docSoNguyen(tableModel.getValueAt(i, 1));
+					danhSachChiTiet.get(i).setSoLuong(soLuongMoi);
+				}
+			}
+			KeSanPham keSP = new KeSanPham("KSP2026010"); // Kệ hàng mới nhập
+			int soLoTao = phieuNhapService.luuPhieuNhapVaChiTiet(pn, danhSachChiTiet, keSP);
+			if (soLoTao < 0) {
 				JOptionPane.showMessageDialog(this, "Không thể tạo phiếu nhập.", "Lỗi", JOptionPane.ERROR_MESSAGE);
 				return;
-			}
-
-			// 4. Lưu chi tiết + tạo lô sản phẩm
-			int soLoTao = 0;
-			for (int i = 0; i < tableModel.getRowCount(); i++) {
-				// Cập nhật số lượng từ bảng (có thể đã sửa)
-				if (i < danhSachChiTiet.size()) {
-					ChiTietPhieuNhap ct = danhSachChiTiet.get(i);
-					int soLuongMoi = docSoNguyen(tableModel.getValueAt(i, 1));
-					ct.setSoLuong(soLuongMoi);
-					ct.setPhieuNhap(pn);
-
-					// Lưu chi tiết phiếu nhập
-					chiTietDAO.them(ct);
-
-					// Tạo lô sản phẩm (quy đổi đơn vị + tính HSD)
-					try {
-						String maLo = taoMaLoTam(i);
-						KeSanPham ke = new KeSanPham("KSP2026010"); // Kệ hàng mới nhập
-						entity.LoSanPham lo = loSanPhamService.taoLoTuPhieuNhap(ct, pn, maLo, ke);
-						loSanPhamService.luuLo(lo);
-						soLoTao++;
-					} catch (Exception ex) {
-						System.err.println("Lỗi tạo lô cho dòng " + i + ": " + ex.getMessage());
-					}
-				}
 			}
 
 			JOptionPane.showMessageDialog(this,
@@ -1064,14 +1052,5 @@ public class NhapHang_GUI extends JPanel {
 		java.util.Date d = dtcNgayNhap == null ? null : dtcNgayNhap.getDate();
 		if (d == null) return null;
 		return d.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-	}
-
-	private String taoMaPhieuNhapTuDong() {
-		String prefix = "PN" + new SimpleDateFormat("yyyyMMdd").format(new java.util.Date());
-		int stt = 1;
-		while (phieuNhapDAO.layPNTheoMa(prefix + String.format("%02d", stt)) != null) {
-			stt++;
-		}
-		return prefix + String.format("%02d", stt);
 	}
 }

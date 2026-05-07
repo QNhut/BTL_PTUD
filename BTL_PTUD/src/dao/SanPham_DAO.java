@@ -19,7 +19,7 @@ public class SanPham_DAO {
     public ArrayList<SanPham> getDSSanPham() {
         ArrayList<SanPham> dsSanPham = new ArrayList<SanPham>();
         String sql = "SELECT sp.MaSanPham, sp.TenSanPham, sp.CongDung, sp.ThanhPhan, sp.HanSuDung, sp.GiaThanh, "
-                + "sp.NoiSanXuat, sp.MaLoaiSanPham, sp.MaKhuyenMai, sp.MaThue, sp.TrangThai, sp.HinhAnh, "
+                + "sp.NoiSanXuat, sp.MaLoaiSanPham, sp.MaKhuyenMai, sp.MaThue, sp.TrangThai, sp.HinhAnh, sp.DonViTinh, "
                 + "lsp.TenLoaiSanPham, lsp.MoTa AS MoTaLoai, "
                 + "km.TenKhuyenMai, km.PhanTramGG, km.NgayBatDau, km.NgayKetThuc, km.TrangThai AS TrangThaiKM, "
                 + "t.TenThue, t.PhanTramThue, t.MoTa AS MoTaThue "
@@ -43,7 +43,7 @@ public class SanPham_DAO {
 
     public SanPham laySanPhamTheoMa(String maSP) {
         String sql = "SELECT sp.MaSanPham, sp.TenSanPham, sp.CongDung, sp.ThanhPhan, sp.HanSuDung, sp.GiaThanh, "
-                + "sp.NoiSanXuat, sp.MaLoaiSanPham, sp.MaKhuyenMai, sp.MaThue, sp.TrangThai, sp.HinhAnh, "
+                + "sp.NoiSanXuat, sp.MaLoaiSanPham, sp.MaKhuyenMai, sp.MaThue, sp.TrangThai, sp.HinhAnh, sp.DonViTinh, "
                 + "lsp.TenLoaiSanPham, lsp.MoTa AS MoTaLoai, "
                 + "km.TenKhuyenMai, km.PhanTramGG, km.NgayBatDau, km.NgayKetThuc, km.TrangThai AS TrangThaiKM, "
                 + "t.TenThue, t.PhanTramThue, t.MoTa AS MoTaThue "
@@ -69,8 +69,8 @@ public class SanPham_DAO {
     }
 
     public boolean themSanPham(SanPham sp) {
-        String sql = "INSERT INTO SanPham (MaSanPham, TenSanPham, CongDung, ThanhPhan, HanSuDung, GiaThanh, NoiSanXuat, MaLoaiSanPham, MaKhuyenMai, MaThue, TrangThai, HinhAnh) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO SanPham (MaSanPham, TenSanPham, CongDung, ThanhPhan, HanSuDung, GiaThanh, NoiSanXuat, MaLoaiSanPham, MaKhuyenMai, MaThue, TrangThai, HinhAnh, DonViTinh) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try {
             con = ConnectDB.getInstance().getConnection();
             try (PreparedStatement stmt = con.prepareStatement(sql)) {
@@ -86,6 +86,7 @@ public class SanPham_DAO {
                 stmt.setString(10, sp.getThue().getMaThue());
                 stmt.setBoolean(11, sp.isTrangThai());
                 stmt.setString(12, sp.getHinhAnh());
+                stmt.setString(13, sp.getDonViTinh());
                 return stmt.executeUpdate() > 0;
             }
         } catch (SQLException e) {
@@ -96,7 +97,7 @@ public class SanPham_DAO {
 
     public boolean updateSanPham(SanPham sp) {
         String sql = "UPDATE SanPham SET TenSanPham = ?, CongDung = ?, ThanhPhan = ?, HanSuDung = ?, GiaThanh = ?, NoiSanXuat = ?, "
-                + "MaLoaiSanPham = ?, MaKhuyenMai = ?, MaThue = ?, TrangThai = ?, HinhAnh = ? WHERE MaSanPham = ?";
+                + "MaLoaiSanPham = ?, MaKhuyenMai = ?, MaThue = ?, TrangThai = ?, HinhAnh = ?, DonViTinh = ? WHERE MaSanPham = ?";
         try {
             con = ConnectDB.getInstance().getConnection();
             try (PreparedStatement stmt = con.prepareStatement(sql)) {
@@ -111,7 +112,8 @@ public class SanPham_DAO {
                 stmt.setString(9, sp.getThue().getMaThue());
                 stmt.setBoolean(10, sp.isTrangThai());
                 stmt.setString(11, sp.getHinhAnh());
-                stmt.setString(12, sp.getMaSanPham());
+                stmt.setString(12, sp.getDonViTinh());
+                stmt.setString(13, sp.getMaSanPham());
                 return stmt.executeUpdate() > 0;
             }
         } catch (SQLException e) {
@@ -144,8 +146,8 @@ public class SanPham_DAO {
                 rs.getString("MaKhuyenMai"),
                 rs.getString("TenKhuyenMai"),
                 rs.getDouble("PhanTramGG"),
-                rs.getTimestamp("NgayBatDau").toLocalDateTime().toLocalDate(),
-                rs.getTimestamp("NgayKetThuc").toLocalDateTime().toLocalDate(),
+                rs.getTimestamp("NgayBatDau") != null ? rs.getTimestamp("NgayBatDau").toLocalDateTime().toLocalDate() : java.time.LocalDate.now(),
+                rs.getTimestamp("NgayKetThuc") != null ? rs.getTimestamp("NgayKetThuc").toLocalDateTime().toLocalDate() : java.time.LocalDate.now().plusYears(1),
                 rs.getBoolean("TrangThaiKM"));
 
         Thue thue = new Thue(
@@ -167,6 +169,7 @@ public class SanPham_DAO {
         sp.setThue(thue);
         sp.setTrangThai(rs.getBoolean("TrangThai"));
         sp.setHinhAnh(rs.getString("HinhAnh"));
+        sp.setDonViTinh(rs.getString("DonViTinh"));
         return sp;
     }
 

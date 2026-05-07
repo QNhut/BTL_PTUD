@@ -2,7 +2,6 @@ package gui;
 
 import constants.Colors;
 import constants.FontStyle;
-import dao.NhanVien_DAO;
 import entity.NhanVien;
 import exception.RoundedButton;
 import exception.RoundedPanel;
@@ -614,6 +613,14 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
         pnlMain.add(pnlInfoContent);
         pnlMain.add(Box.createVerticalGlue());
 
+        JLabel errDialog = new JLabel();
+        errDialog.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
+        errDialog.setForeground(Colors.DANGER);
+        errDialog.setAlignmentX(Component.LEFT_ALIGNMENT);
+        errDialog.setVisible(false);
+        errDialog.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 20));
+        pnlMain.add(errDialog);
+
         // ===== FOOTER =====
         JPanel pnlFooter = new JPanel();
         pnlFooter.setLayout(new FlowLayout(FlowLayout.RIGHT, 15, 10));
@@ -674,8 +681,8 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
                                 JOptionPane.ERROR_MESSAGE);
                     }
                 } catch (IllegalArgumentException ex) {
-                    JOptionPane.showMessageDialog(dialog, ex.getMessage(), "Dữ liệu không hợp lệ",
-                            JOptionPane.WARNING_MESSAGE);
+                    errDialog.setText("✗ " + ex.getMessage());
+                    errDialog.setVisible(true);
                 }
             }
         });
@@ -1069,7 +1076,12 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
         pnlMain.add(pnlWork);
         pnlMain.add(Box.createVerticalStrut(20));
 
-        // ===== FOOTER =====
+        JLabel errDialog = new JLabel();
+        errDialog.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
+        errDialog.setForeground(Colors.DANGER);
+        errDialog.setAlignmentX(Component.LEFT_ALIGNMENT);
+        errDialog.setVisible(false);
+        pnlMain.add(errDialog);
         JPanel pnlFooter = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         pnlFooter.setOpaque(false);
         pnlFooter.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -1107,9 +1119,8 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
                             JOptionPane.ERROR_MESSAGE);
                 }
             } catch (IllegalArgumentException ex) {
-                JOptionPane.showMessageDialog(dialog,
-                        ex.getMessage(), "Dữ liệu không hợp lệ",
-                        JOptionPane.WARNING_MESSAGE);
+                errDialog.setText("✗ " + ex.getMessage());
+                errDialog.setVisible(true);
             }
         });
 

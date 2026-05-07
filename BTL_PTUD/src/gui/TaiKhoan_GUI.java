@@ -8,13 +8,13 @@ import javax.swing.border.*;
 import constants.Colors;
 import constants.FontStyle;
 import constants.Spacings;
-import dao.NhanVien_DAO;
 import entity.NhanVien;
 import entity.TaiKhoan;
 import exception.RoundedButton;
 import exception.RoundedPanel;
 import exception.RoundedPasswordField;
 import exception.RoundedTextField;
+import service.NhanVien_Service;
 import service.TaiKhoan_Service;
 
 public class TaiKhoan_GUI extends JPanel implements ActionListener {
@@ -26,14 +26,15 @@ public class TaiKhoan_GUI extends JPanel implements ActionListener {
     private JPasswordField txtMatKhau;
     private JRadioButton rbNam, rbNu;
     private JButton btnLuuThayDoi, btnDoiMatKhau;
+    private JLabel errThongTin;
     private TaiKhoan_Service taiKhoanService;
     private String currentToken;
-    private NhanVien_DAO nhanVienDAO;
+    private NhanVien_Service nhanVienService;
 
     public TaiKhoan_GUI(TaiKhoan_Service taiKhoanService, String token) {
         this.taiKhoanService = taiKhoanService;
         this.currentToken = token;
-        this.nhanVienDAO = new NhanVien_DAO();
+        this.nhanVienService = new NhanVien_Service();
 
         TaiKhoan tk = taiKhoanService.layTaiKhoanTheoToken(token);
         NhanVien nv = (tk != null) ? tk.getNhanVien() : null;
@@ -161,11 +162,21 @@ public class TaiKhoan_GUI extends JPanel implements ActionListener {
         btnLuuThayDoi = accentBtn("Lưu thay đổi");
         btnDoiMatKhau = accentBtn("Đổi mật khẩu");
 
-        JPanel btnsThongTin = new JPanel(new FlowLayout(FlowLayout.RIGHT, Spacings.S3, 0));
+        errThongTin = new JLabel();
+        errThongTin.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
+        errThongTin.setForeground(Colors.DANGER);
+        errThongTin.setVisible(false);
+
+        JPanel btnsThongTin = new JPanel();
+        btnsThongTin.setLayout(new BoxLayout(btnsThongTin, BoxLayout.Y_AXIS));
         btnsThongTin.setOpaque(false);
         btnsThongTin.setAlignmentX(LEFT_ALIGNMENT);
-        btnsThongTin.add(btnDoiMatKhau);
-        btnsThongTin.add(btnLuuThayDoi);
+        btnsThongTin.add(errThongTin);
+        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, Spacings.S3, 0));
+        btnRow.setOpaque(false);
+        btnRow.add(btnDoiMatKhau);
+        btnRow.add(btnLuuThayDoi);
+        btnsThongTin.add(btnRow);
 
         wrapper.add(buildCard("Thông tin cá nhân", "Cập nhật thông tin cá nhân của bạn", formThongTin, btnsThongTin));
         wrapper.add(Box.createVerticalStrut(Spacings.S6));
@@ -323,9 +334,8 @@ public class TaiKhoan_GUI extends JPanel implements ActionListener {
             boolean gioiTinh = rbNam.isSelected();
 
             if (hoTen.isEmpty() || sdt.isEmpty()) {
-                JOptionPane.showMessageDialog(this,
-                        "Vui lòng nhập đầy đủ họ tên và số điện thoại!", "Lỗi",
-                        JOptionPane.WARNING_MESSAGE);
+                errThongTin.setText("✗ Vui lòng nhập đầy đủ họ tên và số điện thoại!");
+                errThongTin.setVisible(true);
                 return;
             }
 
@@ -337,7 +347,8 @@ public class TaiKhoan_GUI extends JPanel implements ActionListener {
                 nv.setGioiTinh(gioiTinh);
                 nv.setCCCD(cccd);
 
-                if (nhanVienDAO.updateNhanVien(nv)) {
+                if (nhanVienService.updateNhanVien(nv)) {
+                    errThongTin.setVisible(false);
                     JOptionPane.showMessageDialog(this,
                             "Cập nhật thông tin thành công!", "Thành công",
                             JOptionPane.INFORMATION_MESSAGE);
@@ -347,7 +358,8 @@ public class TaiKhoan_GUI extends JPanel implements ActionListener {
                             JOptionPane.ERROR_MESSAGE);
                 }
             } catch (IllegalArgumentException ex) {
-                JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.WARNING_MESSAGE);
+                errThongTin.setText("✗ " + ex.getMessage());
+                errThongTin.setVisible(true);
             }
 
         } else if (src == btnDoiMatKhau) {

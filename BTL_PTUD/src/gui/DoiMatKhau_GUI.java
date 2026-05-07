@@ -3,10 +3,11 @@ package gui;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import constants.Colors;
 import constants.FontStyle;
 import constants.Spacings;
-import dao.TaiKhoan_DAO;
 import entity.TaiKhoan;
 import service.TaiKhoan_Service;
 import exception.RoundedButton;
@@ -16,14 +17,13 @@ public class DoiMatKhau_GUI extends JFrame implements ActionListener {
     private JPasswordField txtMatKhauHienTai, txtMatKhauMoi, txtXacNhanMatKhau;
     private RoundedButton btnDoiMatKhau, btnHuy;
     private JCheckBox chkHienMK;
+    private JLabel errHienTai, errMoi, errXacNhan;
     private TaiKhoan_Service taiKhoanService;
     private String currentToken;
-    private TaiKhoan_DAO taiKhoanDAO;
 
     public DoiMatKhau_GUI(TaiKhoan_Service taiKhoanService, String token) {
         this.taiKhoanService = taiKhoanService;
         this.currentToken = token;
-        this.taiKhoanDAO = new TaiKhoan_DAO();
         
         setTitle("Đổi mật khẩu");
         setSize(500, 500);
@@ -63,12 +63,16 @@ public class DoiMatKhau_GUI extends JFrame implements ActionListener {
         txtMatKhauHienTai = new JPasswordField();
         stylePasswordField(txtMatKhauHienTai);
         main.add(fieldGroup("Mật khẩu hiện tại", txtMatKhauHienTai));
+        errHienTai = errLabel();
+        main.add(errHienTai);
         main.add(Box.createVerticalStrut(Spacings.S4));
 
         // Mật khẩu mới
         txtMatKhauMoi = new JPasswordField();
         stylePasswordField(txtMatKhauMoi);
         main.add(fieldGroup("Mật khẩu mới", txtMatKhauMoi));
+        errMoi = errLabel();
+        main.add(errMoi);
         main.add(Box.createVerticalStrut(Spacings.S1));
 
         JLabel hint = new JLabel("Ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường và số");
@@ -82,7 +86,14 @@ public class DoiMatKhau_GUI extends JFrame implements ActionListener {
         txtXacNhanMatKhau = new JPasswordField();
         stylePasswordField(txtXacNhanMatKhau);
         main.add(fieldGroup("Xác nhận mật khẩu mới", txtXacNhanMatKhau));
+        errXacNhan = errLabel();
+        main.add(errXacNhan);
         main.add(Box.createVerticalStrut(Spacings.S3));
+
+        // Clear errors on typing
+        addClearOnType(txtMatKhauHienTai, errHienTai);
+        addClearOnType(txtMatKhauMoi, errMoi);
+        addClearOnType(txtXacNhanMatKhau, errXacNhan);
 
         // Checkbox hiện mật khẩu
         chkHienMK = new JCheckBox("Hiện mật khẩu");
@@ -144,6 +155,28 @@ public class DoiMatKhau_GUI extends JFrame implements ActionListener {
         return p;
     }
 
+    private JLabel errLabel() {
+        JLabel l = new JLabel();
+        l.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
+        l.setForeground(Colors.DANGER);
+        l.setAlignmentX(LEFT_ALIGNMENT);
+        l.setVisible(false);
+        return l;
+    }
+
+    private void addClearOnType(JPasswordField field, JLabel errLbl) {
+        field.getDocument().addDocumentListener(new DocumentListener() {
+            public void insertUpdate(DocumentEvent e) { errLbl.setVisible(false); }
+            public void removeUpdate(DocumentEvent e) { errLbl.setVisible(false); }
+            public void changedUpdate(DocumentEvent e) { errLbl.setVisible(false); }
+        });
+    }
+
+    private void showErr(JLabel errLbl, String msg) {
+        errLbl.setText("✗ " + msg);
+        errLbl.setVisible(true);
+    }
+
     @Override
     public void actionPerformed(ActionEvent e) {
         Object src = e.getSource();
@@ -160,23 +193,23 @@ public class DoiMatKhau_GUI extends JFrame implements ActionListener {
             String mkMoi = new String(txtMatKhauMoi.getPassword()).trim();
             String xacNhan = new String(txtXacNhanMatKhau.getPassword()).trim();
 
-            if (mkHienTai.isEmpty() || mkMoi.isEmpty() || xacNhan.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ thông tin!", "Lỗi", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
+            boolean valid = true;
+            if (mkHienTai.isEmpty()) { showErr(errHienTai, "Vui lòng nhập mật khẩu hiện tại"); valid = false; }
+            if (mkMoi.isEmpty()) { showErr(errMoi, "Vui lòng nhập mật khẩu mới"); valid = false; }
+            if (xacNhan.isEmpty()) { showErr(errXacNhan, "Vui lòng xác nhận mật khẩu mới"); valid = false; }
+            if (!valid) return;
 
             if (!mkMoi.equals(xacNhan)) {
-                JOptionPane.showMessageDialog(this, "Mật khẩu mới và xác nhận không khớp!", "Lỗi", JOptionPane.WARNING_MESSAGE);
+                showErr(errXacNhan, "Xác nhận không khớp với mật khẩu mới");
                 return;
             }
 
-            TaiKhoan xacThuc = taiKhoanDAO.login(tk.getTenDangNhap(), mkHienTai);
-            if (xacThuc == null) {
-                JOptionPane.showMessageDialog(this, "Mật khẩu hiện tại không đúng!", "Lỗi", JOptionPane.WARNING_MESSAGE);
+            if (!taiKhoanService.xacThucMatKhau(tk.getTenDangNhap(), mkHienTai)) {
+                showErr(errHienTai, "Mật khẩu hiện tại không đúng");
                 return;
             }
 
-            if (taiKhoanDAO.doiMatKhau(tk.getTenDangNhap(), mkMoi)) {
+            if (taiKhoanService.doiMatKhau(tk.getTenDangNhap(), mkMoi)) {
                 JOptionPane.showMessageDialog(this, "Đổi mật khẩu thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
                 dispose();
             } else {

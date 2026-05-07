@@ -64,6 +64,7 @@ public class ChiTietSanPham_GUI extends JDialog {
 	private RoundedComboBox<String> cboDonVi;
 	private JTextArea txaMoTa, txaThanhPhan, txaCongDung, txaCachDung, txaChongChiDinh;
 	private RoundedComboBox<String> cboDanhMuc;
+	private JLabel errTen, errGia;
 	private List<LoaiSanPham> dsLoaiSP;
 
 	private static final DecimalFormat PRICE_FMT = new DecimalFormat("#,###");
@@ -792,6 +793,21 @@ public class ChiTietSanPham_GUI extends JDialog {
 			}
 		});
 
+		// Load existing image in edit mode
+		if (sanPham != null) {
+			String fn = sanPham.getHinhAnh();
+			if (fn != null && !fn.isBlank()) {
+				ImageIcon ic = imgCache.getImage(fn, 146, 196, icon -> {
+					lblAnhPreview.setIcon(icon);
+					lblAnhPreview.setText(null);
+				});
+				if (ic != null) {
+					lblAnhPreview.setIcon(ic);
+					lblAnhPreview.setText(null);
+				}
+			}
+		}
+
 		topRow.add(lblAnhPreview);
 		topRow.add(Box.createRigidArea(new Dimension(20, 0)));
 
@@ -811,9 +827,9 @@ public class ChiTietSanPham_GUI extends JDialog {
 		txtTen.setAlignmentX(Component.LEFT_ALIGNMENT);
 
 		info.add(txtTen);
+		errTen = errLabelSP();
+		info.add(errTen);
 		info.add(Box.createRigidArea(new Dimension(0, 12)));
-
-		// ── DANH MỤC ──
 		info.add(fieldLabel("Danh mục"));
 		info.add(Box.createRigidArea(new Dimension(0, 4)));
 
@@ -885,6 +901,8 @@ public class ChiTietSanPham_GUI extends JDialog {
 		giaRow.add(lblD);
 
 		info.add(giaRow);
+		errGia = errLabelSP();
+		info.add(errGia);
 
 		// add info vào top
 		topRow.add(info);
@@ -960,9 +978,7 @@ public class ChiTietSanPham_GUI extends JDialog {
 					BorderFactory.createMatteBorder(0, 0, sel ? 2 : 0, 0, Colors.PRIMARY),
 					BorderFactory.createEmptyBorder(12, 18, sel ? 10 : 12, 18)));
 		}
-		Component[] comps = contentHolder.getComponents();
-		for (int j = 0; j < comps.length; j++)
-			comps[j].setVisible(j == idx);
+		((CardLayout) contentHolder.getLayout()).show(contentHolder, String.valueOf(idx));
 		contentHolder.revalidate();
 		contentHolder.repaint();
 		// Cập nhật footer
@@ -1049,16 +1065,17 @@ public class ChiTietSanPham_GUI extends JDialog {
 	private void luuSanPham() {
 		String ten = txtTen != null ? txtTen.getText().trim() : "";
 		if (ten.isEmpty()) {
-			JOptionPane.showMessageDialog(this, "Vui lòng nhập tên sản phẩm", "Thiếu thông tin",
-					JOptionPane.WARNING_MESSAGE);
+			if (errTen != null) { errTen.setText("✗ Vui lòng nhập tên sản phẩm"); errTen.setVisible(true); }
 			return;
 		}
+		if (errTen != null) errTen.setVisible(false);
 		double gia = 0;
 		try {
 			String giaStr = txtGia != null ? txtGia.getText().trim().replace(",", "") : "0";
 			gia = Double.parseDouble(giaStr);
+			if (errGia != null) errGia.setVisible(false);
 		} catch (NumberFormatException ex) {
-			JOptionPane.showMessageDialog(this, "Giá bán không hợp lệ", "Lỗi", JOptionPane.ERROR_MESSAGE);
+			if (errGia != null) { errGia.setText("✗ Giá bán không hợp lệ"); errGia.setVisible(true); }
 			return;
 		}
 
@@ -1085,12 +1102,12 @@ public class ChiTietSanPham_GUI extends JDialog {
 		if (cboDonVi != null)
 			sp.setDonViTinh((String) cboDonVi.getSelectedItem());
 		sp.setHinhAnh(tenAnh);
-		if (txaMoTa != null && !txaMoTa.getForeground().equals(Colors.MUTED))
-			sp.setCongDung(txaMoTa.getText().trim());
 		if (txaThanhPhan != null && !txaThanhPhan.getForeground().equals(Colors.MUTED))
 			sp.setThanhPhan(txaThanhPhan.getText().trim());
 		if (txaCongDung != null && !txaCongDung.getForeground().equals(Colors.MUTED))
 			sp.setCongDung(txaCongDung.getText().trim());
+		else if (txaMoTa != null && !txaMoTa.getForeground().equals(Colors.MUTED))
+			sp.setCongDung(txaMoTa.getText().trim()); // fallback nếu chưa qua tab 2
 		if (txaCachDung != null && !txaCachDung.getForeground().equals(Colors.MUTED))
 			sp.setNoiSanXuat(txaCachDung.getText().trim());
 		if (cboDanhMuc != null && !dsLoaiSP.isEmpty()) {
@@ -1133,6 +1150,15 @@ public class ChiTietSanPham_GUI extends JDialog {
 		p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
 		p.setOpaque(false);
 		return p;
+	}
+
+	private JLabel errLabelSP() {
+		JLabel l = new JLabel();
+		l.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
+		l.setForeground(Colors.DANGER);
+		l.setAlignmentX(Component.LEFT_ALIGNMENT);
+		l.setVisible(false);
+		return l;
 	}
 
 	private JLabel smLbl(String text) {
