@@ -128,7 +128,7 @@ public class SanPham_GUI extends JPanel {
 		parent.add(section);
 	}
 
-	// ==================== TOGGLE VIEW ====================
+	//  TOGGLE VIEW
 	private void toggleView() {
 		cheDoCard = !cheDoCard;
 		capNhatNutToggle();
@@ -156,7 +156,7 @@ public class SanPham_GUI extends JPanel {
 		}
 	}
 
-	// ==================== HEADER ====================
+	//  HEADER 
 	private JPanel taoHeader() {
 		JPanel p = new JPanel(new BorderLayout());
 		p.setOpaque(false);
@@ -178,7 +178,7 @@ public class SanPham_GUI extends JPanel {
 		return p;
 	}
 
-	// ==================== THỐNG KÊ ====================
+	//  THỐNG KÊ
 	private JPanel taoThongKe() {
 		JPanel p = new JPanel(new GridLayout(1, 4, 16, 0));
 		p.setOpaque(false);
@@ -211,7 +211,7 @@ public class SanPham_GUI extends JPanel {
 		return c;
 	}
 
-	// ==================== TÌM KIẾM ====================
+	// TÌM KIẾM
 	private JPanel taoTimKiem() {
 		JPanel w = new JPanel(new BorderLayout(0, 8));
 		w.setOpaque(false);
@@ -314,7 +314,7 @@ public class SanPham_GUI extends JPanel {
 		return w;
 	}
 
-	// ==================== CHẾ ĐỘ 1: CARD GRID ====================
+	// CHẾ ĐỘ 1: CARD GRID
 	private JPanel taoGridView() {
 		pnlCards = new JPanel(new GridLayout(0, 4, 14, 14));
 		pnlCards.setBackground(Colors.BACKGROUND);
@@ -522,7 +522,7 @@ public class SanPham_GUI extends JPanel {
 		return p;
 	}
 
-	// ==================== CHẾ ĐỘ 2: TABLE LIST ====================
+	// CHẾ ĐỘ 2: TABLE LIST
 	private JPanel taoTableView() {
 		tableModel = new DefaultTableModel(TABLE_COLUMNS, 0) {
 			@Override
@@ -711,7 +711,7 @@ public class SanPham_GUI extends JPanel {
 		}
 	}
 
-	// ==================== UI HELPERS ====================
+	// UI HELPERS
 	private JLabel badge(TonKhoInfo info) {
 		Color bg, fg;
 		if ("CON_HANG".equals(info.trangThai)) {

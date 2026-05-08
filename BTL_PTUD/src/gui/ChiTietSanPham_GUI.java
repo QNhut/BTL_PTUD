@@ -766,9 +766,7 @@ public class ChiTietSanPham_GUI extends JDialog {
 		return b;
 	}
 
-	// ══════════════════════════════════════════════════════════
 	// TAB THEM/SUA – Thong tin co ban
-	// ══════════════════════════════════════════════════════════
 	private JPanel taoTabThongTinCoban() {
 		JPanel p = new JPanel();
 		p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
@@ -973,9 +971,7 @@ public class ChiTietSanPham_GUI extends JDialog {
 		return p;
 	}
 
-	// ══════════════════════════════════════════════════════════
 	// TAB SWITCHING
-	// ══════════════════════════════════════════════════════════
 	private void chuyenTab(int idx) {
 		currentTab = idx;
 		for (int j = 0; j < tabLabels.length; j++) {
