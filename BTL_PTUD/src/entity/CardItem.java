@@ -11,7 +11,6 @@ public class CardItem {
 
 	public CardItem() {
 		super();
-		// TODO Auto-generated constructor stub
 	}
 
 	public SanPham getSp() {

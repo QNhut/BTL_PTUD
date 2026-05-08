@@ -107,9 +107,7 @@ public class PhieuNhap_DAO {
         return new PhieuNhap(maPhieuNhap, ngayNhap, nhaCungCap, nhanVien, null);
     }
 
-    /**
-     * Sinh mã phiếu nhập tự động: PN + YYYY + 4 số (VD: PN20260001)
-     */
+    // Sinh mã phiếu nhập tự động: PN + YYYY + 3 số (VD: PN2026001)
     public String sinhMaTuDong() {
         String prefix = "PN";
         int nam = LocalDate.now().getYear();
@@ -122,9 +120,11 @@ public class PhieuNhap_DAO {
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         String maxMa = rs.getString(1);
-                        if (maxMa != null && maxMa.length() >= pattern.length() + 4) {
-                            int stt = Integer.parseInt(maxMa.substring(pattern.length())) + 1;
-                            return pattern + String.format("%04d", stt);
+                        if (maxMa != null && maxMa.length() > pattern.length()) {
+                            try {
+                                int stt = Integer.parseInt(maxMa.substring(pattern.length())) + 1;
+                                return pattern + String.format("%03d", stt);
+                            } catch (NumberFormatException ignored) {}
                         }
                     }
                 }
@@ -132,6 +132,6 @@ public class PhieuNhap_DAO {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return pattern + "0001";
+        return pattern + "001";
     }
 }

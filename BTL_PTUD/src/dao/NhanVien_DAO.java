@@ -211,4 +211,30 @@ public class NhanVien_DAO {
         return new NhanVien(maNhanVien, tenNhanVien, gioiTinh, soDienThoai,
                 diaChi, email, cccd, chucVu, hinhAnh, trangThai);
     }
+
+    // Sinh mã nhân viên tự động: NV + YYYY + 3 số (VD: NV2026001)
+    public String sinhMaTuDong() {
+        String prefix = "NV";
+        int nam = java.time.LocalDate.now().getYear();
+        String pattern = prefix + nam;
+        String sql = "SELECT MAX(MaNhanVien) FROM NhanVien WHERE MaNhanVien LIKE ?";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, pattern + "%");
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        String maxMa = rs.getString(1);
+                        if (maxMa != null && maxMa.length() > pattern.length()) {
+                            try {
+                                int stt = Integer.parseInt(maxMa.substring(pattern.length())) + 1;
+                                return pattern + String.format("%03d", stt);
+                            } catch (NumberFormatException ignored) {}
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return pattern + "001";
+    }
 }

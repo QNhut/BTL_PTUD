@@ -10,14 +10,11 @@ import java.util.UUID;
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 
-/**
- * Dịch vụ upload ảnh sản phẩm.
- *
- * Luồng sử dụng:
- *   1. Người dùng chọn file → chuanBiUpload(file) → trả về tên file tạm
- *   2. Nếu xác nhận lưu   → xacNhanLuu(tenFileTam) → copy vào data/img/image_san_pham/
- *   3. Nếu huỷ            → huyUpload(tenFileTam)   → xoá file tạm
- */
+// Dịch vụ upload ảnh sản phẩm.
+// Luồng sử dụng:
+// 1. Người dùng chọn file → chuanBiUpload(file) → trả về tên file tạm
+// 2. Nếu xác nhận lưu   → xacNhanLuu(tenFileTam) → copy vào data/img/image_san_pham/
+// 3. Nếu huỷ            → huyUpload(tenFileTam)   → xoá file tạm
 public class ImageUpload_Service {
 
     private static final String IMG_DIR    = "data/img/image_san_pham/";
@@ -33,12 +30,10 @@ public class ImageUpload_Service {
 
     public static ImageUpload_Service getInstance() { return INSTANCE; }
 
-    /**
-     * Sao chép file ảnh vào thư mục tạm, scale về THUMB_W × THUMB_H.
-     * @param src File nguồn người dùng chọn
-     * @return Tên file tạm (chưa lưu vĩnh viễn)
-     * @throws IOException nếu không đọc/ghi được file
-     */
+    // Sao chép file ảnh vào thư mục tạm, scale về THUMB_W × THUMB_H.
+    // @param src File nguồn người dùng chọn
+    // @return Tên file tạm (chưa lưu vĩnh viễn)
+    // @throws IOException nếu không đọc/ghi được file
     public String chuanBiUpload(File src) throws IOException {
         if (src == null || !src.exists())
             throw new IOException("File không tồn tại");
@@ -60,12 +55,10 @@ public class ImageUpload_Service {
         return tenTam;
     }
 
-    /**
-     * Xác nhận lưu: di chuyển file tạm sang thư mục chính.
-     * @param tenFileTam tên trả về từ chuanBiUpload()
-     * @param tenFileDich tên file đích (thường = maSanPham + ".png")
-     * @return tên file đích đã lưu
-     */
+    // Xác nhận lưu: di chuyển file tạm sang thư mục chính.
+    // @param tenFileTam tên trả về từ chuanBiUpload()
+    // @param tenFileDich tên file đích (thường = maSanPham + ".png")
+    // @return tên file đích đã lưu
     public String xacNhanLuu(String tenFileTam, String tenFileDich) throws IOException {
         File src  = new File(TEMP_DIR + tenFileTam);
         File dest = new File(IMG_DIR  + tenFileDich);
@@ -76,18 +69,14 @@ public class ImageUpload_Service {
         return tenFileDich;
     }
 
-    /**
-     * Huỷ upload: xoá file tạm.
-     */
+    // Huỷ upload: xoá file tạm.
     public void huyUpload(String tenFileTam) {
         if (tenFileTam == null) return;
         File f = new File(TEMP_DIR + tenFileTam);
         if (f.exists()) f.delete();
     }
 
-    /**
-     * Tải preview ảnh từ file tạm (hiển thị trước khi lưu).
-     */
+    // Tải preview ảnh từ file tạm (hiển thị trước khi lưu).
     public ImageIcon taiPreview(String tenFileTam, int w, int h) {
         if (tenFileTam == null) return null;
         try {

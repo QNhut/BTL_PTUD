@@ -13,25 +13,22 @@ import javax.swing.*;
 import javax.swing.border.MatteBorder;
 import javax.swing.table.*;
 
-/**
- * Bảng styled có thể tái sử dụng cho bất kỳ entity nào.
- *
- * <p>
- * Cấu trúc file:</p>
- * <ol>
- * <li>Fields</li>
- * <li>Constructor</li>
- * <li>Khởi tạo nội bộ (initTable, styleHeader, installTableClickListener)</li>
- * <li>Public API – Cấu hình cơ bản (getTable, setRowHeight, setColumnWidth,
- * setColumnRenderer, refresh)</li>
- * <li>Public API – Loại cột dựng sẵn (setAvatarColumn, setTwoLineColumn,
- * ...)</li>
- * <li>Public API – Xử lý sự kiện click (setActionColumnListener,
- * setDeleteColumnListener)</li>
- * <li>Tiện ích nội bộ (AVATAR_COLORS, getInitials, getAvatarColor)</li>
- * <li>Renderer nội bộ (các inner class)</li>
- * </ol>
- */
+// Bảng styled có thể tái sử dụng cho bất kỳ entity nào.
+// <p>
+// Cấu trúc file:</p>
+// <ol>
+// <li>Fields</li>
+// <li>Constructor</li>
+// <li>Khởi tạo nội bộ (initTable, styleHeader, installTableClickListener)</li>
+// <li>Public API – Cấu hình cơ bản (getTable, setRowHeight, setColumnWidth,
+// setColumnRenderer, refresh)</li>
+// <li>Public API – Loại cột dựng sẵn (setAvatarColumn, setTwoLineColumn,
+// ...)</li>
+// <li>Public API – Xử lý sự kiện click (setActionColumnListener,
+// setDeleteColumnListener)</li>
+// <li>Tiện ích nội bộ (AVATAR_COLORS, getInitials, getAvatarColor)</li>
+// <li>Renderer nội bộ (các inner class)</li>
+// </ol>
 public class StyledTable extends JScrollPane {
 
     // =========================================================================
@@ -56,12 +53,9 @@ public class StyledTable extends JScrollPane {
     // =========================================================================
     // 2. CONSTRUCTOR
     // =========================================================================
-    /**
-     * Khởi tạo bảng với tên cột và nguồn dữ liệu.
-     *
-     * @param columnNames Mảng tên cột hiển thị trên header.
-     * @param data List dữ liệu; mỗi phần tử tương ứng một dòng.
-     */
+    // Khởi tạo bảng với tên cột và nguồn dữ liệu.
+    // @param columnNames Mảng tên cột hiển thị trên header.
+    // @param data List dữ liệu; mỗi phần tử tương ứng một dòng.
     public StyledTable(String[] columnNames, List<?> data) {
         this.columnNames = columnNames;
         this.data = data;
@@ -71,10 +65,8 @@ public class StyledTable extends JScrollPane {
     // =========================================================================
     // 3. KHỞI TẠO NỘI BỘ
     // =========================================================================
-    /**
-     * Tạo JTable, gán model, áp style cho header và đăng ký mouse listener.
-     * Được gọi duy nhất từ constructor.
-     */
+    // Tạo JTable, gán model, áp style cho header và đăng ký mouse listener.
+    // Được gọi duy nhất từ constructor.
     private void initTable() {
         model = new AbstractTableModel() {
             @Override
@@ -122,9 +114,7 @@ public class StyledTable extends JScrollPane {
         installTableClickListener();
     }
 
-    /**
-     * Áp dụng font, màu sắc và border cho phần header của bảng.
-     */
+    // Áp dụng font, màu sắc và border cho phần header của bảng.
     private void styleHeader() {
         JTableHeader header = table.getTableHeader();
         header.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
@@ -152,11 +142,9 @@ public class StyledTable extends JScrollPane {
         });
     }
 
-    /**
-     * Đăng ký một MouseListener duy nhất để điều phối click đến đúng callback.
-     * Nhờ cờ {@code clickListenerInstalled}, phương thức này an toàn khi gọi
-     * nhiều lần.
-     */
+    // Đăng ký một MouseListener duy nhất để điều phối click đến đúng callback.
+    // Nhờ cờ {@code clickListenerInstalled}, phương thức này an toàn khi gọi
+    // nhiều lần.
     private void installTableClickListener() {
         if (clickListenerInstalled) {
             return;
@@ -185,39 +173,29 @@ public class StyledTable extends JScrollPane {
     // =========================================================================
     // 4. PUBLIC API – CẤU HÌNH CƠ BẢN
     // =========================================================================
-    /**
-     * Trả về đối tượng JTable gốc để tùy biến thêm khi cần (thêm sorter,
-     * listener, v.v.).
-     */
+    // Trả về đối tượng JTable gốc để tùy biến thêm khi cần (thêm sorter,
+    // listener, v.v.).
     public JTable getTable() {
         return table;
     }
 
-    /**
-     * Thiết lập chiều cao (pixel) cho tất cả các dòng.
-     */
+    // Thiết lập chiều cao (pixel) cho tất cả các dòng.
     public void setRowHeight(int height) {
         table.setRowHeight(height);
     }
 
-    /**
-     * Thiết lập độ rộng ưu tiên cho một cột theo chỉ số.
-     */
+    // Thiết lập độ rộng ưu tiên cho một cột theo chỉ số.
     public void setColumnWidth(int colIndex, int width) {
         table.getColumnModel().getColumn(colIndex).setPreferredWidth(width);
     }
 
-    /**
-     * Gán renderer tùy chỉnh bất kỳ cho một cột.
-     */
+    // Gán renderer tùy chỉnh bất kỳ cho một cột.
     public void setColumnRenderer(int colIndex, TableCellRenderer renderer) {
         table.getColumnModel().getColumn(colIndex).setCellRenderer(renderer);
     }
 
-    /**
-     * Buộc bảng vẽ lại toàn bộ sau khi dữ liệu trong list thay đổi. Phải gọi
-     * mỗi khi thêm / xóa / sửa phần tử trong list nguồn.
-     */
+    // Buộc bảng vẽ lại toàn bộ sau khi dữ liệu trong list thay đổi. Phải gọi
+    // mỗi khi thêm / xóa / sửa phần tử trong list nguồn.
     public void refresh() {
         model.fireTableDataChanged();
     }
@@ -225,25 +203,19 @@ public class StyledTable extends JScrollPane {
     // =========================================================================
     // 5. PUBLIC API – LOẠI CỘT DỰNG SẴN
     // =========================================================================
-    /**
-     * Cột avatar hình tròn (initials) kèm 2 dòng text: tên chính và thông tin
-     * phụ.
-     *
-     * @param nameFunc Lambda lấy tên chính từ object dòng (hiển thị in đậm).
-     * @param subFunc Lambda lấy thông tin phụ (mã, email...) từ object dòng.
-     */
+    // Cột avatar hình tròn (initials) kèm 2 dòng text: tên chính và thông tin
+    // phụ.
+    // @param nameFunc Lambda lấy tên chính từ object dòng (hiển thị in đậm).
+    // @param subFunc Lambda lấy thông tin phụ (mã, email...) từ object dòng.
     public void setAvatarColumn(int colIndex, int width,
             Function<Object, String> nameFunc, Function<Object, String> subFunc) {
         setColumnWidth(colIndex, width);
         setColumnRenderer(colIndex, new AvatarTwoLineRenderer(nameFunc, subFunc, null));
     }
 
-    /**
-     * Cột avatar hình tròn có thể hiển thị ảnh đại diện (nếu có), nếu không sẽ
-     * fallback về initials + màu nền.
-     *
-     * @param imagePathFunc Lambda lấy đường dẫn ảnh từ object dòng.
-     */
+    // Cột avatar hình tròn có thể hiển thị ảnh đại diện (nếu có), nếu không sẽ
+    // fallback về initials + màu nền.
+    // @param imagePathFunc Lambda lấy đường dẫn ảnh từ object dòng.
     public void setAvatarColumn(int colIndex, int width,
             Function<Object, String> nameFunc,
             Function<Object, String> subFunc,
@@ -252,24 +224,19 @@ public class StyledTable extends JScrollPane {
         setColumnRenderer(colIndex, new AvatarTwoLineRenderer(nameFunc, subFunc, imagePathFunc));
     }
 
-    /**
-     * Cột 2 dòng chữ: dòng 1 in đậm (tên / tiêu đề), dòng 2 nhỏ hơn (mô tả
-     * phụ).
-     */
+    // Cột 2 dòng chữ: dòng 1 in đậm (tên / tiêu đề), dòng 2 nhỏ hơn (mô tả
+    // phụ).
     public void setTwoLineColumn(int colIndex, int width,
             Function<Object, String> line1Func, Function<Object, String> line2Func) {
         setColumnWidth(colIndex, width);
         setColumnRenderer(colIndex, new TwoLineRenderer(line1Func, line2Func));
     }
 
-    /**
-     * Cột 2 dòng, mỗi dòng có ký tự icon đầu dòng (ví dụ: ✉ email, ☎ sđt).
-     *
-     * @param icon1 Ký tự icon dòng 1 (unicode hoặc emoji).
-     * @param text1Func Lambda lấy text dòng 1.
-     * @param icon2 Ký tự icon dòng 2.
-     * @param text2Func Lambda lấy text dòng 2.
-     */
+    // Cột 2 dòng, mỗi dòng có ký tự icon đầu dòng (ví dụ: ✉ email, ☎ sđt).
+    // @param icon1 Ký tự icon dòng 1 (unicode hoặc emoji).
+    // @param text1Func Lambda lấy text dòng 1.
+    // @param icon2 Ký tự icon dòng 2.
+    // @param text2Func Lambda lấy text dòng 2.
     public void setIconTwoLineColumn(int colIndex, int width,
             String icon1, Function<Object, String> text1Func,
             String icon2, Function<Object, String> text2Func) {
@@ -277,23 +244,18 @@ public class StyledTable extends JScrollPane {
         setColumnRenderer(colIndex, new IconTwoLineRenderer(icon1, text1Func, icon2, text2Func));
     }
 
-    /**
-     * Cột đơn giản với 1 dòng chữ căn giữa theo chiều dọc.
-     */
+    // Cột đơn giản với 1 dòng chữ căn giữa theo chiều dọc.
     public void setSingleTextColumn(int colIndex, int width,
             Function<Object, String> textFunc) {
         setColumnWidth(colIndex, width);
         setColumnRenderer(colIndex, new SingleTextRenderer(textFunc));
     }
 
-    /**
-     * Cột badge trạng thái: chấm màu + nhãn, màu thay đổi theo trạng thái
-     * active/inactive.
-     *
-     * @param activeFunc Lambda trả về {@code true} nếu đang hoạt động.
-     * @param activeText Nhãn khi đang hoạt động (ví dụ: "Đang làm").
-     * @param inactiveText Nhãn khi không hoạt động (ví dụ: "Nghỉ việc").
-     */
+    // Cột badge trạng thái: chấm màu + nhãn, màu thay đổi theo trạng thái
+    // active/inactive.
+    // @param activeFunc Lambda trả về {@code true} nếu đang hoạt động.
+    // @param activeText Nhãn khi đang hoạt động (ví dụ: "Đang làm").
+    // @param inactiveText Nhãn khi không hoạt động (ví dụ: "Nghỉ việc").
     public void setBadgeColumn(int colIndex, int width,
             Function<Object, Boolean> activeFunc,
             String activeText, String inactiveText) {
@@ -301,20 +263,16 @@ public class StyledTable extends JScrollPane {
         setColumnRenderer(colIndex, new BadgeRenderer(activeFunc, activeText, inactiveText));
     }
 
-    /**
-     * Cột nút "Chi tiết" — khi click sẽ kích hoạt callback đã đăng ký qua
-     * {@link #setActionColumnListener}.
-     */
+    // Cột nút "Chi tiết" — khi click sẽ kích hoạt callback đã đăng ký qua
+    // {@link #setActionColumnListener}.
     public void setActionColumn(int colIndex, int width) {
         actionColumnIndex = colIndex;
         setColumnWidth(colIndex, width);
         setColumnRenderer(colIndex, new ActionDotsRenderer());
     }
 
-    /**
-     * Cột nút "Xóa" màu đỏ — khi click sẽ kích hoạt callback đã đăng ký qua
-     * {@link #setDeleteColumnListener}.
-     */
+    // Cột nút "Xóa" màu đỏ — khi click sẽ kích hoạt callback đã đăng ký qua
+    // {@link #setDeleteColumnListener}.
     public void setDeleteButtonColumn(int colIndex, int width) {
         deleteColumnIndex = colIndex;
         setColumnWidth(colIndex, width);
@@ -324,20 +282,14 @@ public class StyledTable extends JScrollPane {
     // =========================================================================
     // 6. PUBLIC API – XỬ LÝ SỰ KIỆN CLICK
     // =========================================================================
-    /**
-     * Đăng ký callback được gọi khi người dùng click vào cột "Chi tiết".
-     *
-     * @param listener BiConsumer nhận (chỉ số dòng, object dữ liệu dòng đó).
-     */
+    // Đăng ký callback được gọi khi người dùng click vào cột "Chi tiết".
+    // @param listener BiConsumer nhận (chỉ số dòng, object dữ liệu dòng đó).
     public void setActionColumnListener(java.util.function.BiConsumer<Integer, Object> listener) {
         this.actionListener = listener;
     }
 
-    /**
-     * Đăng ký callback được gọi khi người dùng click vào cột "Xóa".
-     *
-     * @param listener BiConsumer nhận (chỉ số dòng, object dữ liệu dòng đó).
-     */
+    // Đăng ký callback được gọi khi người dùng click vào cột "Xóa".
+    // @param listener BiConsumer nhận (chỉ số dòng, object dữ liệu dòng đó).
     public void setDeleteColumnListener(java.util.function.BiConsumer<Integer, Object> listener) {
         this.deleteListener = listener;
     }
@@ -351,10 +303,8 @@ public class StyledTable extends JScrollPane {
         new Color(255, 152, 0), new Color(156, 39, 176),
         new Color(0, 188, 212), new Color(244, 67, 54),};
 
-    /**
-     * Trích chữ cái đầu của từ đầu và từ cuối trong tên đầy đủ. Ví dụ: "Nguyễn
-     * Văn An" → "NA", "Admin" → "A".
-     */
+    // Trích chữ cái đầu của từ đầu và từ cuối trong tên đầy đủ. Ví dụ: "Nguyễn
+    // Văn An" → "NA", "Admin" → "A".
     private static String getInitials(String name) {
         if (name == null || name.isEmpty()) {
             return "?";
@@ -366,10 +316,8 @@ public class StyledTable extends JScrollPane {
         return ("" + parts[0].charAt(0)).toUpperCase();
     }
 
-    /**
-     * Chọn màu avatar dựa trên hashCode của tên. Cùng tên → cùng màu, đảm bảo
-     * nhất quán khi bảng được vẽ lại.
-     */
+    // Chọn màu avatar dựa trên hashCode của tên. Cùng tên → cùng màu, đảm bảo
+    // nhất quán khi bảng được vẽ lại.
     private static Color getAvatarColor(String name) {
         if (name == null) {
             return AVATAR_COLORS[0];
@@ -380,9 +328,7 @@ public class StyledTable extends JScrollPane {
     // =========================================================================
     // 8. RENDERER NỘI BỘ
     // =========================================================================
-    /**
-     * Vẽ avatar tròn (initials) + tên in đậm + dòng phụ nhỏ hơn.
-     */
+    // Vẽ avatar tròn (initials) + tên in đậm + dòng phụ nhỏ hơn.
     private static class AvatarTwoLineRenderer extends JPanel implements TableCellRenderer {
 
         private final Function<Object, String> nameFunc;
@@ -485,9 +431,7 @@ public class StyledTable extends JScrollPane {
         }
     }
 
-    /**
-     * Vẽ 2 dòng chữ: dòng 1 in đậm (tên), dòng 2 nhỏ màu phụ (mô tả).
-     */
+    // Vẽ 2 dòng chữ: dòng 1 in đậm (tên), dòng 2 nhỏ màu phụ (mô tả).
     private static class TwoLineRenderer extends JPanel implements TableCellRenderer {
 
         private final Function<Object, String> line1Func;
@@ -527,9 +471,7 @@ public class StyledTable extends JScrollPane {
         }
     }
 
-    /**
-     * Vẽ 2 dòng, mỗi dòng bắt đầu bằng ký tự icon (unicode/emoji).
-     */
+    // Vẽ 2 dòng, mỗi dòng bắt đầu bằng ký tự icon (unicode/emoji).
     private static class IconTwoLineRenderer extends JPanel implements TableCellRenderer {
 
         private final String icon1, icon2;
@@ -578,9 +520,7 @@ public class StyledTable extends JScrollPane {
         }
     }
 
-    /**
-     * Vẽ 1 dòng chữ căn giữa theo chiều dọc.
-     */
+    // Vẽ 1 dòng chữ căn giữa theo chiều dọc.
     private static class SingleTextRenderer extends JPanel implements TableCellRenderer {
 
         private final Function<Object, String> textFunc;
@@ -615,9 +555,7 @@ public class StyledTable extends JScrollPane {
         }
     }
 
-    /**
-     * Vẽ badge bo góc: chấm màu + nhãn, màu khác nhau tùy trạng thái.
-     */
+    // Vẽ badge bo góc: chấm màu + nhãn, màu khác nhau tùy trạng thái.
     private static class BadgeRenderer extends JPanel implements TableCellRenderer {
 
         private final Function<Object, Boolean> activeFunc;
@@ -670,10 +608,8 @@ public class StyledTable extends JScrollPane {
         }
     }
 
-    /**
-     * Hiển thị nút "Chi tiết". Click được xử lý bởi MouseListener qua
-     * actionListener.
-     */
+    // Hiển thị nút "Chi tiết". Click được xử lý bởi MouseListener qua
+    // actionListener.
     private static class ActionDotsRenderer extends JPanel implements TableCellRenderer {
 
         private final RoundedButton btnDetail;
@@ -699,10 +635,8 @@ public class StyledTable extends JScrollPane {
         }
     }
 
-    /**
-     * Hiển thị nút "Xóa" màu đỏ. Click được xử lý bởi MouseListener qua
-     * deleteListener.
-     */
+    // Hiển thị nút "Xóa" màu đỏ. Click được xử lý bởi MouseListener qua
+    // deleteListener.
     private static class DeleteButtonRenderer extends JPanel implements TableCellRenderer {
 
         private final RoundedButton btnDelete;

@@ -171,6 +171,7 @@ public class Main_GUI extends JFrame {
         contentPanel.add(new KhachHang_GUI(), "KhachHang");
         contentPanel.add(new NhaCungCap_GUI(), "NhaCungCap");
         contentPanel.add(new KhuyenMai_GUI(), "KhuyenMai");
+        contentPanel.add(new Thue_GUI(), "Thue");
 
 //		Xử lý
         contentPanel.add(new HoaDon_GUI(taiKhoanDangNhap != null ? taiKhoanDangNhap.getNhanVien() : null), "BanHang");
@@ -193,7 +194,7 @@ public class Main_GUI extends JFrame {
 
 //		Hê thống
         contentPanel.add(new TaiKhoan_GUI(taiKhoanService, token), "TaiKhoan");
-        contentPanel.add(new TrangChu_GUI(), "TrangChu");
+        contentPanel.add(new TrangChu_GUI(this::showPage), "TrangChu");
         contentPanel.add(new TroGiup_GUI(), "TroGiup");
 
         cardLayout.show(contentPanel, "TrangChu");

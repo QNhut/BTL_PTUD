@@ -20,7 +20,8 @@ public class ChiTietHoaDon_Service {
                     item.getSoLuong(),
                     item.getDonGia()
             );
-            if (!chiTietDAO.them(ct)) {
+            ct.setGiaGoc(item.getGiaGoc());
+            if (!chiTietDAO.them(ct, item.getGiaGoc())) {
                 throw new RuntimeException(
                         "Lỗi khi lưu chi tiết hóa đơn: " + item.getSanPham().getTenSP());
             }

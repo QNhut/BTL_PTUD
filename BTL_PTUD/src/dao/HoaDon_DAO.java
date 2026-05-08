@@ -22,6 +22,7 @@ public class HoaDon_DAO {
     // SQL chung để SELECT HoaDon kèm TongTien (tính từ ChiTietHoaDon) và DiemTichLuy (từ KhachHang)
     private static final String SELECT_HOA_DON =
         "SELECT hd.MaHoaDon, hd.NgayLap, hd.MaKhachHang, hd.MaNhanVien, hd.MaPTTT, " +
+        "hd.TienHang, hd.TienThue, hd.TienGiamGia, hd.DiemSuDung, hd.ThanhTien, " +
         "COALESCE((SELECT SUM(c.SoLuong * c.DonGia) FROM ChiTietHoaDon c WHERE c.MaHoaDon = hd.MaHoaDon), 0) AS TongTien, " +
         "COALESCE(kh.DiemTichLuy, 0) AS DiemTichLuy " +
         "FROM HoaDon hd LEFT JOIN KhachHang kh ON hd.MaKhachHang = kh.MaKhachHang";
@@ -43,9 +44,10 @@ public class HoaDon_DAO {
     }
 
     public boolean taoHoaDon(HoaDon hd) {
-        // TongTien và DiemTichLuy không có trong bảng HoaDon;
-        // TongTien tính qua ChiTietHoaDon, DiemTichLuy lưu trong KhachHang.
-        String sql = "INSERT INTO HoaDon (MaHoaDon, NgayLap, MaKhachHang, MaNhanVien, MaPTTT) VALUES (?, ?, ?, ?, ?)";
+        // TongTien (gross) tính qua ChiTietHoaDon (legacy view).
+        // Lưu thêm breakdown: TienHang, TienThue, TienGiamGia, DiemSuDung, ThanhTien
+        String sql = "INSERT INTO HoaDon (MaHoaDon, NgayLap, MaKhachHang, MaNhanVien, MaPTTT, " +
+                "TienHang, TienThue, TienGiamGia, DiemSuDung, ThanhTien) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try {
             con = ConnectDB.getInstance().getConnection();
             try (PreparedStatement stmt = con.prepareStatement(sql)) {
@@ -54,6 +56,11 @@ public class HoaDon_DAO {
                 stmt.setString(3, hd.getKhachHang().getMaKhachHang());
                 stmt.setString(4, hd.getNhanVien().getMaNhanVien());
                 stmt.setString(5, hd.getMaPTTT());
+                stmt.setDouble(6, hd.getTienHang());
+                stmt.setDouble(7, hd.getTienThue());
+                stmt.setDouble(8, hd.getTienGiamGia());
+                stmt.setInt(9, hd.getDiemSuDung());
+                stmt.setDouble(10, hd.getThanhTien());
                 return stmt.executeUpdate() > 0;
             }
         } catch (SQLException e) {
@@ -102,10 +109,28 @@ public class HoaDon_DAO {
         String maPTTT = rs.getString("MaPTTT");
         double tongTien = rs.getDouble("TongTien");
         int diemTichLuy = rs.getInt("DiemTichLuy");
-        return new HoaDon(maHoaDon, ngayLap, tongTien, diemTichLuy, maPTTT, nhanVien, khachHang);
+        HoaDon hd = new HoaDon(maHoaDon, ngayLap, tongTien, diemTichLuy, maPTTT, nhanVien, khachHang);
+
+        // Breakdown (có thể NULL với hóa đơn cũ trước khi migrate)
+        double tienHang = rs.getDouble("TienHang");
+        if (rs.wasNull()) tienHang = tongTien;
+        double tienThue = rs.getDouble("TienThue");
+        if (rs.wasNull()) tienThue = 0;
+        double tienGiamGia = rs.getDouble("TienGiamGia");
+        if (rs.wasNull()) tienGiamGia = 0;
+        int diemSuDung = rs.getInt("DiemSuDung");
+        if (rs.wasNull()) diemSuDung = 0;
+        double thanhTien = rs.getDouble("ThanhTien");
+        if (rs.wasNull()) thanhTien = tienHang + tienThue - diemSuDung * 1000.0;
+        hd.setTienHang(tienHang);
+        hd.setTienThue(tienThue);
+        hd.setTienGiamGia(tienGiamGia);
+        hd.setDiemSuDung(diemSuDung);
+        hd.setThanhTien(Math.max(0, thanhTien));
+        return hd;
     }
 
-    /** Sinh mã hóa đơn tự động: HD + YYYY + 4 số (VD: HD20260001) */
+    // Sinh mã hóa đơn tự động: HD + YYYY + 3 số (VD: HD2026001)
     public String sinhMaTuDong() {
         String prefix = "HD";
         int nam = LocalDate.now().getYear();
@@ -118,23 +143,23 @@ public class HoaDon_DAO {
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         String maxMa = rs.getString(1);
-                        if (maxMa != null && maxMa.length() >= pattern.length() + 4) {
-                            int stt = Integer.parseInt(maxMa.substring(pattern.length())) + 1;
-                            return pattern + String.format("%04d", stt);
+                        if (maxMa != null && maxMa.length() > pattern.length()) {
+                            try {
+                                int stt = Integer.parseInt(maxMa.substring(pattern.length())) + 1;
+                                return pattern + String.format("%03d", stt);
+                            } catch (NumberFormatException ignored) {}
                         }
                     }
                 }
             }
         } catch (SQLException e) { e.printStackTrace(); }
-        return pattern + "0001";
+        return pattern + "001";
     }
 
     // ==================== THỐNG KÊ DOANH THU ====================
 
-    /**
-     * Tính doanh thu trong kỳ (lọc liên hợp: năm/tháng/ngày hoặc khoảng ngày).
-     * Truyền null cho tham số nào không cần lọc.
-     */
+    // Tính doanh thu trong kỳ (lọc liên hợp: năm/tháng/ngày hoặc khoảng ngày).
+    // Truyền null cho tham số nào không cần lọc.
     public double tinhDoanhThuKy(Integer nam, Integer thang, Integer ngay,
             LocalDate tuNgay, LocalDate denNgay) {
         StringBuilder sql = new StringBuilder(
@@ -154,7 +179,7 @@ public class HoaDon_DAO {
         return 0;
     }
 
-    /** Tổng doanh thu toàn thời gian */
+    // Tổng doanh thu toàn thời gian
     public double tinhTongDoanhThu() {
         String sql = "SELECT COALESCE(SUM(c.SoLuong * c.DonGia), 0) "
                 + "FROM HoaDon hd LEFT JOIN ChiTietHoaDon c ON hd.MaHoaDon = c.MaHoaDon";
@@ -167,7 +192,7 @@ public class HoaDon_DAO {
         return 0;
     }
 
-    /** Đếm số giao dịch trong kỳ */
+    // Đếm số giao dịch trong kỳ
     public int demSoGiaoDich(Integer nam, Integer thang, Integer ngay,
             LocalDate tuNgay, LocalDate denNgay) {
         StringBuilder sql = new StringBuilder(
@@ -186,10 +211,8 @@ public class HoaDon_DAO {
         return 0;
     }
 
-    /**
-     * Doanh thu theo từng tháng trong năm.
-     * @return LinkedHashMap: "Tháng 1" → "Tháng 12" → doanh thu
-     */
+    // Doanh thu theo từng tháng trong năm.
+    // @return LinkedHashMap: "Tháng 1" → "Tháng 12" → doanh thu
     public LinkedHashMap<String, Double> thongKeTheoThang(int nam) {
         LinkedHashMap<String, Double> result = new LinkedHashMap<>();
         for (int t = 1; t <= 12; t++) result.put("Tháng " + t, 0.0);
@@ -210,10 +233,8 @@ public class HoaDon_DAO {
         return result;
     }
 
-    /**
-     * Doanh thu theo từng ngày trong tháng.
-     * @return LinkedHashMap: "01" .. "31" → doanh thu
-     */
+    // Doanh thu theo từng ngày trong tháng.
+    // @return LinkedHashMap: "01" .. "31" → doanh thu
     public LinkedHashMap<String, Double> thongKeTheoNgay(int nam, int thang) {
         LinkedHashMap<String, Double> result = new LinkedHashMap<>();
         String sql = "SELECT DAY(hd.NgayLap) AS Ngay, COALESCE(SUM(c.SoLuong * c.DonGia), 0) AS DT "
@@ -235,9 +256,7 @@ public class HoaDon_DAO {
         return result;
     }
 
-    /**
-     * Xu hướng doanh thu 30 ngày gần nhất (hoặc khoảng tùy chọn).
-     */
+    // Xu hướng doanh thu 30 ngày gần nhất (hoặc khoảng tùy chọn).
     public LinkedHashMap<String, Double> xuHuongTheoNgay(LocalDate tuNgay, LocalDate denNgay) {
         LinkedHashMap<String, Double> result = new LinkedHashMap<>();
         String sql = "SELECT CONVERT(varchar, hd.NgayLap, 23) AS Ngay, COALESCE(SUM(c.SoLuong * c.DonGia), 0) AS DT "
@@ -257,10 +276,8 @@ public class HoaDon_DAO {
         return result;
     }
 
-    /**
-     * Lấy danh sách hóa đơn trong kỳ — dùng cho bảng chi tiết trong ThongKe GUI.
-     * Mỗi Object[]: maHD, ngayLap, maNV, maKH, sốGiao Dịch (luôn 1), tongTien, maPTTT, diemTichLuy
-     */
+    // Lấy danh sách hóa đơn trong kỳ — dùng cho bảng chi tiết trong ThongKe GUI.
+    // Mỗi Object[]: maHD, ngayLap, maNV, maKH, sốGiao Dịch (luôn 1), tongTien, maPTTT, diemTichLuy
     public ArrayList<Object[]> layDanhSachTheoKy(Integer nam, Integer thang, Integer ngay,
             LocalDate tuNgay, LocalDate denNgay) {
         ArrayList<Object[]> result = new ArrayList<>();
@@ -305,10 +322,8 @@ public class HoaDon_DAO {
         return result;
     }
 
-    /**
-     * Doanh thu theo từng giờ trong ngày (0h-23h).
-     * @return LinkedHashMap: "0h" .. "23h" → doanh thu
-     */
+    // Doanh thu theo từng giờ trong ngày (0h-23h).
+    // @return LinkedHashMap: "0h" .. "23h" → doanh thu
     public LinkedHashMap<String, Double> thongKeTheoGio(int nam, int thang, int ngay) {
         LinkedHashMap<String, Double> result = new LinkedHashMap<>();
         for (int h = 0; h < 24; h++) result.put(h + "h", 0.0);
@@ -332,7 +347,7 @@ public class HoaDon_DAO {
         return result;
     }
 
-    /** Append điều kiện thời gian vào SQL động (dùng alias hd. cho JOIN queries) */
+    // Append điều kiện thời gian vào SQL động (dùng alias hd. cho JOIN queries)
     private void appendBoLocThoiGian(StringBuilder sql, ArrayList<Object> params,
             Integer nam, Integer thang, Integer ngay,
             LocalDate tuNgay, LocalDate denNgay) {

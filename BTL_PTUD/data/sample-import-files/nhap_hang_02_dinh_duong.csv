@@ -1,12 +1,12 @@
-PhieuGiaoHang,PGH-ANPHUC-02
-DonViGiao,Cong ty Duoc An Phuc
-NgayGiao,04/05/2026
-KhoNhan,Chi nhanh Quan 3
-GhiChu,
-NguoiGiao,Nguyen Van Minh
+Phiếu Giao Hàng,PGH-DHHEALTH-02
+Nhà Cung Cấp,Công ty DH Healthcare
+Ngày Nhập,04/05/2026
+Kho Nhận,Chi nhánh Quận 3
+Ghi Chú,Đơn hàng dinh dưỡng định kỳ
+Người Giao,Trần Hoàng Sơn
 
-MaSanPham,SoLuong,DonViTinh,GiaNhap
+Mã Sản Phẩm,Số Lượng,Đơn Vị Tính,Giá Nhập
 SP2026011,24,Hũ,210000
 SP2026013,10,Hộp,910000
 SP2026020,30,Hộp,92000
-TongCong,,,16900000
+Tổng Cộng,,,16900000

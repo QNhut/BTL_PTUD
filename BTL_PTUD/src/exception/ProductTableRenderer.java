@@ -9,20 +9,16 @@ import constants.Colors;
 import constants.FontStyle;
 import service.ImageCache;
 
-/**
- * Custom JTable renderer cho bảng sản phẩm dạng list (như hình thiết kế).
- * 
- * Cách dùng: String[] columns = {"SẢN PHẨM", "DANH MỤC", "GIÁ BÁN", "TỒN KHO",
- * "LÔ HÀNG", "TRẠNG THÁI", "THAO TÁC"}; DefaultTableModel model = new
- * DefaultTableModel(columns, 0); JTable table = new JTable(model);
- * ProductTableRenderer.apply(table);
- * 
- * // Thêm dòng: model.addRow(new Object[]{ new Object[]{"SP001", "Paracetamol
- * 500mg", "path/to/img.png"}, // col 0: SẢN PHẨM "Giảm đau - Hạ sốt", // col 1:
- * DANH MỤC 25000.0, // col 2: GIÁ BÁN 450, // col 3: TỒN KHO new Object[]{3, 1,
- * 1, "15/1/2026"}, // col 4: LÔ HÀNG {soLo, hetHan, sapHet, ngayGanNhat}
- * "CON_HANG", // col 5: TRẠNG THÁI null // col 6: THAO TÁC });
- */
+// Custom JTable renderer cho bảng sản phẩm dạng list (như hình thiết kế).
+// Cách dùng: String[] columns = {"SẢN PHẨM", "DANH MỤC", "GIÁ BÁN", "TỒN KHO",
+// "LÔ HÀNG", "TRẠNG THÁI", "THAO TÁC"}; DefaultTableModel model = new
+// DefaultTableModel(columns, 0); JTable table = new JTable(model);
+// ProductTableRenderer.apply(table);
+// // Thêm dòng: model.addRow(new Object[]{ new Object[]{"SP001", "Paracetamol
+// 500mg", "path/to/img.png"}, // col 0: SẢN PHẨM "Giảm đau - Hạ sốt", // col 1:
+// DANH MỤC 25000.0, // col 2: GIÁ BÁN 450, // col 3: TỒN KHO new Object[]{3, 1,
+// 1, "15/1/2026"}, // col 4: LÔ HÀNG {soLo, hetHan, sapHet, ngayGanNhat}
+// "CON_HANG", // col 5: TRẠNG THÁI null // col 6: THAO TÁC });
 public class ProductTableRenderer extends JPanel implements TableCellRenderer {
 
 	private static final DecimalFormat PRICE_FMT = new DecimalFormat("#,###");
@@ -36,9 +32,7 @@ public class ProductTableRenderer extends JPanel implements TableCellRenderer {
 		setOpaque(true);
 	}
 
-	/**
-	 * Áp dụng renderer cho tất cả cột của bảng sản phẩm.
-	 */
+	// Áp dụng renderer cho tất cả cột của bảng sản phẩm.
 	public static void apply(JTable table) {
 		table.setRowHeight(ROW_HEIGHT);
 		table.setShowGrid(false);
@@ -180,13 +174,34 @@ public class ProductTableRenderer extends JPanel implements TableCellRenderer {
 	// ==================== COL 2: GIÁ BÁN ====================
 	private JPanel renderGia(Object value, boolean isSelected, int row) {
 		JPanel p = cellPanel(isSelected, row);
-		double gia = 0;
-		if (value instanceof Number)
-			gia = ((Number) value).doubleValue();
-		JLabel lbl = new JLabel(PRICE_FMT.format(gia) + "đ");
-		lbl.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
-		lbl.setForeground(Colors.ACCENT);
-		p.add(lbl);
+		p.setLayout(new javax.swing.BoxLayout(p, javax.swing.BoxLayout.Y_AXIS));
+
+		double giaGoc = 0, giaSale = 0;
+		boolean coKM = false;
+		if (value instanceof entity.SanPham) {
+			entity.SanPham sp = (entity.SanPham) value;
+			giaGoc = sp.getGiaThanh();
+			giaSale = sp.getGiaSauKM();
+			coKM = sp.coKhuyenMai();
+		} else if (value instanceof Number) {
+			giaGoc = ((Number) value).doubleValue();
+			giaSale = giaGoc;
+		}
+
+		JLabel lblSale = new JLabel(PRICE_FMT.format(giaSale) + "đ");
+		lblSale.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
+		lblSale.setForeground(Colors.ACCENT);
+		lblSale.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+		p.add(lblSale);
+
+		if (coKM) {
+			JLabel lblGoc = new JLabel("<html><span style='text-decoration:line-through;'>"
+					+ PRICE_FMT.format(giaGoc) + "đ</span></html>");
+			lblGoc.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
+			lblGoc.setForeground(Colors.MUTED);
+			lblGoc.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+			p.add(lblGoc);
+		}
 		return p;
 	}
 

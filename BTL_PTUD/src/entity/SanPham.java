@@ -1,5 +1,6 @@
 package entity;
 
+import java.time.LocalDate;
 import java.util.Objects;
 
 public class SanPham {
@@ -183,6 +184,31 @@ public class SanPham {
 
 	public void setKhuyenMai(KhuyenMai khuyenMai) {
 		this.khuyenMai = khuyenMai;
+	}
+
+	// ==================== GIÁ + KHUYẾN MÃI ====================
+
+	// Khuyến mãi của SP có đang hiệu lực hôm nay không.
+	public boolean coKhuyenMai() {
+		if (khuyenMai == null || !khuyenMai.isTrangThai()) return false;
+		if (khuyenMai.getPhanTramGG() <= 0) return false;
+		LocalDate today = LocalDate.now();
+		if (khuyenMai.getNgayBatDau() != null && today.isBefore(khuyenMai.getNgayBatDau())) return false;
+		if (khuyenMai.getNgayKetThuc() != null && today.isAfter(khuyenMai.getNgayKetThuc())) return false;
+		return true;
+	}
+
+	// Phần trăm KM hiệu lực; 0 nếu không có.
+	public double getPhanTramGiam() {
+		return coKhuyenMai() ? khuyenMai.getPhanTramGG() : 0.0;
+	}
+
+	// Giá bán cuối cùng sau khi áp dụng KM hiệu lực; trả về giá gốc nếu không có
+	// KM. Làm tròn xuống đồng (Math.floor).
+	public double getGiaSauKM() {
+		double pct = getPhanTramGiam();
+		if (pct <= 0) return giaThanh;
+		return Math.floor(giaThanh * (100 - pct) / 100.0);
 	}
 
 	public Thue getThue() {

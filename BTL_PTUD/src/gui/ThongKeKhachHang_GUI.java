@@ -46,8 +46,7 @@ public class ThongKeKhachHang_GUI extends JPanel {
     private JTable tableKhachHang;
     private DefaultTableModel tableModel;
 
-    private static final NumberFormat VND =
-            NumberFormat.getNumberInstance(new java.util.Locale("vi", "VN"));
+    private static final NumberFormat VND = constants.Formats.VND;
 
     // ============================================================
     // CONSTRUCTOR
@@ -82,7 +81,7 @@ public class ThongKeKhachHang_GUI extends JPanel {
         SwingUtilities.invokeLater(() -> performFilter());
     }
 
-    /** Được gọi từ Main_GUI khi chuyển sang tab này để reload data mới nhất */
+    // Được gọi từ Main_GUI khi chuyển sang tab này để reload data mới nhất
     public void refresh() {
         LocalDate now = LocalDate.now();
         cbKieu.setSelectedItem("Theo thời gian cụ thể");
@@ -255,23 +254,9 @@ public class ThongKeKhachHang_GUI extends JPanel {
         }
     }
 
-    /** Tính khoảng ngày từ các tham số lọc */
+    // Tính khoảng ngày từ các tham số lọc
     private String[] tinhKhoangNgay(Integer nam, Integer thang, Integer ngay) {
-        int y = (nam != null) ? nam : LocalDate.now().getYear();
-        String tuNgay, denNgay;
-        if (ngay != null && thang != null) {
-            LocalDate d = LocalDate.of(y, thang, ngay);
-            tuNgay = d.toString();
-            denNgay = d.toString();
-        } else if (thang != null) {
-            LocalDate first = LocalDate.of(y, thang, 1);
-            tuNgay = first.toString();
-            denNgay = first.withDayOfMonth(first.lengthOfMonth()).toString();
-        } else {
-            tuNgay = y + "-01-01";
-            denNgay = y + "-12-31";
-        }
-        return new String[]{tuNgay, denNgay};
+        return constants.Formats.tinhKhoangNgay(nam, thang, ngay);
     }
 
     // ============================================================
@@ -423,7 +408,7 @@ public class ThongKeKhachHang_GUI extends JPanel {
         return panel;
     }
 
-    /** Card bo góc tròn — kỹ thuật vẽ tay giống ThongKeDoanhThu_GUI */
+    // Card bo góc tròn — kỹ thuật vẽ tay giống ThongKeDoanhThu_GUI
     private Object[] buildCard(String title, String value, Color accent) {
         JPanel card = new JPanel() {
             protected void paintComponent(Graphics g) {

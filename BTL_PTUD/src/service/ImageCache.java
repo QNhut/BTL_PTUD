@@ -12,12 +12,9 @@ import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.SwingUtilities;
 
-/**
- * Cache ảnh sản phẩm — chỉ load + scale 1 lần, dùng lại mãi.
- * 
- * Cách dùng: ImageCache.getInstance().getImage("abc.png", 180, 110, icon -> {
- * label.setIcon(icon); label.repaint(); });
- */
+// Cache ảnh sản phẩm — chỉ load + scale 1 lần, dùng lại mãi.
+// Cách dùng: ImageCache.getInstance().getImage("abc.png", 180, 110, icon -> {
+// label.setIcon(icon); label.repaint(); });
 public class ImageCache {
 
 	private static final ImageCache INSTANCE = new ImageCache();
@@ -36,25 +33,20 @@ public class ImageCache {
 		return INSTANCE;
 	}
 
-	/**
-	 * Lấy ảnh từ cache (sync). Trả null nếu chưa load.
-	 */
+	// Lấy ảnh từ cache (sync). Trả null nếu chưa load.
 	public ImageIcon getCached(String fileName, int w, int h) {
 		if (fileName == null || fileName.trim().isEmpty())
 			return null;
 		return cache.get(cacheKey(fileName, w, h));
 	}
 
-	/**
-	 * Lấy ảnh — nếu đã cache trả ngay, chưa thì load background rồi callback.
-	 * 
-	 * @param fileName tên file ảnh (VD: "sp001.png")
-	 * @param w        chiều rộng cần scale
-	 * @param h        chiều cao cần scale
-	 * @param onLoaded callback trên EDT khi ảnh sẵn sàng (có thể null nếu chỉ cần
-	 *                 preload)
-	 * @return ImageIcon nếu đã cache, null nếu đang load
-	 */
+	// Lấy ảnh — nếu đã cache trả ngay, chưa thì load background rồi callback.
+	// @param fileName tên file ảnh (VD: "sp001.png")
+	// @param w        chiều rộng cần scale
+	// @param h        chiều cao cần scale
+	// @param onLoaded callback trên EDT khi ảnh sẵn sàng (có thể null nếu chỉ cần
+	// preload)
+	// @return ImageIcon nếu đã cache, null nếu đang load
 	public ImageIcon getImage(String fileName, int w, int h, Consumer<ImageIcon> onLoaded) {
 		if (fileName == null || fileName.trim().isEmpty())
 			return null;
@@ -92,23 +84,19 @@ public class ImageCache {
 		return null; // đang load
 	}
 
-	/**
-	 * Preload tất cả ảnh (gọi 1 lần lúc khởi động).
-	 */
+	// Preload tất cả ảnh (gọi 1 lần lúc khởi động).
 	public void preload(java.util.List<String> fileNames, int w, int h) {
 		for (String fn : fileNames) {
 			getImage(fn, w, h, null);
 		}
 	}
 
-	/**
-	 * Xóa cache (khi cần reload).
-	 */
+	// Xóa cache (khi cần reload).
 	public void clearCache() {
 		cache.clear();
 	}
 
-	/** Xóa cache cho 1 file cụ thể (sau khi upload ảnh mới). */
+	// Xóa cache cho 1 file cụ thể (sau khi upload ảnh mới).
 	public void clearCacheByFileName(String fileName) {
 		if (fileName == null) return;
 		cache.entrySet().removeIf(e -> e.getKey().startsWith(fileName.trim() + "_"));

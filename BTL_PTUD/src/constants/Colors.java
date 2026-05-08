@@ -40,7 +40,7 @@ public final class Colors {
     // Badge / trạng thái đã thêm
     public static final Color SUCCESS_DARK = hex("#065F46");
 
-    // Button riêng 
+    // Button riêng
     public static final Color PRIMARY_BUTTON = hex("#00A86B");
     
     // Hover button
@@ -55,6 +55,12 @@ public final class Colors {
     public static final Color WARNING_BD  = hex("#FDE68A"); // viền cảnh báo vàng
     public static final Color DANGER_LIGHT  = hex("#FFF1F2"); // nền lô hết hạn
     public static final Color DANGER_BORDER = hex("#FFC1C7"); // viền lô hết hạn
+
+    // ===== INPUT INVALID (form validation) =====
+    public static final Color INPUT_INVALID_BG     = hex("#FFF5F5"); // nền ô nhập sai
+    public static final Color INPUT_INVALID_BORDER = hex("#F44725"); // viền ô nhập sai (= DANGER)
+    public static final Color INPUT_NORMAL_BORDER  = hex("#C8C8C8"); // viền ô mặc định
+    public static final Color INPUT_FOCUS_BORDER   = hex("#6496FF"); // viền ô khi focus
 
     // ===== UTILS =====
     public static Color hex(String hex) {

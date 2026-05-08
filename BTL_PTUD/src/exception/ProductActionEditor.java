@@ -10,15 +10,12 @@ import javax.swing.table.*;
 import constants.Colors;
 import constants.FontStyle;
 
-/**
- * Cell Editor cho cột "Thao tác" trong bảng sản phẩm. Hiển thị 4 nút: Xem | Chi
- * tiết | Sửa | Xóa
- * 
- * Cách dùng: table.getColumnModel().getColumn(6).setCellEditor( new
- * ProductActionEditor(table, (action, row) -> { switch (action) { case "XEM":
- * xemChiTiet(row); break; case "CHI_TIET": moChiTiet(row); break; case "SUA":
- * suaSanPham(row); break; case "XOA": xoaSanPham(row); break; } }) );
- */
+// Cell Editor cho cột "Thao tác" trong bảng sản phẩm. Hiển thị 4 nút: Xem | Chi
+// tiết | Sửa | Xóa
+// Cách dùng: table.getColumnModel().getColumn(6).setCellEditor( new
+// ProductActionEditor(table, (action, row) -> { switch (action) { case "XEM":
+// xemChiTiet(row); break; case "CHI_TIET": moChiTiet(row); break; case "SUA":
+// suaSanPham(row); break; case "XOA": xoaSanPham(row); break; } }) );
 public class ProductActionEditor extends AbstractCellEditor implements TableCellEditor {
 
 	private final JPanel panel;

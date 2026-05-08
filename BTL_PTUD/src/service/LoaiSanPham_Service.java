@@ -12,23 +12,17 @@ public class LoaiSanPham_Service {
 		this.loaiSanPhamDAO = new LoaiSanPham_DAO();
 	}
 
-	/**
-	 * Lấy toàn bộ danh sách loại sản phẩm
-	 */
+	// Lấy toàn bộ danh sách loại sản phẩm
 	public List<LoaiSanPham> layDanhSachLoaiSanPham() {
 		return loaiSanPhamDAO.getDSLoaiSanPham();
 	}
 
-	/**
-	 * Lấy loại sản phẩm theo mã
-	 */
+	// Lấy loại sản phẩm theo mã
 	public LoaiSanPham layLoaiSanPhamTheoMa(String maLoaiSP) {
 		return loaiSanPhamDAO.layLoaiSPTheoMaLSP(maLoaiSP);
 	}
 
-	/**
-	 * Lấy tên loại sản phẩm theo mã
-	 */
+	// Lấy tên loại sản phẩm theo mã
 	public String layTenLoaiSanPham(String maLoaiSP) {
 		return loaiSanPhamDAO.layTenLoaiSP(maLoaiSP);
 	}

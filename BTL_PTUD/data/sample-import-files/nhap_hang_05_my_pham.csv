@@ -1,11 +1,12 @@
-PhieuGiaoHang,PGH-ANPHUC-05
-DonViGiao,Cong ty Duoc An Phuc
-NgayGiao,04/05/2026
-KhoNhan,Chi nhanh Thu Duc
-GhiChu,Don my pham giao kem bang ke tay
+Phiếu Giao Hàng,PGH-PYME-05
+Nhà Cung Cấp,Công ty Pymepharco
+Ngày Nhập,04/05/2026
+Kho Nhận,Chi nhánh Thủ Đức
+Ghi Chú,Đơn mỹ phẩm giao kèm bảng kê tay
+Người Giao,Võ Thị Mai
 
-MaSanPham,SoLuong,DonViTinh,GiaNhap
+Mã Sản Phẩm,Số Lượng,Đơn Vị Tính,Giá Nhập
 SP2026041,50,Hũ,22000
 SP2026044,25,Hộp,142000
 SP2026049,28,Hộp,66500
-TongCong,,,6512000
+Tổng Cộng,,,6512000

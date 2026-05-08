@@ -52,8 +52,7 @@ public class ThongKeDoanhThu_GUI extends JPanel implements ActionListener {
     // ===== TABLE =====
     private DefaultTableModel tableModel;
 
-    private static final NumberFormat VND =
-            NumberFormat.getNumberInstance(new java.util.Locale("vi", "VN"));
+    private static final NumberFormat VND = constants.Formats.VND;
 
     // ============================================================
     // CONSTRUCTOR
@@ -83,7 +82,7 @@ public class ThongKeDoanhThu_GUI extends JPanel implements ActionListener {
         updateViewMode();
     }
 
-    /** Được gọi từ Main_GUI khi chuyển sang tab này để reload data mới nhất */
+    // Được gọi từ Main_GUI khi chuyển sang tab này để reload data mới nhất
     public void refresh() {
         LocalDate today = LocalDate.now();
         cbNam.setSelectedItem(String.valueOf(today.getYear()));
@@ -93,9 +92,7 @@ public class ThongKeDoanhThu_GUI extends JPanel implements ActionListener {
         loadAll(today.getYear(), today.getMonthValue(), today.getDayOfMonth(), null, null);
     }
 
-    // ============================================================
     // FILTER PANEL
-    // ============================================================
     private JPanel createFilterPanel() {
         // Outer panel: BorderLayout đảm bảo hai nút bên phải KHÔNG bao giờ bị wrap xuống
         JPanel panel = new JPanel(new BorderLayout(0, 0));
@@ -120,10 +117,46 @@ public class ThongKeDoanhThu_GUI extends JPanel implements ActionListener {
         cbNgay = new JComboBox<>(new String[]{"Chọn ngày"});
         cbNgay.setPreferredSize(new Dimension(100, 30));
 
-        dateFrom = new JDateChooser(); dateFrom.setDateFormatString("dd/MM/yyyy");
-        dateFrom.setPreferredSize(new Dimension(100, 30));
-        dateTo   = new JDateChooser(); dateTo.setDateFormatString("dd/MM/yyyy");
-        dateTo.setPreferredSize(new Dimension(100, 30));
+        // Mặc định Từ ngày = đầu tháng hiện tại, Đến ngày = hôm nay
+        java.util.Date hoNay = new java.util.Date();
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        cal.setTime(hoNay);
+        cal.set(java.util.Calendar.DAY_OF_MONTH, 1);
+        java.util.Date dauThang = cal.getTime();
+
+        dateFrom = new JDateChooser();
+        dateFrom.setDateFormatString("dd/MM/yyyy");
+        dateFrom.setPreferredSize(new Dimension(120, 30));
+        dateFrom.setDate(dauThang);
+        // Không cho chọn ngày tương lai cho "Từ ngày"
+        dateFrom.setMaxSelectableDate(hoNay);
+
+        dateTo = new JDateChooser();
+        dateTo.setDateFormatString("dd/MM/yyyy");
+        dateTo.setPreferredSize(new Dimension(120, 30));
+        dateTo.setDate(hoNay);
+        dateTo.setMaxSelectableDate(hoNay);
+        dateTo.setMinSelectableDate(dauThang);
+
+        // Quy tắc: Từ ngày thay đổi → cập nhật giới hạn min của Đến ngày
+        dateFrom.addPropertyChangeListener("date", evt -> {
+            java.util.Date f = dateFrom.getDate();
+            if (f != null) {
+                dateTo.setMinSelectableDate(f);
+                java.util.Date t = dateTo.getDate();
+                if (t != null && t.before(f)) {
+                    dateTo.setDate(f);
+                }
+            }
+        });
+        // Đến ngày thay đổi → cập nhật giới hạn max của Từ ngày
+        dateTo.addPropertyChangeListener("date", evt -> {
+            java.util.Date t = dateTo.getDate();
+            if (t != null) {
+                java.util.Date capMax = t.after(hoNay) ? hoNay : t;
+                dateFrom.setMaxSelectableDate(capMax);
+            }
+        });
 
         lblFromDate = new JLabel("Từ ngày:");
         lblToDate   = new JLabel("Đến ngày:");
@@ -193,7 +226,7 @@ public class ThongKeDoanhThu_GUI extends JPanel implements ActionListener {
         return panel;
     }
 
-    /** Card với góc tròn vẽ thủ công, tương tự kỹ thuật trong RoundedButton */
+    // Card với góc tròn vẽ thủ công, tương tự kỹ thuật trong RoundedButton
     private Object[] buildCard(String title, String value, Color accent) {
         JPanel card = new JPanel() {
             protected void paintComponent(Graphics g) {
@@ -445,6 +478,11 @@ public class ThongKeDoanhThu_GUI extends JPanel implements ActionListener {
             java.util.Date to   = dateTo.getDate();
             if (from == null || to == null) {
                 JOptionPane.showMessageDialog(this, "Vui lòng chọn đầy đủ Từ ngày và Đến ngày!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            java.util.Date hoNay = new java.util.Date();
+            if (from.after(hoNay) || to.after(hoNay)) {
+                JOptionPane.showMessageDialog(this, "Không được chọn ngày trong tương lai!", "Lỗi", JOptionPane.ERROR_MESSAGE);
                 return;
             }
             if (from.after(to)) {

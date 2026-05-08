@@ -46,7 +46,7 @@ public class DangNhap_GUI extends JFrame implements ActionListener {
     public DangNhap_GUI() {
         super("Đăng nhập");
 
-//		Phần này sẽ có 2 khu vực chính: bên trái là phần giới thiệu, bên phải là form đăng nhập		
+//		Phần này sẽ có 2 khu vực chính: bên trái là phần giới thiệu, bên phải là form đăng nhập
         ImageIcon nen = new ImageIcon("data/img/icons/Logo.png");
         Image img = nen.getImage();
         img = img.getScaledInstance(130, 130, Image.SCALE_SMOOTH);

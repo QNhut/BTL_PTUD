@@ -3,6 +3,7 @@ package gui;
 import constants.Colors;
 import constants.FontStyle;
 import entity.KhachHang;
+import exception.FormValidator;
 import exception.RoundedButton;
 import exception.RoundedPanel;
 import exception.RoundedTextField;
@@ -13,6 +14,7 @@ import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import javax.swing.*;
 import service.KhachHang_Service;
+import service.Validators;
 
 public class KhachHang_GUI extends JPanel implements ActionListener {
 
@@ -48,47 +50,74 @@ public class KhachHang_GUI extends JPanel implements ActionListener {
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         setBackground(Colors.BACKGROUND);
 
-        // ===== HEADER =====
-        add(pnlHead = new JPanel(), BorderLayout.NORTH);
+        add(taoHeader(), BorderLayout.NORTH);
+        add(taoContent(), BorderLayout.CENTER);
+        wireEvents();
+        loadDataSafe();
+    }
+
+    // ===== KHỐI: HEADER =====
+    private JPanel taoHeader() {
+        pnlHead = new JPanel();
         pnlHead.setLayout(new BoxLayout(pnlHead, BoxLayout.X_AXIS));
         pnlHead.setBackground(Colors.BACKGROUND);
-        pnlHead.add(pnlTitle = new JPanel());
-        pnlHead.add(pnlButtonAddKH = new JPanel());
 
+        pnlTitle = new JPanel();
         pnlTitle.setLayout(new BoxLayout(pnlTitle, BoxLayout.Y_AXIS));
         pnlTitle.setPreferredSize(new Dimension(900, 0));
         pnlTitle.setBackground(Colors.BACKGROUND);
         pnlTitle.add(lblTitle = new JLabel("Khách hàng"));
         lblTitle.setFont(FontStyle.font(FontStyle.XXL, FontStyle.BOLD));
         lblTitle.setForeground(Colors.FOREGROUND);
-
         pnlTitle.add(lblNote = new JLabel("Quản lý khách hàng trong hệ thống"));
         lblNote.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
         lblNote.setForeground(Colors.MUTED);
 
+        pnlButtonAddKH = new JPanel();
         pnlButtonAddKH.setBackground(Colors.BACKGROUND);
         pnlButtonAddKH.add(btnAddKH = new RoundedButton(170, 40, 10, "+ Thêm khách hàng", Colors.PRIMARY));
 
-        // ===== CONTENT =====
-        add(pnlContent = new JPanel(), BorderLayout.CENTER);
+        pnlHead.add(pnlTitle);
+        pnlHead.add(pnlButtonAddKH);
+        return pnlHead;
+    }
+
+    // ===== KHỐI: NỘI DUNG =====
+    private JPanel taoContent() {
+        pnlContent = new JPanel();
         pnlContent.setLayout(new BoxLayout(pnlContent, BoxLayout.Y_AXIS));
         pnlContent.setBackground(Colors.BACKGROUND);
+        pnlContent.add(taoStatCards());
+        pnlContent.add(taoSearchBar());
+        pnlContent.add(setupTable());
+        return pnlContent;
+    }
 
-        // Thống kê tổng quan
-        pnlContent.add(pnlCategory = new JPanel(new GridLayout(1, 3, 16, 0)));
+    // ===== KHỐI: THỐNG KÊ =====
+    private JPanel taoStatCards() {
+        pnlCategory = new JPanel(new GridLayout(1, 3, 16, 0));
         pnlCategory.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
         pnlCategory.setBackground(Colors.BACKGROUND);
         pnlCategory.setMaximumSize(new Dimension(Integer.MAX_VALUE, 110));
-        pnlCategory.setPreferredSize(new Dimension(0,110));
-        pnlCategory.add(statCard("Tổng khách hàng", khachHangSV.getSoLuongKhachHang(), Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
-        pnlCategory.add(statCard("Đang hoạt động", khachHangSV.getSoLuongKhachHangHoatDong(), Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
-        pnlCategory.add(statCard("Ngừng hoạt động", khachHangSV.getSoLuongKhachHangNgungHoatDong(), Colors.SECONDARY, Colors.DANGER, Colors.DANGER));
+        pnlCategory.setPreferredSize(new Dimension(0, 110));
+        try {
+            pnlCategory.add(statCard("Tổng khách hàng", khachHangSV.getSoLuongKhachHang(), Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
+            pnlCategory.add(statCard("Đang hoạt động", khachHangSV.getSoLuongKhachHangHoatDong(), Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
+            pnlCategory.add(statCard("Ngừng hoạt động", khachHangSV.getSoLuongKhachHangNgungHoatDong(), Colors.SECONDARY, Colors.DANGER, Colors.DANGER));
+        } catch (Exception e) {
+            System.err.println("[KhachHang_GUI] Không tải được thống kê: " + e.getMessage());
+            pnlCategory.add(statCard("Tổng khách hàng", 0, Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
+            pnlCategory.add(statCard("Đang hoạt động", 0, Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
+            pnlCategory.add(statCard("Ngừng hoạt động", 0, Colors.SECONDARY, Colors.DANGER, Colors.DANGER));
+        }
+        return pnlCategory;
+    }
 
-        // Thanh tìm kiếm
-        pnlContent.add(pnlSearch = new JPanel());
+    // ===== KHỐI: THANH TÌM KIẾM =====
+    private JPanel taoSearchBar() {
+        pnlSearch = new JPanel();
         pnlSearch.setLayout(new FlowLayout(FlowLayout.LEFT, 20, 20));
         pnlSearch.setBackground(Colors.BACKGROUND);
-
         pnlSearch.add(lblDSKH = new JLabel("Danh sách khách hàng"));
         lblDSKH.setFont(FontStyle.font(FontStyle.LG, FontStyle.BOLD));
         lblDSKH.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 0));
@@ -98,8 +127,11 @@ public class KhachHang_GUI extends JPanel implements ActionListener {
         pnlSearch.add(btnAll = new RoundedButton(100, 40, 20, "Tất cả", Colors.SECONDARY));
         pnlSearch.setMaximumSize(new Dimension(Integer.MAX_VALUE, 56));
         btnAll.setForeground(Colors.TEXT_PRIMARY);
+        return pnlSearch;
+    }
 
-        // ===== BẢNG =====
+    // ===== KHỐI: BẢNG =====
+    private StyledTable setupTable() {
         tblKhachHang = new StyledTable(COLUMN_NAMES, list);
 
         tblKhachHang.setAvatarColumn(0, 220,
@@ -140,8 +172,11 @@ public class KhachHang_GUI extends JPanel implements ActionListener {
             }
         });
 
-        pnlContent.add(tblKhachHang);
+        return tblKhachHang;
+    }
 
+    // ===== KHỐI: SỰ KIỆN =====
+    private void wireEvents() {
         btnAddKH.addActionListener(this);
         btnFind.addActionListener(this);
         btnAll.addActionListener(this);
@@ -169,7 +204,10 @@ public class KhachHang_GUI extends JPanel implements ActionListener {
                 t.start();
             }
         });
+    }
 
+    // ===== KHỐI: TẢI DỮ LIỆU =====
+    private void loadDataSafe() {
         try {
             ArrayList<KhachHang> dsKH = khachHangSV.getDSKhachHang();
             if (dsKH == null || dsKH.isEmpty()) {
@@ -552,6 +590,10 @@ public class KhachHang_GUI extends JPanel implements ActionListener {
         RoundedTextField txtSDT = new RoundedTextField(240, 25, 10, "10 chữ số");
         RoundedTextField txtEmail = new RoundedTextField(240, 25, 10, "example@email.com");
 
+        JLabel errTen = FormValidator.errorLabel();
+        JLabel errSDT = FormValidator.errorLabel();
+        JLabel errEmail = FormValidator.errorLabel();
+
         JRadioButton rdoNam = new JRadioButton("Nam");
         JRadioButton rdoNu = new JRadioButton("Nữ");
         rdoNam.setSelected(true);
@@ -594,8 +636,8 @@ public class KhachHang_GUI extends JPanel implements ActionListener {
         pnlLeft.add(Box.createVerticalStrut(12));
         pnlLeft.add(createFormField("Mã khách hàng (tự động)", txtMaKH));
         pnlLeft.add(Box.createVerticalStrut(10));
-        pnlLeft.add(createFormField("Họ và tên *", txtTenKH));
-        pnlLeft.add(Box.createVerticalStrut(10));
+        pnlLeft.add(FormValidator.fieldWithError("Họ và tên *", txtTenKH, errTen));
+        pnlLeft.add(Box.createVerticalStrut(8));
         pnlLeft.add(createFormField("Giới tính *", pnlGioiTinh));
 
         // Phải — Thông tin liên hệ
@@ -611,9 +653,9 @@ public class KhachHang_GUI extends JPanel implements ActionListener {
         lblContact.setAlignmentX(Component.LEFT_ALIGNMENT);
         pnlRight.add(lblContact);
         pnlRight.add(Box.createVerticalStrut(12));
-        pnlRight.add(createFormField("Số điện thoại *", txtSDT));
-        pnlRight.add(Box.createVerticalStrut(10));
-        pnlRight.add(createFormField("Email", txtEmail));
+        pnlRight.add(FormValidator.fieldWithError("Số điện thoại *", txtSDT, errSDT));
+        pnlRight.add(Box.createVerticalStrut(8));
+        pnlRight.add(FormValidator.fieldWithError("Email", txtEmail, errEmail));
         pnlRight.add(Box.createVerticalStrut(10));
 
         JPanel pnlTrangThai = new JPanel();
@@ -635,6 +677,11 @@ public class KhachHang_GUI extends JPanel implements ActionListener {
         pnlRow1.add(Box.createHorizontalGlue());
         pnlMain.add(pnlRow1, BorderLayout.CENTER);
 
+        FormValidator fv = new FormValidator()
+                .add(txtTenKH, errTen, Validators::tenNguoi)
+                .add(txtSDT, errSDT, Validators::soDienThoai)
+                .add(txtEmail, errEmail, Validators::emailOptional);
+
         // ===== FOOTER =====
         JPanel pnlFooter = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         pnlFooter.setOpaque(false);
@@ -646,6 +693,7 @@ public class KhachHang_GUI extends JPanel implements ActionListener {
 
         btnHuy.addActionListener(ev -> dialog.dispose());
         btnThem.addActionListener(ev -> {
+            if (!fv.validateAll()) return;
             try {
                 KhachHang kh = new KhachHang(
                         txtMaKH.getText().trim(),
@@ -723,6 +771,10 @@ public class KhachHang_GUI extends JPanel implements ActionListener {
         RoundedTextField txtEmail = new RoundedTextField(240, 38, 10, "example@email.com");
         txtEmail.setText(khachHang.getEmail() != null ? khachHang.getEmail() : "");
 
+        JLabel errTen = FormValidator.errorLabel();
+        JLabel errSDT = FormValidator.errorLabel();
+        JLabel errEmail = FormValidator.errorLabel();
+
         JRadioButton rdoNam = new JRadioButton("Nam");
         JRadioButton rdoNu = new JRadioButton("Nữ");
         rdoNam.setSelected(khachHang.isGioiTinh());
@@ -764,8 +816,8 @@ public class KhachHang_GUI extends JPanel implements ActionListener {
         pnlLeft.add(Box.createVerticalStrut(12));
         pnlLeft.add(createFormField("Mã khách hàng", txtMaKH));
         pnlLeft.add(Box.createVerticalStrut(10));
-        pnlLeft.add(createFormField("Họ và tên *", txtTenKH));
-        pnlLeft.add(Box.createVerticalStrut(10));
+        pnlLeft.add(FormValidator.fieldWithError("Họ và tên *", txtTenKH, errTen));
+        pnlLeft.add(Box.createVerticalStrut(8));
         pnlLeft.add(createFormField("Giới tính *", pnlGioiTinh));
 
         RoundedPanel pnlRight = new RoundedPanel(260, 260, 15);
@@ -780,9 +832,9 @@ public class KhachHang_GUI extends JPanel implements ActionListener {
         lblContact.setAlignmentX(Component.LEFT_ALIGNMENT);
         pnlRight.add(lblContact);
         pnlRight.add(Box.createVerticalStrut(12));
-        pnlRight.add(createFormField("Số điện thoại *", txtSDT));
-        pnlRight.add(Box.createVerticalStrut(10));
-        pnlRight.add(createFormField("Email", txtEmail));
+        pnlRight.add(FormValidator.fieldWithError("Số điện thoại *", txtSDT, errSDT));
+        pnlRight.add(Box.createVerticalStrut(8));
+        pnlRight.add(FormValidator.fieldWithError("Email", txtEmail, errEmail));
         pnlRight.add(Box.createVerticalStrut(10));
 
         JPanel pnlTrangThai = new JPanel();
@@ -803,6 +855,11 @@ public class KhachHang_GUI extends JPanel implements ActionListener {
         pnlMain.add(pnlRow1);
         pnlMain.add(Box.createVerticalStrut(20));
 
+        FormValidator fv = new FormValidator()
+                .add(txtTenKH, errTen, Validators::tenNguoi)
+                .add(txtSDT, errSDT, Validators::soDienThoai)
+                .add(txtEmail, errEmail, Validators::emailOptional);
+
         // ===== FOOTER =====
         JPanel pnlFooter = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         pnlFooter.setOpaque(false);
@@ -813,6 +870,7 @@ public class KhachHang_GUI extends JPanel implements ActionListener {
 
         btnHuy.addActionListener(ev -> dialog.dispose());
         btnLuu.addActionListener(ev -> {
+            if (!fv.validateAll()) return;
             try {
                 khachHang.setTenKhachHang(txtTenKH.getText().trim());
                 khachHang.setSoDienThoai(txtSDT.getText().trim());
@@ -867,19 +925,7 @@ public class KhachHang_GUI extends JPanel implements ActionListener {
     }
 
     private String taoMaKhachHang() {
-        int year = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
-        int maxNum = 0;
-        for (KhachHang kh : list) {
-            try {
-                String ma = kh.getMaKhachHang();
-                int num = Integer.parseInt(ma.substring(ma.length() - 3));
-                if (num > maxNum) {
-                    maxNum = num;
-                }
-            } catch (Exception ignored) {
-            }
-        }
-        return String.format("KH%d%03d", year, maxNum + 1);
+        return khachHangSV.sinhMaKhachHang();
     }
 
     private String getInitials(String fullName) {

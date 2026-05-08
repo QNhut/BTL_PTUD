@@ -156,21 +156,23 @@ public class KhachHang_DAO {
         return false;
     }
 
-    //====="Sinh mã khách hàng tự động: KH + 4 số (VD: KH0001)"=====
+    //===== Sinh mã khách hàng tự động: KH + YYYY + 3 số (VD: KH2026001) =====
     public String sinhMaTuDong() {
         String prefix = "KH";
+        int nam = java.time.LocalDate.now().getYear();
+        String pattern = prefix + nam;
         String sql = "SELECT MAX(MaKhachHang) FROM KhachHang WHERE MaKhachHang LIKE ?";
         try {
             con = ConnectDB.getInstance().getConnection();
             try (PreparedStatement ps = con.prepareStatement(sql)) {
-                ps.setString(1, prefix + "%");
+                ps.setString(1, pattern + "%");
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         String maxMa = rs.getString(1);
-                        if (maxMa != null && maxMa.length() > prefix.length()) {
+                        if (maxMa != null && maxMa.length() > pattern.length()) {
                             try {
-                                int stt = Integer.parseInt(maxMa.substring(prefix.length())) + 1;
-                                return prefix + String.format("%04d", stt);
+                                int stt = Integer.parseInt(maxMa.substring(pattern.length())) + 1;
+                                return pattern + String.format("%03d", stt);
                             } catch (NumberFormatException ignored) {
                             }
                         }
@@ -180,14 +182,14 @@ public class KhachHang_DAO {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return prefix + "0001";
+        return pattern + "001";
     }
 
     // ============================================================
     // THỐNG KÊ KHÁCH HÀNG
     // ============================================================
 
-    /** Đếm tổng KH đang hoạt động trong hệ thống */
+    // Đếm tổng KH đang hoạt động trong hệ thống
     public int demTongKH() {
         String sql = "SELECT COUNT(*) FROM KhachHang WHERE TrangThai = 1";
         try {
@@ -199,7 +201,7 @@ public class KhachHang_DAO {
         return 0;
     }
 
-    /** Đếm số KH có phát sinh giao dịch trong khoảng thời gian */
+    // Đếm số KH có phát sinh giao dịch trong khoảng thời gian
     public int demKHCoGiaoDich(String tuNgay, String denNgay) {
         String sql = "SELECT COUNT(DISTINCT MaKhachHang) FROM HoaDon "
                 + "WHERE CAST(NgayLap AS DATE) BETWEEN ? AND ?";
@@ -216,7 +218,7 @@ public class KhachHang_DAO {
         return 0;
     }
 
-    /** Đếm KH mới (có hóa đơn đầu tiên trong khoảng thời gian) */
+    // Đếm KH mới (có hóa đơn đầu tiên trong khoảng thời gian)
     public int demKHMoi(String tuNgay, String denNgay) {
         String sql = "SELECT COUNT(DISTINCT hd.MaKhachHang) FROM HoaDon hd "
                 + "WHERE CAST(hd.NgayLap AS DATE) BETWEEN ? AND ? "
@@ -237,7 +239,7 @@ public class KhachHang_DAO {
         return 0;
     }
 
-    /** Tổng doanh thu từ KH trong khoảng thời gian */
+    // Tổng doanh thu từ KH trong khoảng thời gian
     public double doanhThuKH(String tuNgay, String denNgay) {
         String sql = "SELECT ISNULL(SUM(ct.SoLuong * ct.DonGia), 0) "
                 + "FROM HoaDon hd JOIN ChiTietHoaDon ct ON hd.MaHoaDon = ct.MaHoaDon "
@@ -255,7 +257,7 @@ public class KhachHang_DAO {
         return 0;
     }
 
-    /** Đếm KH có >= threshold đơn hàng (dùng tính tỉ lệ giữ chân) */
+    // Đếm KH có >= threshold đơn hàng (dùng tính tỉ lệ giữ chân)
     public int demKHCoNhieuDon(int threshold) {
         String sql = "SELECT COUNT(*) FROM ("
                 + "  SELECT MaKhachHang FROM HoaDon GROUP BY MaKhachHang HAVING COUNT(*) >= ?"
@@ -272,7 +274,7 @@ public class KhachHang_DAO {
         return 0;
     }
 
-    /** Đếm tổng KH đã từng mua hàng */
+    // Đếm tổng KH đã từng mua hàng
     public int demKHDaMua() {
         String sql = "SELECT COUNT(DISTINCT MaKhachHang) FROM HoaDon";
         try {
@@ -284,11 +286,9 @@ public class KhachHang_DAO {
         return 0;
     }
 
-    /**
-     * Danh sách KH kèm ngày lập gần nhất, số đơn, tổng chi tiêu, phân loại.
-     * Nếu tuNgay/denNgay != null: chỉ lấy KH có giao dịch trong khoảng đó.
-     * Trả về: [MaKH, TenKH, SDT, NgayLapGanNhat(String), SoDon, TongChiTieu, PhanLoai]
-     */
+    // Danh sách KH kèm ngày lập gần nhất, số đơn, tổng chi tiêu, phân loại.
+    // Nếu tuNgay/denNgay != null: chỉ lấy KH có giao dịch trong khoảng đó.
+    // Trả về: [MaKH, TenKH, SDT, NgayLapGanNhat(String), SoDon, TongChiTieu, PhanLoai]
     public ArrayList<Object[]> layDanhSachKHThongKe(String tuNgay, String denNgay) {
         ArrayList<Object[]> rows = new ArrayList<>();
         boolean hasDate = (tuNgay != null && denNgay != null);
@@ -340,7 +340,7 @@ public class KhachHang_DAO {
         return rows;
     }
 
-    /** Thống kê phân loại KH cho Pie chart: {loại -> số lượng} */
+    // Thống kê phân loại KH cho Pie chart: {loại -> số lượng}
     public java.util.LinkedHashMap<String, Integer> thongKePhanLoai() {
         java.util.LinkedHashMap<String, Integer> map = new java.util.LinkedHashMap<>();
         String sql = "SELECT PhanLoai, COUNT(*) AS SoLuong FROM ("
@@ -365,7 +365,7 @@ public class KhachHang_DAO {
         return map;
     }
 
-    /** Doanh thu theo tháng trong năm cho bar chart: {tháng -> doanh thu} */
+    // Doanh thu theo tháng trong năm cho bar chart: {tháng -> doanh thu}
     public java.util.LinkedHashMap<String, Double> doanhThuTheoThang(int nam) {
         java.util.LinkedHashMap<String, Double> map = new java.util.LinkedHashMap<>();
         for (int i = 1; i <= 12; i++) map.put("T" + i, 0.0);
@@ -387,7 +387,7 @@ public class KhachHang_DAO {
         return map;
     }
 
-    /** Số lượng KH theo loại theo tháng cho line chart xu hướng */
+    // Số lượng KH theo loại theo tháng cho line chart xu hướng
     public java.util.LinkedHashMap<String, int[]> xuHuongKHTheoThang(int nam) {
         // key = "T1".."T12", value = [thuongXuyen, khachMoi, tiemNang]
         java.util.LinkedHashMap<String, int[]> map = new java.util.LinkedHashMap<>();

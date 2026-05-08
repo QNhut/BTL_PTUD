@@ -24,7 +24,7 @@ public class ThongKeSanPham_GUI extends JPanel {
 
     // ===== SERVICE =====
     private final SanPham_Service sanPhamService = new SanPham_Service();
-    private static final NumberFormat VND = NumberFormat.getNumberInstance(new java.util.Locale("vi", "VN"));
+    private static final NumberFormat VND = constants.Formats.VND;
 
     // ===== FILTER =====
     private JComboBox<String> cbKieu, cbNgay, cbThang, cbNam, cbQuy, cbDoanhThu;
@@ -163,8 +163,8 @@ public class ThongKeSanPham_GUI extends JPanel {
 
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 6));
         rightPanel.setOpaque(false);
-        rightPanel.add(btnViewChart);
         rightPanel.add(btnViewTable);
+        rightPanel.add(btnViewChart);
         rightPanel.add(btnExport);
 
         panel.add(leftPanel,  BorderLayout.CENTER);
@@ -338,21 +338,7 @@ public class ThongKeSanPham_GUI extends JPanel {
     }
 
     private String[] tinhKhoangNgay(Integer nam, Integer thang, Integer ngay) {
-        int y = (nam != null) ? nam : LocalDate.now().getYear();
-        String tuNgay, denNgay;
-        if (ngay != null && thang != null) {
-            LocalDate d = LocalDate.of(y, thang, ngay);
-            tuNgay = d.toString();
-            denNgay = d.toString();
-        } else if (thang != null) {
-            LocalDate first = LocalDate.of(y, thang, 1);
-            tuNgay = first.toString();
-            denNgay = first.withDayOfMonth(first.lengthOfMonth()).toString();
-        } else {
-            tuNgay = y + "-01-01";
-            denNgay = y + "-12-31";
-        }
-        return new String[]{tuNgay, denNgay};
+        return constants.Formats.tinhKhoangNgay(nam, thang, ngay);
     }
 
     private void performFilter() {

@@ -24,6 +24,7 @@ public class MenuBarPanel extends JPanel {
         danhMuc.addSubMenu("Sản Phẩm", "data/img/icons/box.png", "SanPham");
         danhMuc.addSubMenu("Nhà cung cấp", "data/img/icons/vehicle.png", "NhaCungCap");
         danhMuc.addSubMenu("Khuyến mãi", "data/img/icons/tag.png", "KhuyenMai");
+        danhMuc.addSubMenu("Thuế", "data/img/icons/taxes.png", "Thue");
 
         MenuButton xuLy = createMenu("XỬ LÝ");
         xuLy.addSubMenu("Tạo hoá đơn", "data/img/icons/shopping-cart.png", "BanHang");

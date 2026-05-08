@@ -25,8 +25,8 @@ public class SanPham_DAO {
                 + "t.TenThue, t.PhanTramThue, t.MoTa AS MoTaThue "
                 + "FROM SanPham sp "
                 + "JOIN LoaiSanPham lsp ON sp.MaLoaiSanPham = lsp.MaLoaiSanPham "
-                + "JOIN KhuyenMai km ON sp.MaKhuyenMai = km.MaKhuyenMai "
-                + "JOIN Thue t ON sp.MaThue = t.MaThue "
+                + "LEFT JOIN KhuyenMai km ON sp.MaKhuyenMai = km.MaKhuyenMai "
+                + "LEFT JOIN Thue t ON sp.MaThue = t.MaThue "
                 + "ORDER BY sp.MaSanPham";
         try {
             con = ConnectDB.getInstance().getConnection();
@@ -49,8 +49,8 @@ public class SanPham_DAO {
                 + "t.TenThue, t.PhanTramThue, t.MoTa AS MoTaThue "
                 + "FROM SanPham sp "
                 + "JOIN LoaiSanPham lsp ON sp.MaLoaiSanPham = lsp.MaLoaiSanPham "
-                + "JOIN KhuyenMai km ON sp.MaKhuyenMai = km.MaKhuyenMai "
-                + "JOIN Thue t ON sp.MaThue = t.MaThue "
+                + "LEFT JOIN KhuyenMai km ON sp.MaKhuyenMai = km.MaKhuyenMai "
+                + "LEFT JOIN Thue t ON sp.MaThue = t.MaThue "
                 + "WHERE sp.MaSanPham = ?";
         try {
             con = ConnectDB.getInstance().getConnection();
@@ -82,8 +82,14 @@ public class SanPham_DAO {
                 stmt.setDouble(6, sp.getGiaThanh());
                 stmt.setString(7, sp.getNoiSanXuat());
                 stmt.setString(8, sp.getLoaiSanPham().getMaLoaiSanPham());
-                stmt.setString(9, sp.getKhuyenMai().getMaKhuyenMai());
-                stmt.setString(10, sp.getThue().getMaThue());
+                if (sp.getKhuyenMai() != null && sp.getKhuyenMai().getMaKhuyenMai() != null)
+                    stmt.setString(9, sp.getKhuyenMai().getMaKhuyenMai());
+                else
+                    stmt.setNull(9, java.sql.Types.NVARCHAR);
+                if (sp.getThue() != null && sp.getThue().getMaThue() != null)
+                    stmt.setString(10, sp.getThue().getMaThue());
+                else
+                    stmt.setNull(10, java.sql.Types.NVARCHAR);
                 stmt.setBoolean(11, sp.isTrangThai());
                 stmt.setString(12, sp.getHinhAnh());
                 return stmt.executeUpdate() > 0;
@@ -107,8 +113,14 @@ public class SanPham_DAO {
                 stmt.setDouble(5, sp.getGiaThanh());
                 stmt.setString(6, sp.getNoiSanXuat());
                 stmt.setString(7, sp.getLoaiSanPham().getMaLoaiSanPham());
-                stmt.setString(8, sp.getKhuyenMai().getMaKhuyenMai());
-                stmt.setString(9, sp.getThue().getMaThue());
+                if (sp.getKhuyenMai() != null && sp.getKhuyenMai().getMaKhuyenMai() != null)
+                    stmt.setString(8, sp.getKhuyenMai().getMaKhuyenMai());
+                else
+                    stmt.setNull(8, java.sql.Types.NVARCHAR);
+                if (sp.getThue() != null && sp.getThue().getMaThue() != null)
+                    stmt.setString(9, sp.getThue().getMaThue());
+                else
+                    stmt.setNull(9, java.sql.Types.NVARCHAR);
                 stmt.setBoolean(10, sp.isTrangThai());
                 stmt.setString(11, sp.getHinhAnh());
                 stmt.setString(12, sp.getMaSanPham());
@@ -140,19 +152,27 @@ public class SanPham_DAO {
                 rs.getString("TenLoaiSanPham"),
                 rs.getString("MoTaLoai"));
 
-        KhuyenMai km = new KhuyenMai(
-                rs.getString("MaKhuyenMai"),
-                rs.getString("TenKhuyenMai"),
-                rs.getDouble("PhanTramGG"),
-                rs.getTimestamp("NgayBatDau") != null ? rs.getTimestamp("NgayBatDau").toLocalDateTime().toLocalDate() : java.time.LocalDate.now(),
-                rs.getTimestamp("NgayKetThuc") != null ? rs.getTimestamp("NgayKetThuc").toLocalDateTime().toLocalDate() : java.time.LocalDate.now().plusYears(1),
-                rs.getBoolean("TrangThaiKM"));
+        String maKM = rs.getString("MaKhuyenMai");
+        KhuyenMai km = null;
+        if (maKM != null) {
+            km = new KhuyenMai(
+                    maKM,
+                    rs.getString("TenKhuyenMai"),
+                    rs.getDouble("PhanTramGG"),
+                    rs.getTimestamp("NgayBatDau") != null ? rs.getTimestamp("NgayBatDau").toLocalDateTime().toLocalDate() : java.time.LocalDate.now(),
+                    rs.getTimestamp("NgayKetThuc") != null ? rs.getTimestamp("NgayKetThuc").toLocalDateTime().toLocalDate() : java.time.LocalDate.now().plusYears(1),
+                    rs.getBoolean("TrangThaiKM"));
+        }
 
-        Thue thue = new Thue(
-                rs.getString("MaThue"),
-                rs.getString("TenThue"),
-                rs.getDouble("PhanTramThue"),
-                rs.getString("MoTaThue"));
+        String maThue = rs.getString("MaThue");
+        Thue thue = null;
+        if (maThue != null) {
+            thue = new Thue(
+                    maThue,
+                    rs.getString("TenThue"),
+                    rs.getDouble("PhanTramThue"),
+                    rs.getString("MoTaThue"));
+        }
 
         SanPham sp = new SanPham();
         sp.setMaSanPham(rs.getString("MaSanPham"));
@@ -172,7 +192,7 @@ public class SanPham_DAO {
         return sp;
     }
 
-    /** Sinh mã sản phẩm tự động: SP + YYYY + 3 số (VD: SP2026001) */
+    // Sinh mã sản phẩm tự động: SP + YYYY + 3 số (VD: SP2026001)
     public String sinhMaTuDong() {
         String prefix = "SP";
         int nam = java.time.LocalDate.now().getYear();

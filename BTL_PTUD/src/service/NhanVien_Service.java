@@ -10,7 +10,6 @@ public class NhanVien_Service {
 
     public NhanVien_Service() {
         this.nhanVienDao = new NhanVien_DAO();
-        // TODO Auto-generated constructor stub
     }
 
 //Hàm lấy danh sách nhân viên
@@ -34,7 +33,7 @@ public class NhanVien_Service {
         return nhanVienDao.updateNhanVien(nv);
     }
 
-//Hàm xóa nhân viên    
+//Hàm xóa nhân viên
     public boolean xoaNhanVien(String maNhanVien) {
         return nhanVienDao.xoaNhanVien(maNhanVien);
     }
@@ -74,11 +73,9 @@ public class NhanVien_Service {
         return count;
     }
 
-    /**
-     * Tìm kiếm nhân viên trên danh sách cục bộ (không gọi lại DB). - Nếu
-     * keyword khớp chính xác mã NV → tra ngay qua DAO O(1). - Fallback: linear
-     * scan O(n) theo mã, tên, SĐT, email.
-     */
+    // Tìm kiếm nhân viên trên danh sách cục bộ (không gọi lại DB). - Nếu
+    // keyword khớp chính xác mã NV → tra ngay qua DAO O(1). - Fallback: linear
+    // scan O(n) theo mã, tên, SĐT, email.
     public ArrayList<NhanVien> timKiem(ArrayList<NhanVien> dsnv, String keyword) {
         if (keyword == null || keyword.isBlank()) {
             return new ArrayList<>(dsnv);
@@ -109,9 +106,7 @@ public class NhanVien_Service {
         return result;
     }
 
-    /**
-     * Chuẩn hóa chuỗi: bỏ dấu, viết thường để so sánh không phân biệt dấu.
-     */
+    // Chuẩn hóa chuỗi: bỏ dấu, viết thường để so sánh không phân biệt dấu.
     public static String normalize(String s) {
         if (s == null) {
             return "";
@@ -119,6 +114,11 @@ public class NhanVien_Service {
         return java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD)
                 .replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
                 .toLowerCase();
+    }
+
+    // Sinh mã nhân viên tự động theo năm hiện tại.
+    public String sinhMaNhanVien() {
+        return nhanVienDao.sinhMaTuDong();
     }
 
 }

@@ -1,7 +1,10 @@
 package exception;
 
+import constants.Colors;
 import java.awt.*;
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 //======CÁCH DÙNG=======
 //Gọi JTextField txtA = new RoundedTextField(int width, int height, int radius, String placeholder)
@@ -13,10 +16,14 @@ public class RoundedTextField extends JTextField {
     private int height;
     private String placeholder;
 
-    private Color borderColor = new Color(200, 200, 200);
-    private Color focusBorderColor = new Color(100, 150, 255);
+    private Color borderColor = Colors.INPUT_NORMAL_BORDER;
+    private Color focusBorderColor = Colors.INPUT_FOCUS_BORDER;
     private Color backgroundColor = Color.WHITE;
     private Color placeholderColor = new Color(150, 150, 150);
+
+    private boolean invalid = false;
+    private Color savedBorderColor;
+    private Color savedBgColor;
 
     public RoundedTextField(int width, int height, int radius, String placeholder) {
         this.width = width;
@@ -27,6 +34,39 @@ public class RoundedTextField extends JTextField {
         setOpaque(false);
         setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
         setFont(new Font("Segoe UI", Font.PLAIN, 14));
+
+        // Khi user g\u00f5 lai: t\u1ef1 \u0111\u1ed9ng x\u00f3a tr\u1ea1ng th\u00e1i invalid
+        getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e) { clearInvalidIfTyping(); }
+            @Override public void removeUpdate(DocumentEvent e) { clearInvalidIfTyping(); }
+            @Override public void changedUpdate(DocumentEvent e) {}
+        });
+    }
+
+    private void clearInvalidIfTyping() {
+        if (invalid) {
+            setInvalid(false);
+        }
+    }
+
+    // \u0110\u00e1nh d\u1ea5u \u00f4 nh\u1eadp \u0111ang sai (vi\u1ec1n \u0111\u1ecf + n\u1ec1n h\u1ed3ng nh\u1ea1t).
+    public void setInvalid(boolean invalid) {
+        if (this.invalid == invalid) return;
+        if (invalid) {
+            this.savedBorderColor = this.borderColor;
+            this.savedBgColor = this.backgroundColor;
+            this.borderColor = Colors.INPUT_INVALID_BORDER;
+            this.backgroundColor = Colors.INPUT_INVALID_BG;
+        } else {
+            if (savedBorderColor != null) this.borderColor = savedBorderColor;
+            if (savedBgColor != null) this.backgroundColor = savedBgColor;
+        }
+        this.invalid = invalid;
+        repaint();
+    }
+
+    public boolean isInvalid() {
+        return invalid;
     }
 
     // 👉 Cho layout biết size

@@ -105,10 +105,8 @@ public class LoSanPham_DAO {
         return 0;
     }
 
-    /**
-     * Lấy tất cả lô theo mã sản phẩm (kể cả hết hạn), sắp xếp HSD tăng dần.
-     * Chỉ lấy dữ liệu trực tiếp từ bảng LoSanPham – Service sẽ enrich thêm.
-     */
+    // Lấy tất cả lô theo mã sản phẩm (kể cả hết hạn), sắp xếp HSD tăng dần.
+    // Chỉ lấy dữ liệu trực tiếp từ bảng LoSanPham – Service sẽ enrich thêm.
     public ArrayList<LoSanPham> layTheoMaSanPham(String maSanPham) {
         ArrayList<LoSanPham> ds = new ArrayList<>();
         String sql = "SELECT MaLoSanPham, MaSanPham, MaPhieuNhap, MaKeSanPham, SoLuong, DonViTinh, HanSuDung, TrangThai "
@@ -147,10 +145,8 @@ public class LoSanPham_DAO {
         return ds;
     }
 
-    /**
-     * Giảm số lượng tồn kho theo FEFO (lô gần hết hạn nhất bị trừ trước).
-     * Chỉ trừ các lô còn TrangThai=true và chưa hết hạn.
-     */
+    // Giảm số lượng tồn kho theo FEFO (lô gần hết hạn nhất bị trừ trước).
+    // Chỉ trừ các lô còn TrangThai=true và chưa hết hạn.
     public void giamSoLuongTheoSanPham(String maSanPham, int soLuongCan) {
         ArrayList<LoSanPham> dsLo = layTheoMaSanPham(maSanPham);
         int conLai = soLuongCan;
@@ -177,9 +173,7 @@ public class LoSanPham_DAO {
         }
     }
 
-    /**
-     * Cập nhật kệ chứa của một lô sản phẩm.
-     */
+    // Cập nhật kệ chứa của một lô sản phẩm.
     public boolean capNhatKe(String maLoSanPham, String maKeSanPham) {
         String sql = "UPDATE LoSanPham SET MaKeSanPham = ? WHERE MaLoSanPham = ?";
         try {
@@ -195,9 +189,7 @@ public class LoSanPham_DAO {
         return false;
     }
 
-    /**
-     * Sinh mã lô sản phẩm tự động: LSP + YYYY + 4 số (VD: LSP20260001)
-     */
+    // Sinh mã lô sản phẩm tự động: LSP + YYYY + 3 số (VD: LSP2026001)
     public String sinhMaTuDong() {
         String prefix = "LSP";
         int nam = LocalDate.now().getYear();
@@ -210,9 +202,11 @@ public class LoSanPham_DAO {
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         String maxMa = rs.getString(1);
-                        if (maxMa != null && maxMa.length() >= pattern.length() + 4) {
-                            int stt = Integer.parseInt(maxMa.substring(pattern.length())) + 1;
-                            return pattern + String.format("%04d", stt);
+                        if (maxMa != null && maxMa.length() > pattern.length()) {
+                            try {
+                                int stt = Integer.parseInt(maxMa.substring(pattern.length())) + 1;
+                                return pattern + String.format("%03d", stt);
+                            } catch (NumberFormatException ignored) {}
                         }
                     }
                 }

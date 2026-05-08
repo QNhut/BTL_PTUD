@@ -1,11 +1,12 @@
-PhieuGiaoHang,PGH-ANPHUC-03
-DonViGiao,Cong ty Duoc An Phuc
-NgayGiao,04/05/2026
-KhoNhan,Chi nhanh Tan Binh
-GhiChu,Can uu tien kiem dem ngay khi nhan
+Phiếu Giao Hàng,PGH-SANOFI-03
+Nhà Cung Cấp,Công ty Sanofi Việt Nam
+Ngày Nhập,04/05/2026
+Kho Nhận,Chi nhánh Tân Bình
+Ghi Chú,Cần ưu tiên kiểm đếm ngay khi nhận
+Người Giao,Lê Thị Hồng
 
-MaSanPham,SoLuong,DonViTinh,GiaNhap
+Mã Sản Phẩm,Số Lượng,Đơn Vị Tính,Giá Nhập
 SP2026021,40,Chai,35000
 SP2026024,12,Tuýp,560000
 SP2026029,18,Chai,190000
-TongCong,,,11540000
+Tổng Cộng,,,11540000

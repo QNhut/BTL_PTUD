@@ -13,6 +13,18 @@ public class HoaDon {
     private NhanVien nhanVien;
     private KhachHang khachHang;
 
+    // ==== Phân tích chi tiết tiền (breakdown) ====
+    // Tiền hàng = tổng (số lượng * đơn giá sau KM) — subtotal trước thuế.
+    private double tienHang;
+    // Tổng tiền thuế tính trên từng dòng.
+    private double tienThue;
+    // Tổng tiền giảm giá do khuyến mãi của sản phẩm.
+    private double tienGiamGia;
+    // Số điểm khách hàng đã sử dụng (1 điểm = 1.000đ).
+    private int diemSuDung;
+    // Số tiền cuối cùng phải thanh toán = tienHang + tienThue - diemSuDung*1000.
+    private double thanhTien;
+
     public HoaDon(String maHoaDon, LocalDateTime ngayLap, double tongTien, int diemTichLuy, String maPTTT,
                   NhanVien nhanVien, KhachHang khachHang) {
         setMaHoaDon(maHoaDon);
@@ -59,7 +71,7 @@ public class HoaDon {
         this.ngayLap = ngayLap == null ? LocalDateTime.now() : ngayLap;
     }
 
-    /** Convenience: set từ LocalDate (tự thêm giờ 00:00) */
+    // Convenience: set từ LocalDate (tự thêm giờ 00:00)
     public void setNgayLap(LocalDate ngayLap) {
         this.ngayLap = ngayLap == null ? LocalDateTime.now() : ngayLap.atStartOfDay();
     }
@@ -116,6 +128,37 @@ public class HoaDon {
 
     public void setKhachHang(KhachHang khachHang) {
         this.khachHang = khachHang;
+    }
+
+    // ==== Breakdown getters/setters ====
+    public double getTienHang() { return tienHang; }
+    public void setTienHang(double tienHang) {
+        if (tienHang < 0) throw new IllegalArgumentException("Tien hang khong duoc am");
+        this.tienHang = tienHang;
+    }
+
+    public double getTienThue() { return tienThue; }
+    public void setTienThue(double tienThue) {
+        if (tienThue < 0) throw new IllegalArgumentException("Tien thue khong duoc am");
+        this.tienThue = tienThue;
+    }
+
+    public double getTienGiamGia() { return tienGiamGia; }
+    public void setTienGiamGia(double tienGiamGia) {
+        if (tienGiamGia < 0) throw new IllegalArgumentException("Tien giam gia khong duoc am");
+        this.tienGiamGia = tienGiamGia;
+    }
+
+    public int getDiemSuDung() { return diemSuDung; }
+    public void setDiemSuDung(int diemSuDung) {
+        if (diemSuDung < 0) throw new IllegalArgumentException("Diem su dung khong duoc am");
+        this.diemSuDung = diemSuDung;
+    }
+
+    public double getThanhTien() { return thanhTien; }
+    public void setThanhTien(double thanhTien) {
+        if (thanhTien < 0) throw new IllegalArgumentException("Thanh tien khong duoc am");
+        this.thanhTien = thanhTien;
     }
 
     @Override

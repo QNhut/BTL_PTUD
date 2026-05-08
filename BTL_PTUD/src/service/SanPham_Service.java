@@ -83,10 +83,8 @@ public class SanPham_Service {
 	}
 
 	// ==================== TỒN KHO (1 lần query) ====================
-	/**
-	 * Tính tồn kho cho TẤT CẢ sản phẩm trong 1 lần query.
-	 * Trả về Map: maSP → TonKhoInfo
-	 */
+	// Tính tồn kho cho TẤT CẢ sản phẩm trong 1 lần query.
+	// Trả về Map: maSP → TonKhoInfo
 	public Map<String, TonKhoInfo> tinhTonKhoTatCa(List<SanPham> dsSanPham) {
 		List<LoSanPham> dsLo = loSanPhamDAO.getDSLoSanPham();
 		LocalDate homNay = LocalDate.now();
@@ -164,28 +162,16 @@ public class SanPham_Service {
 	}
 
 	// ==================== TỒN KHO (1 SP) ====================
-	/** Trả về tổng số lượng còn tồn (chưa hết hạn) của 1 sản phẩm — dùng cho HoaDon_GUI */
+	// Trả về tổng số lượng còn tồn (chưa hết hạn) của 1 sản phẩm — dùng cho HoaDon_GUI
 	public int layTonKho(String maSP) {
 		return loSanPhamDAO.layTongSoLuongTonTheoMaSanPham(maSP);
 	}
 
 	// ── CRUD ─────────────────────────────────────────────────
 
-	/**
-	 * Thêm sản phẩm mới. Tự động gán KhuyenMai/Thue mặc định (record đầu tiên từ DB)
-	 * nếu sp không có để tránh NPE trong DAO.
-	 */
+	// Thêm sản phẩm mới. Tự động gán KhuyenMai/Thue mặc định (record đầu tiên từ DB)
+	// nếu sp không có để tránh NPE trong DAO.
 	public boolean themSanPham(SanPham sp) {
-		if (sp.getKhuyenMai() == null) {
-			KhuyenMai km = layKhuyenMaiMacDinh();
-			if (km == null) throw new IllegalStateException("Không có khuyến mãi nào trong DB");
-			sp.setKhuyenMai(km);
-		}
-		if (sp.getThue() == null) {
-			Thue thue = layThueMacDinh();
-			if (thue == null) throw new IllegalStateException("Không có thuế nào trong DB");
-			sp.setThue(thue);
-		}
 		return sanPhamDAO.themSanPham(sp);
 	}
 

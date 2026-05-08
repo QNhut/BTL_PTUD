@@ -16,6 +16,7 @@ import service.LoSanPham_Service;
 import service.LoaiSanPham_Service;
 import service.SanPham_Service;
 import service.SanPham_Service.TonKhoInfo;
+import service.Validators;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -26,12 +27,9 @@ import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-/**
- * Dialog chi tiết / thêm / chỉnh sửa sản phẩm.
- *
- * Cách dùng: ChiTietSanPham_GUI.moChiTiet(parentFrame, sanPham, tonKhoInfo);
- * ChiTietSanPham_GUI.moThemMoi(parentFrame, () -> refresh.run());
- */
+// Dialog chi tiết / thêm / chỉnh sửa sản phẩm.
+// Cách dùng: ChiTietSanPham_GUI.moChiTiet(parentFrame, sanPham, tonKhoInfo);
+// ChiTietSanPham_GUI.moThemMoi(parentFrame, () -> refresh.run());
 public class ChiTietSanPham_GUI extends JDialog {
 
 	// ── Services ──────────────────────────────────────────────
@@ -218,8 +216,17 @@ public class ChiTietSanPham_GUI extends JDialog {
 			priceRow.setOpaque(false);
 			priceRow.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-			// Giá
-			JLabel lblGia = new JLabel(PRICE_FMT.format(sanPham.getGiaThanh()) + "đ");
+			// Giá (có gạch ngang giá gốc khi có KM)
+			String giaHtml;
+			if (sanPham.coKhuyenMai()) {
+				giaHtml = "<html><span style='color:#ED5A2D;'>"
+						+ PRICE_FMT.format(sanPham.getGiaSauKM()) + "đ</span> "
+						+ "<span style='color:#9CA3AF; text-decoration:line-through; font-size:smaller;'>"
+						+ PRICE_FMT.format(sanPham.getGiaThanh()) + "đ</span></html>";
+			} else {
+				giaHtml = PRICE_FMT.format(sanPham.getGiaThanh()) + "đ";
+			}
+			JLabel lblGia = new JLabel(giaHtml);
 			lblGia.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
 			lblGia.setForeground(Colors.SUCCESS);
 			priceRow.add(lblGia);
@@ -1025,7 +1032,30 @@ public class ChiTietSanPham_GUI extends JDialog {
 			if (currentTab == 0) {
 				// Tab 1: Tiếp theo
 				RoundedButton btnNext = roundBtn("Tiếp theo", 120, 38, Colors.PRIMARY, Colors.BACKGROUND);
-				btnNext.addActionListener(e -> chuyenTab(1));
+				btnNext.addActionListener(e -> {
+					// Validate tab 1 trước khi chuyển
+					String ten = txtTen != null ? txtTen.getText().trim() : "";
+					String errMsgTen = Validators.required(ten);
+					if (errMsgTen != null) {
+						if (errTen != null) { errTen.setText(errMsgTen); errTen.setVisible(true); }
+						if (txtTen != null) { txtTen.setInvalid(true); txtTen.requestFocusInWindow(); txtTen.selectAll(); }
+						return;
+					}
+					if (errTen != null) errTen.setVisible(false);
+					if (txtTen != null) txtTen.setInvalid(false);
+
+					String giaStr = txtGia != null ? txtGia.getText().trim().replace(",", "") : "";
+					String errMsgGia = Validators.soThucDuong(giaStr);
+					if (errMsgGia != null) {
+						if (errGia != null) { errGia.setText(errMsgGia); errGia.setVisible(true); }
+						if (txtGia != null) { txtGia.setInvalid(true); txtGia.requestFocusInWindow(); txtGia.selectAll(); }
+						return;
+					}
+					if (errGia != null) errGia.setVisible(false);
+					if (txtGia != null) txtGia.setInvalid(false);
+
+					chuyenTab(1);
+				});
 				pnlFooter.add(btnNext);
 			} else {
 				// Tab 2: Lưu / Thêm mới
@@ -1064,20 +1094,25 @@ public class ChiTietSanPham_GUI extends JDialog {
 
 	private void luuSanPham() {
 		String ten = txtTen != null ? txtTen.getText().trim() : "";
-		if (ten.isEmpty()) {
-			if (errTen != null) { errTen.setText("✗ Vui lòng nhập tên sản phẩm"); errTen.setVisible(true); }
+		String errMsgTen = Validators.required(ten);
+		if (errMsgTen != null) {
+			if (errTen != null) { errTen.setText(errMsgTen); errTen.setVisible(true); }
+			if (txtTen != null) { txtTen.setInvalid(true); txtTen.requestFocusInWindow(); txtTen.selectAll(); }
 			return;
 		}
 		if (errTen != null) errTen.setVisible(false);
-		double gia = 0;
-		try {
-			String giaStr = txtGia != null ? txtGia.getText().trim().replace(",", "") : "0";
-			gia = Double.parseDouble(giaStr);
-			if (errGia != null) errGia.setVisible(false);
-		} catch (NumberFormatException ex) {
-			if (errGia != null) { errGia.setText("✗ Giá bán không hợp lệ"); errGia.setVisible(true); }
+		if (txtTen != null) txtTen.setInvalid(false);
+
+		String giaStr = txtGia != null ? txtGia.getText().trim().replace(",", "") : "";
+		String errMsgGia = Validators.soThucDuong(giaStr);
+		if (errMsgGia != null) {
+			if (errGia != null) { errGia.setText(errMsgGia); errGia.setVisible(true); }
+			if (txtGia != null) { txtGia.setInvalid(true); txtGia.requestFocusInWindow(); txtGia.selectAll(); }
 			return;
 		}
+		double gia = Double.parseDouble(giaStr);
+		if (errGia != null) errGia.setVisible(false);
+		if (txtGia != null) txtGia.setInvalid(false);
 
 		// Xác nhận lưu ảnh tạm
 		String tenAnh = sanPham != null ? sanPham.getHinhAnh() : null;
@@ -1175,7 +1210,7 @@ public class ChiTietSanPham_GUI extends JDialog {
 		return l;
 	}
 
-	/** Tạo panel BoxLayout X_AXIS: [label cố định 100px] [strut 4] [value fill] */
+	// Tạo panel BoxLayout X_AXIS: [label cố định 100px] [strut 4] [value fill]
 	private JPanel makeInfoPair(String label, JLabel value) {
 		JPanel p = new JPanel();
 		p.setLayout(new BoxLayout(p, BoxLayout.X_AXIS));
@@ -1193,10 +1228,8 @@ public class ChiTietSanPham_GUI extends JDialog {
 		return p;
 	}
 
-	/**
-	 * Hàng 2 cặp: GridLayout(1,2,16,0) mỗi ô là makeInfoPair; nếu lbl2==null thì 1
-	 * cặp full width
-	 */
+	// Hàng 2 cặp: GridLayout(1,2,16,0) mỗi ô là makeInfoPair; nếu lbl2==null thì 1
+	// cặp full width
 	private JPanel makeInfoRow(String lbl1, JLabel val1, String lbl2, JLabel val2) {
 		if (lbl2 == null)
 			return makeInfoPair(lbl1, val1);

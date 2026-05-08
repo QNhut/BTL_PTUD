@@ -16,7 +16,7 @@ public class ChiTietHoaDon_DAO {
 
     public ArrayList<ChiTietHoaDon> getDSTheoHoaDon(String maHoaDon) {
         ArrayList<ChiTietHoaDon> ds = new ArrayList<ChiTietHoaDon>();
-        String sql = "SELECT MaHoaDon, MaSanPham, SoLuong, DonGia FROM ChiTietHoaDon WHERE MaHoaDon = ?";
+        String sql = "SELECT MaHoaDon, MaSanPham, SoLuong, DonGia, COALESCE(GiaGoc, DonGia) AS GiaGoc FROM ChiTietHoaDon WHERE MaHoaDon = ?";
         try {
             con = ConnectDB.getInstance().getConnection();
             try (PreparedStatement ps = con.prepareStatement(sql)) {
@@ -28,6 +28,7 @@ public class ChiTietHoaDon_DAO {
                                 new SanPham(rs.getString("MaSanPham")),
                                 rs.getInt("SoLuong"),
                                 rs.getDouble("DonGia"));
+                        ct.setGiaGoc(rs.getDouble("GiaGoc"));
                         ds.add(ct);
                     }
                 }
@@ -39,7 +40,12 @@ public class ChiTietHoaDon_DAO {
     }
 
     public boolean them(ChiTietHoaDon ct) {
-        String sql = "INSERT INTO ChiTietHoaDon (MaHoaDon, MaSanPham, SoLuong, DonGia) VALUES (?, ?, ?, ?)";
+        return them(ct, ct.getDonGia());
+    }
+
+    // Lưu chi tiết kèm giá gốc (trước khi áp dụng khuyến mãi).
+    public boolean them(ChiTietHoaDon ct, double giaGoc) {
+        String sql = "INSERT INTO ChiTietHoaDon (MaHoaDon, MaSanPham, SoLuong, DonGia, GiaGoc) VALUES (?, ?, ?, ?, ?)";
         try {
             con = ConnectDB.getInstance().getConnection();
             try (PreparedStatement ps = con.prepareStatement(sql)) {
@@ -47,6 +53,7 @@ public class ChiTietHoaDon_DAO {
                 ps.setString(2, ct.getSanPham().getMaSanPham());
                 ps.setInt(3, ct.getSoLuong());
                 ps.setDouble(4, ct.getDonGia());
+                ps.setDouble(5, giaGoc);
                 return ps.executeUpdate() > 0;
             }
         } catch (SQLException e) {

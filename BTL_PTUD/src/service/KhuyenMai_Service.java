@@ -37,10 +37,8 @@ public class KhuyenMai_Service {
         return getDSKhuyenMai().size();
     }
 
-    /**
-     * Khuyến mãi đang diễn ra: trangThai=true VÀ hôm nay nằm trong [ngayBatDau,
-     * ngayKetThuc]
-     */
+    // Khuyến mãi đang diễn ra: trangThai=true VÀ hôm nay nằm trong [ngayBatDau,
+    // ngayKetThuc]
     public int getSoLuongDangHoatDong() {
         LocalDate today = LocalDate.now();
         int count = 0;
@@ -54,9 +52,7 @@ public class KhuyenMai_Service {
         return count;
     }
 
-    /**
-     * Sắp diễn ra: trangThai=true VÀ hôm nay < ngayBatDau
-     */
+    // Sắp diễn ra: trangThai=true VÀ hôm nay < ngayBatDau
     public int getSoLuongSapDienRa() {
         LocalDate today = LocalDate.now();
         int count = 0;
@@ -68,9 +64,7 @@ public class KhuyenMai_Service {
         return count;
     }
 
-    /**
-     * Đã kết thúc: trangThai=false HOẶC hôm nay > ngayKetThuc
-     */
+    // Đã kết thúc: trangThai=false HOẶC hôm nay > ngayKetThuc
     public int getSoLuongDaKetThuc() {
         LocalDate today = LocalDate.now();
         int count = 0;
@@ -82,10 +76,8 @@ public class KhuyenMai_Service {
         return count;
     }
 
-    /**
-     * Trả về chuỗi trạng thái hiển thị dựa trên ngày: "Đang diễn ra", "Sắp diễn
-     * ra", "Đã kết thúc"
-     */
+    // Trả về chuỗi trạng thái hiển thị dựa trên ngày: "Đang diễn ra", "Sắp diễn
+    // ra", "Đã kết thúc"
     public String getTrangThaiHienThi(KhuyenMai km) {
         LocalDate today = LocalDate.now();
         if (!km.isTrangThai() || today.isAfter(km.getNgayKetThuc())) {
@@ -97,9 +89,7 @@ public class KhuyenMai_Service {
         return "Đang diễn ra";
     }
 
-    /**
-     * Kiểm tra khuyến mãi đang hoạt động thực tế (dùng cho badge table)
-     */
+    // Kiểm tra khuyến mãi đang hoạt động thực tế (dùng cho badge table)
     public boolean isDangHoatDong(KhuyenMai km) {
         LocalDate today = LocalDate.now();
         return km.isTrangThai()
@@ -107,11 +97,9 @@ public class KhuyenMai_Service {
                 && !today.isAfter(km.getNgayKetThuc());
     }
 
-    /**
-     * Tìm kiếm trên danh sách cục bộ — không gọi lại DB. - Nếu keyword khớp
-     * chính xác mã KM → tra ngay qua DAO O(1). - Fallback: linear scan theo mã,
-     * tên — hỗ trợ không dấu.
-     */
+    // Tìm kiếm trên danh sách cục bộ — không gọi lại DB. - Nếu keyword khớp
+    // chính xác mã KM → tra ngay qua DAO O(1). - Fallback: linear scan theo mã,
+    // tên — hỗ trợ không dấu.
     public ArrayList<KhuyenMai> timKiem(ArrayList<KhuyenMai> ds, String keyword) {
         if (keyword == null || keyword.isBlank()) {
             return new ArrayList<>(ds);
@@ -139,9 +127,7 @@ public class KhuyenMai_Service {
         return result;
     }
 
-    /**
-     * Chuẩn hóa chuỗi: bỏ dấu, viết thường để so sánh không phân biệt dấu.
-     */
+    // Chuẩn hóa chuỗi: bỏ dấu, viết thường để so sánh không phân biệt dấu.
     public static String normalize(String s) {
         if (s == null) {
             return "";
@@ -151,13 +137,28 @@ public class KhuyenMai_Service {
                 .toLowerCase();
     }
 
-    /** Trả về map maKhuyenMai → số sản phẩm đang áp dụng */
+    // Trả về map maKhuyenMai → số sản phẩm đang áp dụng
     public java.util.Map<String, Integer> getDemSanPhamTheoKM() {
         return khuyenMaiDao.getDemSanPhamTheoKM();
     }
 
-    /** Áp dụng khuyến mãi cho 1 sản phẩm */
+    // Áp dụng khuyến mãi cho 1 sản phẩm
     public boolean apDungChoSanPham(String maSP, String maKM) {
         return khuyenMaiDao.apDungChoSanPham(maSP, maKM);
+    }
+
+    // Gỡ khuyến mãi khỏi 1 sản phẩm (set MaKhuyenMai = NULL)
+    public boolean goKhuyenMaiKhoiSanPham(String maSP) {
+        return khuyenMaiDao.goKhuyenMaiKhoiSanPham(maSP);
+    }
+
+    // Gỡ khuyến mãi khỏi TẤT CẢ sản phẩm đang áp dụng.
+    public int goKhuyenMaiKhoiTatCa(String maKM) {
+        return khuyenMaiDao.goKhuyenMaiKhoiTatCa(maKM);
+    }
+
+    // Sinh mã khuyến mãi tự động theo năm hiện tại.
+    public String sinhMaKhuyenMai() {
+        return khuyenMaiDao.sinhMaTuDong();
     }
 }

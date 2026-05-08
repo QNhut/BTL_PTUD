@@ -308,7 +308,7 @@ public class NhapHang_GUI extends JPanel {
 
 		pnlContentBottomRight.add(Box.createVerticalStrut(14));
 
-//		Nút "Tạo phiếu nhập" 
+//		Nút "Tạo phiếu nhập"
 		btnNhapHang = new JButton("Nhập sản phẩm");
 		btnNhapHang.setAlignmentX(Component.CENTER_ALIGNMENT);
 		btnNhapHang.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
@@ -991,12 +991,10 @@ public class NhapHang_GUI extends JPanel {
 
 	// ==================== LƯU PHIẾU NHẬP VÀO DB ====================
 
-	/**
-	 * Xử lý khi nhấn "Xác nhận nhập":
-	 * 1. Tạo PhieuNhap → lưu DB
-	 * 2. Tạo ChiTietPhieuNhap cho mỗi dòng → lưu DB
-	 * 3. Tạo LoSanPham cho mỗi dòng (quy đổi đơn vị + tính HSD) → lưu DB
-	 */
+	// Xử lý khi nhấn "Xác nhận nhập":
+	// 1. Tạo PhieuNhap → lưu DB
+	// 2. Tạo ChiTietPhieuNhap cho mỗi dòng → lưu DB
+	// 3. Tạo LoSanPham cho mỗi dòng (quy đổi đơn vị + tính HSD) → lưu DB
 	private void xuLyLuuPhieuNhap() {
 		try {
 			// 1. Đọc thông tin phiếu từ form

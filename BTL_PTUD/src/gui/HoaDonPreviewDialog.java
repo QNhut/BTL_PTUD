@@ -18,10 +18,8 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import service.HoaDon_Service;
 
-/**
- * Dialog xem trước và in / xuất PDF hóa đơn. Không phụ thuộc thư viện ngoài –
- * PDF được tạo bằng cách nhúng ảnh JPEG.
- */
+// Dialog xem trước và in / xuất PDF hóa đơn. Không phụ thuộc thư viện ngoài –
+// PDF được tạo bằng cách nhúng ảnh JPEG.
 public class HoaDonPreviewDialog extends JDialog {
 
     // --- Kích thước trang hóa đơn (px, dùng cho Graphics2D) ---
@@ -43,6 +41,14 @@ public class HoaDonPreviewDialog extends JDialog {
     private final String sdtRaw;
     private final List<HoaDon_Service.CartItem> cartItems;
     private final Runnable onThanhToanThanhCong;
+    // Số điểm khách sử dụng cho hóa đơn này.
+    private final int diemSuDung;
+    // Mã phương thức thanh toán được chọn trước từ form (có thể null).
+    private final String maPTTTChon;
+    // Tên PTTT để hiển thị trên hóa đơn (resolve từ maPTTTChon).
+    private String tenPTTTHienThi;
+    // Breakdown tính trước để hiển thị và in.
+    private HoaDon_Service.HoaDonSummary summary;
 
     private InvoicePanel invoicePanel;
     private JPanel pnlSouth; // thanh dưới – thay thế sau khi thanh toán
@@ -67,6 +73,9 @@ public class HoaDonPreviewDialog extends JDialog {
         this.sdtRaw = sdt;
         this.cartItems = null;
         this.onThanhToanThanhCong = null;
+        this.diemSuDung = 0;
+        this.maPTTTChon = null;
+        this.summary = null;
         initUI();
     }
 
@@ -82,6 +91,35 @@ public class HoaDonPreviewDialog extends JDialog {
             NhanVien nhanVien,
             List<HoaDon_Service.CartItem> items,
             Runnable onSuccess) {
+        this(parent, tenKH, sdt, tenNV, thoiGian, model, maHD, service, nhanVien, items, 0, null, onSuccess);
+    }
+
+    // Constructor đầy đủ với điểm sử dụng.
+    public HoaDonPreviewDialog(Frame parent,
+            String tenKH, String sdt,
+            String tenNV, String thoiGian,
+            DefaultTableModel model,
+            String maHD,
+            HoaDon_Service service,
+            NhanVien nhanVien,
+            List<HoaDon_Service.CartItem> items,
+            int diemSuDung,
+            Runnable onSuccess) {
+        this(parent, tenKH, sdt, tenNV, thoiGian, model, maHD, service, nhanVien, items, diemSuDung, null, onSuccess);
+    }
+
+    // Constructor đầy đủ với điểm sử dụng + mã PTTT được chọn trước.
+    public HoaDonPreviewDialog(Frame parent,
+            String tenKH, String sdt,
+            String tenNV, String thoiGian,
+            DefaultTableModel model,
+            String maHD,
+            HoaDon_Service service,
+            NhanVien nhanVien,
+            List<HoaDon_Service.CartItem> items,
+            int diemSuDung,
+            String maPTTTChon,
+            Runnable onSuccess) {
         super(parent, "Hóa đơn bán hàng", true);
         this.tenKhachHang = (tenKH == null || tenKH.isBlank()) ? "Khách lẻ" : tenKH;
         this.soDienThoai = (sdt == null || sdt.isBlank()) ? "---" : sdt;
@@ -94,7 +132,22 @@ public class HoaDonPreviewDialog extends JDialog {
         this.tenKHRaw = tenKH;
         this.sdtRaw = sdt;
         this.cartItems = items;
+        this.diemSuDung = Math.max(0, diemSuDung);
+        this.maPTTTChon = maPTTTChon;
         this.onThanhToanThanhCong = onSuccess;
+        // Tính trước breakdown để vẽ footer
+        if (service != null && items != null) {
+            this.summary = service.tinhTongKet(items, this.diemSuDung);
+        }
+        // Resolve tên PTTT để hiển thị
+        if (service != null && maPTTTChon != null) {
+            for (entity.PhuongThucThanhToan pt : service.getDSPhuongThucThanhToan()) {
+                if (maPTTTChon.equals(pt.getMaPTTT())) {
+                    this.tenPTTTHienThi = pt.getTenPTTT();
+                    break;
+                }
+            }
+        }
         initUI();
     }
 
@@ -149,13 +202,14 @@ public class HoaDonPreviewDialog extends JDialog {
             setBackground(new Color(210, 210, 210));
         }
 
-        /**
-         * Tính chiều cao thực tế của nội dung hóa đơn dựa trên số dòng.
-         */
+        // Tính chiều cao thực tế của nội dung hóa đơn dựa trên số dòng.
         int computePageHeight() {
             int rows = (tableModel != null) ? tableModel.getRowCount() : 0;
-            // base: 58 header + nội dung cố định ~252 + mỗi dòng 20 + padding 30
-            return 310 + rows * 20;
+            // base: 58 header + thông tin cố định ~252 + mỗi dòng 22 (do thêm strikethrough giá gốc)
+            // + footer breakdown ~80 (5 dòng) thay cho 1 dòng tổng tiền
+            int rowH = 22;
+            int footerExtra = 60;
+            return 310 + rows * rowH + footerExtra;
         }
 
         @Override
@@ -187,12 +241,10 @@ public class HoaDonPreviewDialog extends JDialog {
             g2.dispose();
         }
 
-        /**
-         * Vẽ toàn bộ nội dung hóa đơn vào Graphics2D đã cho.
-         */
+        // Vẽ toàn bộ nội dung hóa đơn vào Graphics2D đã cho.
         void drawInvoice(Graphics2D g2, int width, int height, int pad) {
             applyHints(g2);
-            NumberFormat nf = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
+            NumberFormat nf = constants.Formats.VND;
             int contentW = width - pad * 2;
             int x = pad;
 
@@ -237,15 +289,22 @@ public class HoaDonPreviewDialog extends JDialog {
             drawValue(g2, tenNhanVien, x + contentW / 2 + 26, y);
             y += 14;
 
+            // PTTT (nếu có)
+            if (tenPTTTHienThi != null && !tenPTTTHienThi.isBlank()) {
+                drawLabel(g2, "PTTT:", x, y);
+                drawValue(g2, tenPTTTHienThi, x + 32, y);
+                y += 14;
+            }
+
             // ---- Divider ----
             drawDivider(g2, x, y, contentW);
             y += 10;
 
             // ---- Bảng sản phẩm ----
             // colW: STT | Tên sản phẩm | SL | Thành tiền
-            int[] colW = {22, contentW - 22 - 28 - 70, 28, 70};
+            int[] colW = {22, contentW - 22 - 28 - 80, 28, 80};
             String[] headers = {"STT", "Tên sản phẩm", "SL", "Thành tiền"};
-            int rowH = 20;
+            int rowH = 22;
 
             // Header
             g2.setColor(Colors.PRIMARY);
@@ -257,7 +316,8 @@ public class HoaDonPreviewDialog extends JDialog {
 
             // Rows
             long grandTotal = 0;
-            for (int r = 0; r < tableModel.getRowCount(); r++) {
+            int rowsCount = tableModel.getRowCount();
+            for (int r = 0; r < rowsCount; r++) {
                 Color bg = (r % 2 == 0) ? Color.WHITE : new Color(248, 250, 252);
                 g2.setColor(bg);
                 g2.fillRect(x, y, contentW, rowH);
@@ -272,6 +332,13 @@ public class HoaDonPreviewDialog extends JDialog {
                 long thanhTien = (long) qty * donGia;
                 grandTotal += thanhTien;
 
+                // Lấy giaGoc từ cartItems nếu có
+                double giaGoc = donGia;
+                if (cartItems != null && r < cartItems.size()) {
+                    giaGoc = cartItems.get(r).getGiaGoc();
+                }
+                boolean coKM = giaGoc > donGia + 0.5;
+
                 String[] vals = {
                     String.valueOf(r + 1),
                     tenSP,
@@ -282,17 +349,60 @@ public class HoaDonPreviewDialog extends JDialog {
                 g2.setFont(new Font("Arial", Font.PLAIN, 9));
                 g2.setColor(Colors.TEXT_PRIMARY);
                 drawTableRow(g2, vals, colW, x, y, rowH, RowAlign.DATA);
+
+                // Vẽ giá gốc strikethrough nhỏ ngay dưới Thành tiền nếu có KM
+                if (coKM) {
+                    long thanhTienGoc = (long) qty * (long) giaGoc;
+                    String strikeStr = nf.format(thanhTienGoc) + "đ";
+                    g2.setFont(new Font("Arial", Font.PLAIN, 7));
+                    g2.setColor(new Color(150, 150, 150));
+                    FontMetrics fmS = g2.getFontMetrics();
+                    int sw = fmS.stringWidth(strikeStr);
+                    int strikeX = x + contentW - 6 - sw;
+                    int strikeY = y + 19;
+                    g2.drawString(strikeStr, strikeX, strikeY);
+                    g2.setStroke(new BasicStroke(0.5f));
+                    g2.drawLine(strikeX, strikeY - 2, strikeX + sw, strikeY - 2);
+                }
                 y += rowH;
             }
 
-            // ---- Tổng tiền ----
+            // ---- Breakdown tổng kết ----
             y += 6;
             g2.setColor(Colors.BORDER);
             g2.setStroke(new BasicStroke(1f));
             g2.drawLine(x, y, x + contentW, y);
             y += 12;
 
-            String totalStr = "TỔNG TIỀN: " + nf.format(grandTotal) + "đ";
+            // Lấy breakdown: ưu tiên dùng summary; nếu chưa có dùng grandTotal
+            double sTienHang = (summary != null) ? summary.tienHang : grandTotal;
+            double sTienThue = (summary != null) ? summary.tienThue : 0;
+            double sTienGiamKM = (summary != null) ? summary.tienGiamGia : 0;
+            double sTienGiamDiem = (summary != null) ? summary.tienGiamTuDiem : 0;
+            int sDiemDung = (summary != null) ? summary.diemSuDung : 0;
+            double sThanhTien = (summary != null) ? summary.thanhTien : grandTotal;
+
+            g2.setFont(new Font("Arial", Font.PLAIN, 9));
+            g2.setColor(Colors.TEXT_PRIMARY);
+            y = drawSummaryLine(g2, x, y, contentW, "Tạm tính:",       nf.format((long) sTienHang) + "đ", false);
+            if (sTienThue > 0) {
+                y = drawSummaryLine(g2, x, y, contentW, "Thuế (+):",   nf.format((long) sTienThue) + "đ", false);
+            }
+            if (sTienGiamKM > 0) {
+                y = drawSummaryLine(g2, x, y, contentW, "Giảm giá KM (-):",
+                        nf.format((long) sTienGiamKM) + "đ", false);
+            }
+            if (sDiemDung > 0) {
+                y = drawSummaryLine(g2, x, y, contentW,
+                        "Điểm sử dụng (-) [" + sDiemDung + " đ]:",
+                        nf.format((long) sTienGiamDiem) + "đ", false);
+            }
+            // line
+            g2.setColor(Colors.BORDER);
+            g2.drawLine(x, y, x + contentW, y);
+            y += 12;
+            // Thành tiền (nổi bật)
+            String totalStr = "THÀNH TIỀN: " + nf.format((long) sThanhTien) + "đ";
             g2.setFont(new Font("Arial", Font.BOLD, 11));
             g2.setColor(Colors.PRIMARY);
             FontMetrics fm = g2.getFontMetrics();
@@ -352,6 +462,19 @@ public class HoaDonPreviewDialog extends JDialog {
             HEADER, DATA
         }
 
+        // Vẽ 1 dòng "label : value" cho khu summary. Trả về y mới (dòng kế).
+        private int drawSummaryLine(Graphics2D g2, int x, int y, int contentW,
+                                    String label, String value, boolean bold) {
+            Font old = g2.getFont();
+            g2.setFont(new Font("Arial", bold ? Font.BOLD : Font.PLAIN, bold ? 10 : 9));
+            FontMetrics fm = g2.getFontMetrics();
+            g2.setColor(Colors.TEXT_PRIMARY);
+            g2.drawString(label, x, y + 12);
+            g2.drawString(value, x + contentW - fm.stringWidth(value), y + 12);
+            g2.setFont(old);
+            return y + 14;
+        }
+
         private void drawTableRow(Graphics2D g2, String[] vals, int[] colW,
                 int x, int y, int unusedRowH, RowAlign mode) {
             FontMetrics fm = g2.getFontMetrics();
@@ -391,6 +514,43 @@ public class HoaDonPreviewDialog extends JDialog {
     // =========================================================
     @SuppressWarnings("unchecked")
     private JPanel buildPaymentBar() {
+        JButton btnThanhToan = new RoundedButton(155, 34, 17, "✓ Xác nhận thanh toán", Colors.SUCCESS);
+        btnThanhToan.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
+        btnThanhToan.setForeground(Color.WHITE);
+
+        JButton btnHuy = new RoundedButton(70, 34, 17, "Hủy", Colors.SECONDARY);
+        btnHuy.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
+        btnHuy.setForeground(Colors.TEXT_PRIMARY);
+        btnHuy.addActionListener(e -> dispose());
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBackground(Colors.BACKGROUND);
+        panel.setBorder(BorderFactory.createEmptyBorder(4, 0, 4, 0));
+
+        // Nếu đã chọn PTTT từ form trước đó: chỉ hiển thị nhãn xác nhận, không cần combobox
+        if (maPTTTChon != null) {
+            JLabel lblPTTTInfo = new JLabel("Phương thức thanh toán: "
+                    + (tenPTTTHienThi != null ? tenPTTTHienThi : maPTTTChon));
+            lblPTTTInfo.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
+            lblPTTTInfo.setForeground(Colors.TEXT_PRIMARY);
+            JPanel rowInfo = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 6));
+            rowInfo.setBackground(Colors.BACKGROUND);
+            rowInfo.add(lblPTTTInfo);
+
+            btnThanhToan.addActionListener(e -> xuLyThanhToan(btnThanhToan, maPTTTChon));
+
+            JPanel rowBtn = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 4));
+            rowBtn.setBackground(Colors.BACKGROUND);
+            rowBtn.add(btnThanhToan);
+            rowBtn.add(btnHuy);
+
+            panel.add(rowInfo);
+            panel.add(rowBtn);
+            return panel;
+        }
+
+        // Trường hợp không có maPTTTChon (constructor cũ): hiển thị combobox
         java.util.List<entity.PhuongThucThanhToan> dsPTTT = hoaDonService.getDSPhuongThucThanhToan();
         JComboBox<entity.PhuongThucThanhToan> cmbPTTT = new JComboBox<>();
         for (entity.PhuongThucThanhToan pt : dsPTTT) {
@@ -408,9 +568,6 @@ public class HoaDonPreviewDialog extends JDialog {
         cmbPTTT.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
         cmbPTTT.setPreferredSize(new Dimension(140, 30));
 
-        JButton btnThanhToan = new RoundedButton(155, 34, 17, "✓ Xác nhận", Colors.SUCCESS);
-        btnThanhToan.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
-        btnThanhToan.setForeground(Color.WHITE);
         btnThanhToan.addActionListener(e -> {
             entity.PhuongThucThanhToan selected
                     = (entity.PhuongThucThanhToan) cmbPTTT.getSelectedItem();
@@ -418,31 +575,20 @@ public class HoaDonPreviewDialog extends JDialog {
             xuLyThanhToan(btnThanhToan, maPTTT);
         });
 
-        JButton btnHuy = new RoundedButton(70, 34, 17, "Hủy", Colors.SECONDARY);
-        btnHuy.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
-        btnHuy.setForeground(Colors.TEXT_PRIMARY);
-        btnHuy.addActionListener(e -> dispose());
-
         JLabel lblPTTT = new JLabel("Phương thức thanh toán:");
         lblPTTT.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
         lblPTTT.setForeground(Colors.TEXT_PRIMARY);
 
-        // Hàng 1: label + combobox
         JPanel row1 = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 6));
         row1.setBackground(Colors.BACKGROUND);
         row1.add(lblPTTT);
         row1.add(cmbPTTT);
 
-        // Hàng 2: nút xác nhận + hủy
         JPanel row2 = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 4));
         row2.setBackground(Colors.BACKGROUND);
         row2.add(btnThanhToan);
         row2.add(btnHuy);
 
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBackground(Colors.BACKGROUND);
-        panel.setBorder(BorderFactory.createEmptyBorder(4, 0, 4, 0));
         panel.add(row1);
         panel.add(row2);
         return panel;
@@ -491,7 +637,7 @@ public class HoaDonPreviewDialog extends JDialog {
             @Override
             protected HoaDon doInBackground() {
                 return hoaDonService.taoHoaDon(
-                        maHoaDon, tenKHRaw, sdtRaw, nhanVienEntity, cartItems, maPTTT);
+                        maHoaDon, tenKHRaw, sdtRaw, nhanVienEntity, cartItems, maPTTT, diemSuDung);
             }
 
             @Override
@@ -580,9 +726,7 @@ public class HoaDonPreviewDialog extends JDialog {
         }
     }
 
-    /**
-     * Render nội dung hóa đơn vào BufferedImage (2× để sắc nét).
-     */
+    // Render nội dung hóa đơn vào BufferedImage (2× để sắc nét).
     private BufferedImage renderToImage() {
         final int SCALE = 2;
         int dynH = invoicePanel.computePageHeight();
@@ -599,10 +743,8 @@ public class HoaDonPreviewDialog extends JDialog {
         return img;
     }
 
-    /**
-     * Tạo file PDF tối giản: nhúng ảnh JPEG dùng DCTDecode. Không cần thư viện
-     * ngoài, hỗ trợ tiếng Việt đầy đủ.
-     */
+    // Tạo file PDF tối giản: nhúng ảnh JPEG dùng DCTDecode. Không cần thư viện
+    // ngoài, hỗ trợ tiếng Việt đầy đủ.
     private void writePDF(BufferedImage img, java.io.File outFile) throws IOException {
         // --- Mã hóa ảnh sang JPEG ---
         ByteArrayOutputStream jpegBuf = new ByteArrayOutputStream();

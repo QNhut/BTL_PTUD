@@ -111,4 +111,30 @@ public class NhaCungCap_DAO {
 		boolean trangThai = rs.getBoolean("TrangThai");
 		return new NhaCungCap(maNCC, tenNCC, diaChi, email, soDienThoai, moTa, trangThai);
 	}
+
+	// Sinh mã nhà cung cấp tự động: NCC + YYYY + 3 số (VD: NCC2026001)
+	public String sinhMaTuDong() {
+		String prefix = "NCC";
+		int nam = java.time.LocalDate.now().getYear();
+		String pattern = prefix + nam;
+		String sql = "SELECT MAX(MaNhaCungCap) FROM NhaCungCap WHERE MaNhaCungCap LIKE ?";
+		try {
+			con = ConnectDB.getInstance().getConnection();
+			try (PreparedStatement ps = con.prepareStatement(sql)) {
+				ps.setString(1, pattern + "%");
+				try (ResultSet rs = ps.executeQuery()) {
+					if (rs.next()) {
+						String maxMa = rs.getString(1);
+						if (maxMa != null && maxMa.length() > pattern.length()) {
+							try {
+								int stt = Integer.parseInt(maxMa.substring(pattern.length())) + 1;
+								return pattern + String.format("%03d", stt);
+							} catch (NumberFormatException ignored) {}
+						}
+					}
+				}
+			}
+		} catch (SQLException e) { e.printStackTrace(); }
+		return pattern + "001";
+	}
 }

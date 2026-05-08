@@ -7,6 +7,8 @@ public class ChiTietHoaDon {
     private SanPham sanPham;
     private int soLuong;
     private double donGia;
+    // Giá gốc trước khuyến mãi (nếu không có = donGia).
+    private double giaGoc;
 
     public ChiTietHoaDon(HoaDon hoaDon, SanPham sanPham, int soLuong, double donGia) {
         setHoaDon(hoaDon);
@@ -54,6 +56,18 @@ public class ChiTietHoaDon {
             throw new IllegalArgumentException("Don gia khong duoc am");
         }
         this.donGia = donGia;
+    }
+
+    public double getGiaGoc() { return giaGoc > 0 ? giaGoc : donGia; }
+    public void setGiaGoc(double giaGoc) {
+        if (giaGoc < 0) throw new IllegalArgumentException("Gia goc khong duoc am");
+        this.giaGoc = giaGoc;
+    }
+
+    // Tiền KM trên dòng = soLuong * (giaGoc - donGia) (>=0).
+    public double getTienGiamGia() {
+        double diff = getGiaGoc() - donGia;
+        return diff > 0 ? diff * soLuong : 0;
     }
 
     @Override

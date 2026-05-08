@@ -13,6 +13,7 @@ import exception.RoundedTextField;
 import exception.RoundedToggleButton;
 import service.ImageCache;
 import service.LoaiSanPham_Service;
+import service.LoSanPham_Service;
 import service.SanPham_Service;
 import service.SanPham_Service.TonKhoInfo;
 import service.SanPham_Service.ThongKe;
@@ -34,6 +35,7 @@ public class SanPham_GUI extends JPanel {
 	private static final DecimalFormat PRICE_FMT = new DecimalFormat("#,###");
 
 	private final SanPham_Service spService = new SanPham_Service();
+	private final LoSanPham_Service loSPService = new LoSanPham_Service();
 	private final LoaiSanPham_Service lspService = new LoaiSanPham_Service();
 
 	private List<SanPham> dsGoc, dsHienThi;
@@ -434,8 +436,17 @@ public class SanPham_GUI extends JPanel {
 		JPanel priceRow = new JPanel(new BorderLayout());
 		priceRow.setOpaque(false);
 		priceRow.setAlignmentX(LEFT_ALIGNMENT);
-		priceRow.setMaximumSize(dim(Integer.MAX_VALUE, 20));
-		priceRow.add(leftLabel(PRICE_FMT.format(sp.getGiaThanh()) + "đ", FontStyle.SM, FontStyle.BOLD, Colors.SUCCESS),
+		priceRow.setMaximumSize(dim(Integer.MAX_VALUE, 24));
+		String giaHtml;
+		if (sp.coKhuyenMai()) {
+			giaHtml = "<html><span style='color:#ED5A2D; font-weight:bold;'>"
+					+ PRICE_FMT.format(sp.getGiaSauKM()) + "đ</span> "
+					+ "<span style='color:#9CA3AF; text-decoration:line-through; font-size:smaller;'>"
+					+ PRICE_FMT.format(sp.getGiaThanh()) + "đ</span></html>";
+		} else {
+			giaHtml = PRICE_FMT.format(sp.getGiaThanh()) + "đ";
+		}
+		priceRow.add(leftLabel(giaHtml, FontStyle.SM, FontStyle.BOLD, Colors.SUCCESS),
 				BorderLayout.WEST);
 		priceRow.add(leftLabel("Tồn: " + info.tonKho, FontStyle.XS, FontStyle.NORMAL, Colors.MUTED), BorderLayout.EAST);
 		ct.add(priceRow);
@@ -569,7 +580,7 @@ public class SanPham_GUI extends JPanel {
 		String ngayGanNhat = layNgayGanNhat(sp.getMaSanPham());
 
 		return new Object[] { new Object[] { sp.getMaSanPham(), sp.getTenSanPham(), imgPath }, danhMuc,
-				sp.getGiaThanh(), info.tonKho, new Object[] { info.soLo, info.loHetHan, sapHetLo, ngayGanNhat },
+				sp, info.tonKho, new Object[] { info.soLo, info.loHetHan, sapHetLo, ngayGanNhat },
 				info.trangThai, null };
 	}
 
@@ -579,11 +590,11 @@ public class SanPham_GUI extends JPanel {
 		return "";
 	}
 
-	/** Tính trước ngày gần nhất cho tất cả SP (1 lần query thay vì N lần) */
+	// Tính trước ngày gần nhất cho tất cả SP (1 lần query thay vì N lần)
 	private void tinhNgayGanNhatTatCa() {
 		mapNgayGanNhat = new HashMap<>();
 		if (dsLoSanPhamCache == null) {
-			dsLoSanPhamCache = safeCall(() -> new dao.LoSanPham_DAO().getDSLoSanPham(), new ArrayList<>());
+			dsLoSanPhamCache = safeCall(() -> loSPService.getDSLoSanPham(), new ArrayList<>());
 		}
 		Map<String, LocalDate> map = new HashMap<>();
 		for (LoSanPham lo : dsLoSanPhamCache) {

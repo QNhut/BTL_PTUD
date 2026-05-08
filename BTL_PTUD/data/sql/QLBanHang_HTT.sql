@@ -82,15 +82,15 @@ VALUES
 ('VTNAnh', '123456', 'NV2025010'),
 ('TKTest', '123456', 'NV2025011')
 
--- Reset online state de test login/logout theo service
+-- Reset trạng thái online để test login/logout theo service
 UPDATE TaiKhoan SET TrangThai = 0
 
--- Tai khoan test khuyen nghi:
+-- Tài khoản test khuyến nghị:
 -- username: TKTest
 -- password: 123456
 
--- Query kiem tra nhanh trang thai sau login/logout
--- SELECT TenTaiKhoan, TrangThai, MaNhanVien FROM TaiKhoan ORDER BY TenDangNhap
+-- Query kiểm tra nhanh trạng thái sau login/logout
+-- SELECT TenTaiKhoan, TrangThai, MaNhanVien FROM TaiKhoan ORDER BY TenTaiKhoan
 
 GO
 -- Chuẩn bị bản thuế
@@ -130,7 +130,7 @@ CREATE TABLE KhuyenMai (
 );
 
 GO
--- Chuẩn bị data khuyễn mãi
+-- Chuẩn bị data khuyến mãi
 INSERT INTO KhuyenMai (
     MaKhuyenMai, TenKhuyenMai, PhanTramGG, NgayBatDau, NgayKetThuc, TrangThai
 )

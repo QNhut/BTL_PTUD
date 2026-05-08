@@ -66,11 +66,9 @@ public class KhachHang_Service {
         return count;
     }
 
-    /**
-     * Tìm kiếm khách hàng trên danh sách cục bộ (không gọi lại DB). - Nếu
-     * keyword khớp chính xác mã KH → tra qua DAO O(1). - Nếu keyword là 10 chữ
-     * số → tra theo SĐT O(1). - Fallback: linear scan O(n) theo mã, tên, SĐT.
-     */
+    // Tìm kiếm khách hàng trên danh sách cục bộ (không gọi lại DB). - Nếu
+    // keyword khớp chính xác mã KH → tra qua DAO O(1). - Nếu keyword là 10 chữ
+    // số → tra theo SĐT O(1). - Fallback: linear scan O(n) theo mã, tên, SĐT.
     public ArrayList<KhachHang> timKiem(ArrayList<KhachHang> dskh, String keyword) {
         if (keyword == null || keyword.isBlank()) {
             return new ArrayList<>(dskh);
@@ -109,9 +107,7 @@ public class KhachHang_Service {
         return result;
     }
 
-    /**
-     * Chuẩn hóa chuỗi: bỏ dấu, viết thường để so sánh không phân biệt dấu.
-     */
+    // Chuẩn hóa chuỗi: bỏ dấu, viết thường để so sánh không phân biệt dấu.
     public static String normalize(String s) {
         if (s == null) {
             return "";
@@ -125,7 +121,7 @@ public class KhachHang_Service {
     // THỐNG KÊ KHÁCH HÀNG
     // ============================================================
 
-    /** DTO tổng hợp cho 4 summary cards */
+    // DTO tổng hợp cho 4 summary cards
     public static class ThongKeKHTongHop {
         public int tongKH;
         public int khMoi;
@@ -133,7 +129,7 @@ public class KhachHang_Service {
         public double doanhThuKH;
     }
 
-    /** Lấy thống kê tổng hợp cho summary cards */
+    // Lấy thống kê tổng hợp cho summary cards
     public ThongKeKHTongHop layThongKeTongHop(String tuNgay, String denNgay) {
         ThongKeKHTongHop tk = new ThongKeKHTongHop();
         tk.tongKH = khachHangDao.demTongKH(); // Tổng KH hoạt động trong hệ thống
@@ -148,25 +144,30 @@ public class KhachHang_Service {
         return tk;
     }
 
-    /** Lấy phân loại KH cho Pie chart */
+    // Lấy phân loại KH cho Pie chart
     public java.util.LinkedHashMap<String, Integer> layPhanLoaiKH() {
         return khachHangDao.thongKePhanLoai();
     }
 
-    /** Lấy doanh thu theo tháng cho Bar chart */
+    // Lấy doanh thu theo tháng cho Bar chart
     public java.util.LinkedHashMap<String, Double> layDoanhThuTheoThang(Integer nam) {
         int y = (nam != null) ? nam : java.time.LocalDate.now().getYear();
         return khachHangDao.doanhThuTheoThang(y);
     }
 
-    /** Lấy xu hướng KH theo tháng cho Line chart */
+    // Lấy xu hướng KH theo tháng cho Line chart
     public java.util.LinkedHashMap<String, int[]> layXuHuongKH(Integer nam) {
         int y = (nam != null) ? nam : java.time.LocalDate.now().getYear();
         return khachHangDao.xuHuongKHTheoThang(y);
     }
 
-    /** Lấy danh sách KH cho bảng thống kê (lọc theo khoảng thời gian) */
+    // Lấy danh sách KH cho bảng thống kê (lọc theo khoảng thời gian)
     public ArrayList<Object[]> layDanhSachKHThongKe(String tuNgay, String denNgay) {
         return khachHangDao.layDanhSachKHThongKe(tuNgay, denNgay);
     }
-}
+
+    // Sinh mã KH tự động theo năm hiện tại.
+    public String sinhMaKhachHang() {
+        return khachHangDao.sinhMaTuDong();
+    }
+}

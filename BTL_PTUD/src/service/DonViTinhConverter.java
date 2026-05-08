@@ -7,14 +7,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Quy đổi đơn vị tính cho dược phẩm.
- * 
- * Bảng quy đổi mặc định: 1 Vỉ = 10 Viên 1 Hộp = 10 Vỉ = 100 Viên 1 Hộp = 10 Gói
- * / 10 Ống 1 Bịch = 10 Gói 1 Chai = 1 Lọ
- * 
- * Có thể bổ sung thêm qua boSungQuyDoi() và boSungBienThe().
- */
+// Quy đổi đơn vị tính cho dược phẩm.
+// Bảng quy đổi mặc định: 1 Vỉ = 10 Viên 1 Hộp = 10 Vỉ = 100 Viên 1 Hộp = 10 Gói
+// / 10 Ống 1 Bịch = 10 Gói 1 Chai = 1 Lọ
+// Có thể bổ sung thêm qua boSungQuyDoi() và boSungBienThe().
 public class DonViTinhConverter {
 
 	private final Map<String, String> bienThe; // "vien" → "Viên"
@@ -27,18 +23,18 @@ public class DonViTinhConverter {
 
 	// ==================== API CHÍNH ====================
 
-	/** Chuẩn hóa tên đơn vị: "vien" → "Viên", "hop" → "Hộp" */
+	// Chuẩn hóa tên đơn vị: "vien" → "Viên", "hop" → "Hộp"
 	public String chuanHoa(String donVi) {
 		String chuan = bienThe.get(toKey(donVi));
 		return chuan != null ? chuan : donVi.trim();
 	}
 
-	/** Hai đơn vị có tương đương không? */
+	// Hai đơn vị có tương đương không?
 	public boolean tuongDuong(String a, String b) {
 		return chuanHoa(a).equalsIgnoreCase(chuanHoa(b));
 	}
 
-	/** Lấy hệ số quy đổi: layHeSoQuyDoi("Hộp", "Viên") = 100.0 */
+	// Lấy hệ số quy đổi: layHeSoQuyDoi("Hộp", "Viên") = 100.0
 	public double layHeSoQuyDoi(String donViGoc, String donViDich) {
 		String goc = chuanHoa(donViGoc);
 		String dich = chuanHoa(donViDich);
@@ -52,17 +48,17 @@ public class DonViTinhConverter {
 		return heSo;
 	}
 
-	/** Quy đổi số lượng: chuanHoaSoLuong(5, "Hộp", "Viên") = 500 */
+	// Quy đổi số lượng: chuanHoaSoLuong(5, "Hộp", "Viên") = 500
 	public double chuanHoaSoLuong(double soLuong, String donViGoc, String donViDich) {
 		return soLuong * layHeSoQuyDoi(donViGoc, donViDich);
 	}
 
-	/** Quy đổi đơn giá (nghịch đảo): chuanHoaDonGia(50000, "Hộp", "Viên") = 500 */
+	// Quy đổi đơn giá (nghịch đảo): chuanHoaDonGia(50000, "Hộp", "Viên") = 500
 	public double chuanHoaDonGia(double donGia, String donViGoc, String donViDich) {
 		return donGia / layHeSoQuyDoi(donViGoc, donViDich);
 	}
 
-	/** Kiểm tra 2 đơn vị có thể quy đổi qua lại */
+	// Kiểm tra 2 đơn vị có thể quy đổi qua lại
 	public boolean coTheQuyDoi(String donViA, String donViB) {
 		if (donViA == null || donViB == null)
 			return true;
@@ -71,7 +67,7 @@ public class DonViTinhConverter {
 		return timHeSo(chuanHoa(donViA), chuanHoa(donViB), new HashSet<String>()) != null;
 	}
 
-	/** Mô tả: "1 Hộp = 100 Viên" */
+	// Mô tả: "1 Hộp = 100 Viên"
 	public String moTa(String donViGoc, String donViDich) {
 		double hs = layHeSoQuyDoi(donViGoc, donViDich);
 		String hsStr = (hs == Math.floor(hs)) ? String.valueOf((long) hs) : String.format("%.2f", hs);
@@ -80,12 +76,12 @@ public class DonViTinhConverter {
 
 	// ==================== MỞ RỘNG ====================
 
-	/** Bổ sung biến thể tên: boSungBienThe("tablet", "Viên") */
+	// Bổ sung biến thể tên: boSungBienThe("tablet", "Viên")
 	public void boSungBienThe(String bienTheMoi, String donViChuan) {
 		bienThe.put(toKey(bienTheMoi), donViChuan.trim());
 	}
 
-	/** Bổ sung quy đổi: boSungQuyDoi("Thùng", "Hộp", 24) → 1 Thùng = 24 Hộp */
+	// Bổ sung quy đổi: boSungQuyDoi("Thùng", "Hộp", 24) → 1 Thùng = 24 Hộp
 	public void boSungQuyDoi(String donViLon, String donViNho, double heSo) {
 		if (heSo <= 0)
 			throw new IllegalArgumentException("Hệ số phải > 0");
@@ -151,7 +147,7 @@ public class DonViTinhConverter {
 		g.computeIfAbsent(nho, k -> new HashMap<String, Double>()).put(lon, 1.0 / heSo);
 	}
 
-	/** Tìm hệ số quy đổi bằng BFS/DFS qua graph (hỗ trợ quy đổi gián tiếp) */
+	// Tìm hệ số quy đổi bằng BFS/DFS qua graph (hỗ trợ quy đổi gián tiếp)
 	private Double timHeSo(String goc, String dich, Set<String> daDuyet) {
 		if (goc.equalsIgnoreCase(dich))
 			return 1.0;
@@ -176,7 +172,7 @@ public class DonViTinhConverter {
 		return null;
 	}
 
-	/** Chuẩn hóa key: bỏ dấu, lowercase */
+	// Chuẩn hóa key: bỏ dấu, lowercase
 	private static String toKey(String donVi) {
 		if (donVi == null || donVi.trim().isEmpty()) {
 			throw new IllegalArgumentException("Đơn vị tính không được để trống");

@@ -110,7 +110,7 @@ public class KhuyenMai_DAO {
                 rs.getBoolean("TrangThai"));
     }
 
-    /** Trả về map maKhuyenMai → số sản phẩm đang áp dụng, load 1 lần */
+    // Trả về map maKhuyenMai → số sản phẩm đang áp dụng, load 1 lần
     public java.util.Map<String, Integer> getDemSanPhamTheoKM() {
         String sql = "SELECT MaKhuyenMai, COUNT(*) AS SoLuong FROM SanPham GROUP BY MaKhuyenMai";
         java.util.Map<String, Integer> map = new java.util.HashMap<>();
@@ -127,7 +127,7 @@ public class KhuyenMai_DAO {
         return map;
     }
 
-    /** Áp dụng (gán) khuyến mãi cho 1 sản phẩm */
+    // Áp dụng (gán) khuyến mãi cho 1 sản phẩm
     public boolean apDungChoSanPham(String maSP, String maKM) {
         String sql = "UPDATE SanPham SET MaKhuyenMai = ? WHERE MaSanPham = ?";
         try {
@@ -141,5 +141,61 @@ public class KhuyenMai_DAO {
             e.printStackTrace();
         }
         return false;
+    }
+
+    // Gỡ (huỷ) khuyến mãi khỏi 1 sản phẩm bằng cách set MaKhuyenMai = NULL
+    public boolean goKhuyenMaiKhoiSanPham(String maSP) {
+        String sql = "UPDATE SanPham SET MaKhuyenMai = NULL WHERE MaSanPham = ?";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, maSP);
+                return ps.executeUpdate() > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // Gỡ khuyến mãi khỏi TẤT CẢ sản phẩm đang áp dụng {@code maKM}. Trả về số SP bị gỡ.
+    public int goKhuyenMaiKhoiTatCa(String maKM) {
+        String sql = "UPDATE SanPham SET MaKhuyenMai = NULL WHERE MaKhuyenMai = ?";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, maKM);
+                return ps.executeUpdate();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    // Sinh mã khuyến mãi tự động: KM + YYYY + 3 số (VD: KM2026001)
+    public String sinhMaTuDong() {
+        String prefix = "KM";
+        int nam = java.time.LocalDate.now().getYear();
+        String pattern = prefix + nam;
+        String sql = "SELECT MAX(MaKhuyenMai) FROM KhuyenMai WHERE MaKhuyenMai LIKE ?";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, pattern + "%");
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        String maxMa = rs.getString(1);
+                        if (maxMa != null && maxMa.length() > pattern.length()) {
+                            try {
+                                int stt = Integer.parseInt(maxMa.substring(pattern.length())) + 1;
+                                return pattern + String.format("%03d", stt);
+                            } catch (NumberFormatException ignored) {}
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return pattern + "001";
     }
 }

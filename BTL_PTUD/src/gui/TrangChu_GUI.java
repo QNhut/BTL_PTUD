@@ -1,14 +1,25 @@
 package gui;
 
 import java.awt.*;
+import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Locale;
+import java.util.function.Consumer;
 import javax.swing.*;
 import javax.swing.border.*;
 
 import constants.Colors;
 import constants.FontStyle;
 import constants.Spacings;
+import entity.KhuyenMai;
+import entity.SanPham;
 import exception.RoundedButton;
 import exception.RoundedPanel;
+import service.HoaDon_Service;
+import service.KhachHang_Service;
+import service.KhuyenMai_Service;
+import service.SanPham_Service;
 
 public class TrangChu_GUI extends JPanel {
 
@@ -19,9 +30,24 @@ public class TrangChu_GUI extends JPanel {
 
 	private static final Color DOT_ORANGE = new Color(245, 158, 11);
 	private static final Color DOT_BLUE = new Color(59, 130, 246);
-	private static final Color DOT_RED = new Color(239, 68, 68);
+
+	private static final NumberFormat VND = constants.Formats.VND;
+
+	// Services
+	private final HoaDon_Service hoaDonService = new HoaDon_Service();
+	private final SanPham_Service sanPhamService = new SanPham_Service();
+	private final KhachHang_Service khachHangService = new KhachHang_Service();
+	private final KhuyenMai_Service khuyenMaiService = new KhuyenMai_Service();
+
+	// Navigation callback (set by Main_GUI)
+	private Consumer<String> nav;
 
 	public TrangChu_GUI() {
+		this(page -> {});
+	}
+
+	public TrangChu_GUI(Consumer<String> nav) {
+		this.nav = nav;
 		setLayout(new BorderLayout());
 		setBackground(Colors.SECONDARY);
 
@@ -89,7 +115,7 @@ public class TrangChu_GUI extends JPanel {
 		textPanel.setOpaque(false);
 
 		JLabel lblT = new JLabel("Sức khỏe là ưu tiên hàng đầu");
-		lblT.setFont(FontStyle.font(FontStyle.XL, FontStyle.BOLD));
+		lblT.setFont(FontStyle.font(FontStyle.LG, FontStyle.BOLD));
 		lblT.setForeground(Colors.FOREGROUND);
 
 		JLabel lblS = new JLabel("PharmaCare - Nhà thuốc tin cậy cho sức khỏe gia đình bạn");
@@ -97,8 +123,8 @@ public class TrangChu_GUI extends JPanel {
 		lblS.setForeground(Colors.MUTED);
 
 		RoundedButton btn = new RoundedButton(150, 40, 14, "Tìm hiểu thêm", Color.BLACK);
-		btn.setFont(FontStyle.font(FontStyle.XS, FontStyle.BOLD));
 		btn.setForeground(Color.WHITE);
+		btn.addActionListener(e -> nav.accept("TroGiup"));
 
 		textPanel.add(lblT);
 		textPanel.add(Box.createVerticalStrut(Spacings.S2));
@@ -119,10 +145,29 @@ public class TrangChu_GUI extends JPanel {
 		row.setAlignmentX(LEFT_ALIGNMENT);
 		row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 110));
 
-		row.add(statCard("Tổng doanh thu", "125,430,000đ", CARD_ICON_GREEN));
-		row.add(statCard("Đơn hàng hôm nay", "24", CARD_ICON_ORANGE));
-		row.add(statCard("Sản phẩm", "342", CARD_ICON_TEAL));
-		row.add(statCard("Khách hàng", "156", CARD_ICON_PURPLE));
+		// Số liệu thật từ Service
+		double tongDT = 0;
+		int donHomNay = 0;
+		int tongSP = 0;
+		int tongKH = 0;
+		try {
+			tongDT = hoaDonService.layThongKeTongHop(null, null, null, null, null).tongDoanhThu;
+		} catch (Exception ignored) {}
+		try {
+			LocalDate t = LocalDate.now();
+			donHomNay = hoaDonService.layThongKeTongHop(t.getYear(), t.getMonthValue(), t.getDayOfMonth(), null, null).soGiaoDich;
+		} catch (Exception ignored) {}
+		try {
+			tongSP = sanPhamService.layDanhSachSanPham().size();
+		} catch (Exception ignored) {}
+		try {
+			tongKH = khachHangService.getSoLuongKhachHang();
+		} catch (Exception ignored) {}
+
+		row.add(statCard("Tổng doanh thu", VND.format((long) tongDT) + "đ", CARD_ICON_GREEN));
+		row.add(statCard("Đơn hàng hôm nay", String.valueOf(donHomNay), CARD_ICON_ORANGE));
+		row.add(statCard("Sản phẩm", String.valueOf(tongSP), CARD_ICON_TEAL));
+		row.add(statCard("Khách hàng", String.valueOf(tongKH), CARD_ICON_PURPLE));
 
 		return row;
 	}
@@ -178,29 +223,69 @@ public class TrangChu_GUI extends JPanel {
 		left.add(lblT);
 		left.add(Box.createVerticalStrut(Spacings.S4));
 
-		left.add(productRow("Vitamin C 1000mg", "Tăng cường miễn dịch", "45,000đ"));
-		left.add(sep());
-		left.add(productRow("Omega-3 Fish Oil", "Sức khỏe tim mạch", "120,000đ"));
-		left.add(sep());
-		left.add(productRow("Probiotics Pro", "Hệ tiêu hóa khỏe mạnh", "85,000đ"));
+		// Lấy 3 sản phẩm đầu danh sách từ DB
+		try {
+			List<SanPham> ds = sanPhamService.layDanhSachSanPham();
+			int n = Math.min(3, ds.size());
+			for (int i = 0; i < n; i++) {
+				SanPham sp = ds.get(i);
+				String tenLoai = sp.getLoaiSanPham() != null && sp.getLoaiSanPham().getTenLoaiSanPham() != null
+						? sp.getLoaiSanPham().getTenLoaiSanPham() : "Sản phẩm";
+				left.add(productRow(sp.getTenSanPham(), tenLoai,
+						VND.format((long) sp.getGiaThanh()) + "đ"));
+				if (i < n - 1) left.add(sep());
+			}
+			if (n == 0) {
+				JLabel lblEmpty = new JLabel("Chưa có sản phẩm nào");
+				lblEmpty.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
+				lblEmpty.setForeground(Colors.MUTED);
+				left.add(lblEmpty);
+			}
+		} catch (Exception ex) {
+			JLabel lblErr = new JLabel("Không tải được sản phẩm");
+			lblErr.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
+			lblErr.setForeground(Colors.MUTED);
+			left.add(lblErr);
+		}
 
-		// Right: Khuyến mãi hôm nay
+		// Right: Khuyến mãi đang hoạt động
 		RoundedPanel right = new RoundedPanel(500, 300, 14);
 		right.setLayout(new BoxLayout(right, BoxLayout.Y_AXIS));
 		right.setBackground(new Color(255, 251, 235)); // Amber-50
 		right.setBorder(BorderFactory.createEmptyBorder(Spacings.S6, Spacings.S6, Spacings.S6, Spacings.S6));
 
-		JLabel lblR = new JLabel("Khuyến mãi hôm nay");
+		JLabel lblR = new JLabel("Khuyến mãi đang áp dụng");
 		lblR.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
 		lblR.setForeground(Colors.FOREGROUND);
 		right.add(lblR);
 		right.add(Box.createVerticalStrut(Spacings.S6));
 
-		right.add(notifRow(DOT_ORANGE, "Mua 2 tặng 1", "Các sản phẩm vitamin C được chọn\nĐến hết ngày hôm nay"));
-		right.add(Box.createVerticalStrut(Spacings.S4));
-		right.add(notifRow(CARD_ICON_TEAL, "Giảm 20%", "Mỹ phẩm chăm sóc da Hàn Quốc\nÁp dụng trong tuần này"));
-		right.add(Box.createVerticalStrut(Spacings.S4));
-		right.add(notifRow(DOT_BLUE, "Freeship", "Đơn hàng từ 500,000đ trở lên\nHàng ngày"));
+		// Lấy tối đa 3 khuyến mãi đang hoạt động
+		try {
+			java.util.ArrayList<KhuyenMai> dskm = khuyenMaiService.getDSKhuyenMai();
+			Color[] palette = {DOT_ORANGE, CARD_ICON_TEAL, DOT_BLUE};
+			int idx = 0;
+			for (KhuyenMai km : dskm) {
+				if (!khuyenMaiService.isDangHoatDong(km)) continue;
+				String tieuDe = km.getTenKhuyenMai() != null ? km.getTenKhuyenMai() : "Khuyến mãi";
+				String detail = "Giảm " + ((int) km.getPhanTramGG()) + "%"
+						+ (km.getNgayKetThuc() != null ? "\nĐến hết " + km.getNgayKetThuc() : "");
+				right.add(notifRow(palette[idx % palette.length], tieuDe, detail));
+				right.add(Box.createVerticalStrut(Spacings.S4));
+				if (++idx >= 3) break;
+			}
+			if (idx == 0) {
+				JLabel lblEmpty = new JLabel("Hiện chưa có khuyến mãi nào");
+				lblEmpty.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
+				lblEmpty.setForeground(Colors.MUTED);
+				right.add(lblEmpty);
+			}
+		} catch (Exception ex) {
+			JLabel lblErr = new JLabel("Không tải được khuyến mãi");
+			lblErr.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
+			lblErr.setForeground(Colors.MUTED);
+			right.add(lblErr);
+		}
 
 		row.add(left);
 		row.add(right);
@@ -297,7 +382,7 @@ public class TrangChu_GUI extends JPanel {
 		card.setBorder(BorderFactory.createEmptyBorder(Spacings.S6, Spacings.S6, Spacings.S6, Spacings.S6));
 
 		JLabel lblIcon = new JLabel(icon);
-		lblIcon.setFont(FontStyle.font(FontStyle.XXL, FontStyle.NORMAL));
+		lblIcon.setFont(FontStyle.font(FontStyle.XL, FontStyle.NORMAL));
 		lblIcon.setForeground(Colors.FOREGROUND);
 
 		JLabel lblTitle = new JLabel(title);
@@ -342,8 +427,8 @@ public class TrangChu_GUI extends JPanel {
 		lblS.setForeground(Colors.MUTED);
 
 		RoundedButton btn = new RoundedButton(220, 40, 14, "Đặt lịch tư vấn miễn phí", Color.BLACK);
-		btn.setFont(FontStyle.font(FontStyle.XS, FontStyle.BOLD));
 		btn.setForeground(Color.WHITE);
+		btn.addActionListener(e -> nav.accept("TroGiup"));
 
 		JPanel contact = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		contact.setOpaque(false);

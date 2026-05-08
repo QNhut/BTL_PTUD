@@ -151,12 +151,12 @@ public class TaiKhoan_Service {
 		return null;
 	}
 
-	/** Xác thực mật khẩu hiện tại — dùng cho DoiMatKhau_GUI */
+	// Xác thực mật khẩu hiện tại — dùng cho DoiMatKhau_GUI
 	public boolean xacThucMatKhau(String tenDangNhap, String matKhau) {
 		return taiKhoanDAO.login(tenDangNhap, matKhau) != null;
 	}
 
-	/** Đổi mật khẩu — dùng cho DoiMatKhau_GUI */
+	// Đổi mật khẩu — dùng cho DoiMatKhau_GUI
 	public boolean doiMatKhau(String tenDangNhap, String matKhauMoi) {
 		return taiKhoanDAO.doiMatKhau(tenDangNhap, matKhauMoi);
 	}

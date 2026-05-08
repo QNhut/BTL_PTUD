@@ -453,34 +453,29 @@ public class PhieuNhap_Service {
 
 	// ==================== LƯU PHIẾU NHẬP ====================
 
-	/**
-	 * Sinh mã phiếu nhập tự động theo định dạng: prefix + số thứ tự 2 chữ số.
-	 * Ví dụ prefix = "PN20260506" → "PN2026050601", "PN2026050602", ...
-	 */
+	// Sinh mã phiếu nhập tự động: PN + YYYY + 3 số (PN2026001).
+	// Tham số {@code prefix} chỉ giữ để tương thích ngược, không sử dụng.
 	public String sinhMaPhieuNhap(String prefix) {
-		int stt = 1;
-		while (phieuNhapDAO.layPNTheoMa(prefix + String.format("%02d", stt)) != null) {
-			stt++;
-		}
-		return prefix + String.format("%02d", stt);
+		return phieuNhapDAO.sinhMaTuDong();
 	}
 
-	/**
-	 * Sinh prefix mã phiếu nhập theo ngày hiện tại: "PN" + yyyyMMdd.
-	 */
+	// Sinh mã phiếu nhập tự động: PN + YYYY + 3 số.
+	public String sinhMaPhieuNhap() {
+		return phieuNhapDAO.sinhMaTuDong();
+	}
+
+	// @deprecated Giữ để tương thích, hãy gọi {@link #sinhMaPhieuNhap()}.
+	@Deprecated
 	public String sinhPrefixHomNay() {
-		return "PN" + new SimpleDateFormat("yyyyMMdd").format(new java.util.Date());
+		return "PN" + java.time.LocalDate.now().getYear();
 	}
 
-	/**
-	 * Lưu phiếu nhập + toàn bộ chi tiết + tạo lô sản phẩm.
-	 *
-	 * @param pn           Phiếu nhập đã điền mã, ngày, NCC, NV
-	 * @param dsChiTiet    Danh sách chi tiết (từ bảng GUI)
-	 * @param keSP         Kệ mặc định để đặt lô
-	 * @param taoMaLoFn    Hàm sinh mã lô theo index (có thể null → tự sinh)
-	 * @return số lô tạo thành công; -1 nếu không lưu được phiếu nhập
-	 */
+	// Lưu phiếu nhập + toàn bộ chi tiết + tạo lô sản phẩm.
+	// @param pn           Phiếu nhập đã điền mã, ngày, NCC, NV
+	// @param dsChiTiet    Danh sách chi tiết (từ bảng GUI)
+	// @param keSP         Kệ mặc định để đặt lô
+	// @param taoMaLoFn    Hàm sinh mã lô theo index (có thể null → tự sinh)
+	// @return số lô tạo thành công; -1 nếu không lưu được phiếu nhập
 	public int luuPhieuNhapVaChiTiet(PhieuNhap pn, List<ChiTietPhieuNhap> dsChiTiet, KeSanPham keSP) {
 		if (!phieuNhapDAO.taoPhieuNhap(pn)) {
 			return -1;

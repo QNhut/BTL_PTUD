@@ -96,4 +96,9 @@ public class NhaCungCap_Service {
         }
         return null;
     }
+
+    // Sinh mã NCC tự động theo năm hiện tại.
+    public String sinhMaNCC() {
+        return nhaCungCapDAO.sinhMaTuDong();
+    }
 }

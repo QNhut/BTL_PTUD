@@ -3,11 +3,13 @@ package gui;
 import constants.Colors;
 import constants.FontStyle;
 import entity.NhanVien;
+import exception.FormValidator;
 import exception.RoundedButton;
 import exception.RoundedPanel;
 import exception.RoundedTextField;
 import exception.StyledTable;
 import service.NhanVien_Service;
+import service.Validators;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -56,48 +58,74 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         setBackground(Colors.BACKGROUND);
 
-        // Phần tiêu đề
-        add(pnlHead = new JPanel(), BorderLayout.NORTH);
+        add(taoHeader(), BorderLayout.NORTH);
+        add(taoContent(), BorderLayout.CENTER);
+        wireEvents();
+        loadDataSafe();
+    }
+
+    // ===== KHỐI: HEADER =====
+    private JPanel taoHeader() {
+        pnlHead = new JPanel();
         pnlHead.setLayout(new BoxLayout(pnlHead, BoxLayout.X_AXIS));
         pnlHead.setBackground(Colors.BACKGROUND);
-        pnlHead.add(pnlTitle = new JPanel());
-        pnlHead.add(pnlButtonAddNV = new JPanel());
 
+        pnlTitle = new JPanel();
         pnlTitle.setLayout(new BoxLayout(pnlTitle, BoxLayout.Y_AXIS));
         pnlTitle.setPreferredSize(new Dimension(900, 0));
         pnlTitle.setBackground(Colors.BACKGROUND);
         pnlTitle.add(lblTitle = new JLabel("Nhân viên"));
         lblTitle.setFont(FontStyle.font(FontStyle.XXL, FontStyle.BOLD));
         lblTitle.setForeground(Colors.FOREGROUND);
-
         pnlTitle.add(lblNote = new JLabel("Quản lý nhân viên trong hệ thống"));
         lblNote.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
         lblNote.setForeground(Colors.MUTED);
 
+        pnlButtonAddNV = new JPanel();
         pnlButtonAddNV.setBackground(Colors.BACKGROUND);
         pnlButtonAddNV.add(btnAddNV = new RoundedButton(170, 40, 10, "+ Thêm nhân viên", Colors.PRIMARY));
 
-        // Phần nội dung
-        add(pnlContent = new JPanel(), BorderLayout.CENTER);
+        pnlHead.add(pnlTitle);
+        pnlHead.add(pnlButtonAddNV);
+        return pnlHead;
+    }
+
+    // ===== KHỐI: NỘI DUNG =====
+    private JPanel taoContent() {
+        pnlContent = new JPanel();
         pnlContent.setLayout(new BoxLayout(pnlContent, BoxLayout.Y_AXIS));
         pnlContent.setBackground(Colors.BACKGROUND);
+        pnlContent.add(taoStatCards());
+        pnlContent.add(taoSearchBar());
+        pnlContent.add(setupTable());
+        return pnlContent;
+    }
 
-        // Thông tin chung: Tổng NV, Trạng thái,...
-        pnlContent.add(pnlCategory = new JPanel(new GridLayout(1, 3, 16, 0)));
+    // ===== KHỐI: THỐNG KÊ =====
+    private JPanel taoStatCards() {
+        pnlCategory = new JPanel(new GridLayout(1, 3, 16, 0));
         pnlCategory.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
         pnlCategory.setBackground(Colors.BACKGROUND);
         pnlCategory.setMaximumSize(new Dimension(Integer.MAX_VALUE, 110));
         pnlCategory.setPreferredSize(new Dimension(0, 110));
-        pnlCategory.add(statCard("Tổng nhân viên", nhanVienSV.getSoLuongNhanVien(), Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
-        pnlCategory.add(statCard("Đang hoạt động", nhanVienSV.getSoLuongNhanVienOnline(), Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
-        pnlCategory.add(statCard("Nghỉ việc", nhanVienSV.getSoLuongNhanVienOffline(), Colors.SECONDARY, Colors.DANGER, Colors.DANGER));
+        try {
+            pnlCategory.add(statCard("Tổng nhân viên", nhanVienSV.getSoLuongNhanVien(), Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
+            pnlCategory.add(statCard("Đang hoạt động", nhanVienSV.getSoLuongNhanVienOnline(), Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
+            pnlCategory.add(statCard("Nghỉ việc", nhanVienSV.getSoLuongNhanVienOffline(), Colors.SECONDARY, Colors.DANGER, Colors.DANGER));
+        } catch (Exception e) {
+            System.err.println("[NhanVien_GUI] Không tải được thống kê: " + e.getMessage());
+            pnlCategory.add(statCard("Tổng nhân viên", 0, Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
+            pnlCategory.add(statCard("Đang hoạt động", 0, Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
+            pnlCategory.add(statCard("Nghỉ việc", 0, Colors.SECONDARY, Colors.DANGER, Colors.DANGER));
+        }
+        return pnlCategory;
+    }
 
-        // Thanh tìm kiếm + nút tìm kiếm
-        pnlContent.add(pnlSearch = new JPanel());
+    // ===== KHỐI: THANH TÌM KIẾM =====
+    private JPanel taoSearchBar() {
+        pnlSearch = new JPanel();
         pnlSearch.setLayout(new FlowLayout(FlowLayout.LEFT, 20, 8));
         pnlSearch.setBackground(Colors.BACKGROUND);
-        
-
         pnlSearch.add(lblDSNV = new JLabel("Danh sách nhân viên"));
         lblDSNV.setFont(FontStyle.font(FontStyle.LG, FontStyle.BOLD));
         lblDSNV.setBorder(BorderFactory.createEmptyBorder(10, 10, 0, 0));
@@ -107,8 +135,11 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
         pnlSearch.add(btnAll = new RoundedButton(100, 40, 20, "Tất cả", Colors.SECONDARY));
         pnlSearch.setMaximumSize(new Dimension(Integer.MAX_VALUE, 56));
         btnAll.setForeground(Colors.TEXT_PRIMARY);
+        return pnlSearch;
+    }
 
-        // Bảng danh sách nhân viên
+    // ===== KHỐI: BẢNG =====
+    private StyledTable setupTable() {
         tblNhanVien = new StyledTable(COLUMN_NAMES, list);
 
         tblNhanVien.setAvatarColumn(0, 220,
@@ -132,13 +163,11 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
         tblNhanVien.setActionColumn(5, 80);
         tblNhanVien.setDeleteButtonColumn(6, 80);
 
-        // Xử lý click nút "Chi tiết"
         tblNhanVien.setActionColumnListener((row, obj) -> {
             NhanVien nhanVien = (NhanVien) obj;
             moDialogChiTietNhanVien(nhanVien);
         });
 
-        // Xử lý click nút "Xóa"
         tblNhanVien.setDeleteColumnListener((row, obj) -> {
             NhanVien nhanVien = (NhanVien) obj;
             int confirm = JOptionPane.showConfirmDialog(null,
@@ -152,8 +181,11 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
             }
         });
 
-        pnlContent.add(tblNhanVien);
+        return tblNhanVien;
+    }
 
+    // ===== KHỐI: SỰ KIỆN =====
+    private void wireEvents() {
         btnAddNV.addActionListener(this);
         btnFind.addActionListener(this);
         btnAll.addActionListener(this);
@@ -181,7 +213,10 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
                 t.start();
             }
         });
+    }
 
+    // ===== KHỐI: TẢI DỮ LIỆU =====
+    private void loadDataSafe() {
         try {
             ArrayList<NhanVien> dsNV = nhanVienSV.getDSNhanVien();
             if (dsNV == null || dsNV.isEmpty()) {
@@ -480,10 +515,13 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
         txtTenNV.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         txtTenNV.setAlignmentX(Component.LEFT_ALIGNMENT);
         txtTenNV.setEnabled(false);
+        JLabel errTen = FormValidator.errorLabel();
         info.add(fieldLabelNV("Họ và tên *"));
         info.add(Box.createRigidArea(new Dimension(0, 4)));
         info.add(txtTenNV);
-        info.add(Box.createRigidArea(new Dimension(0, 12)));
+        info.add(Box.createRigidArea(new Dimension(0, 2)));
+        info.add(errTen);
+        info.add(Box.createRigidArea(new Dimension(0, 8)));
 
         JRadioButton rdoNam = new JRadioButton("Nam");
         JRadioButton rdoNu = new JRadioButton("Nữ");
@@ -513,19 +551,25 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
         txtCCCD.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         txtCCCD.setAlignmentX(Component.LEFT_ALIGNMENT);
         txtCCCD.setEnabled(false);
+        JLabel errCCCD = FormValidator.errorLabel();
         info.add(fieldLabelNV("CCCD *"));
         info.add(Box.createRigidArea(new Dimension(0, 4)));
         info.add(txtCCCD);
-        info.add(Box.createRigidArea(new Dimension(0, 12)));
+        info.add(Box.createRigidArea(new Dimension(0, 2)));
+        info.add(errCCCD);
+        info.add(Box.createRigidArea(new Dimension(0, 8)));
 
         RoundedTextField txtSDT = new RoundedTextField(270, 38, 10, "10 chữ số");
         txtSDT.setText(nhanVien.getSoDienThoai() != null ? nhanVien.getSoDienThoai() : "");
         txtSDT.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         txtSDT.setAlignmentX(Component.LEFT_ALIGNMENT);
         txtSDT.setEnabled(false);
+        JLabel errSDT = FormValidator.errorLabel();
         info.add(fieldLabelNV("Số điện thoại *"));
         info.add(Box.createRigidArea(new Dimension(0, 4)));
         info.add(txtSDT);
+        info.add(Box.createRigidArea(new Dimension(0, 2)));
+        info.add(errSDT);
 
         topRow.add(info);
         pnlMain.add(topRow);
@@ -537,10 +581,13 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
         txtEmail.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         txtEmail.setAlignmentX(Component.LEFT_ALIGNMENT);
         txtEmail.setEnabled(false);
+        JLabel errEmail = FormValidator.errorLabel();
         pnlMain.add(fieldLabelNV("Email"));
         pnlMain.add(Box.createRigidArea(new Dimension(0, 4)));
         pnlMain.add(txtEmail);
-        pnlMain.add(Box.createRigidArea(new Dimension(0, 12)));
+        pnlMain.add(Box.createRigidArea(new Dimension(0, 2)));
+        pnlMain.add(errEmail);
+        pnlMain.add(Box.createRigidArea(new Dimension(0, 8)));
 
         RoundedTextField txtDiaChi = new RoundedTextField(300, 38, 10, "Địa chỉ (tùy chọn)");
         txtDiaChi.setText(nhanVien.getDiaChi() != null ? nhanVien.getDiaChi() : "");
@@ -584,13 +631,12 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
         pnlMain.add(chkTrangThai);
         pnlMain.add(Box.createVerticalGlue());
 
-        // ===== ERROR + FOOTER =====
-        JLabel errDialog = new JLabel();
-        errDialog.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
-        errDialog.setForeground(Colors.DANGER);
-        errDialog.setAlignmentX(Component.LEFT_ALIGNMENT);
-        errDialog.setVisible(false);
-        pnlMain.add(errDialog);
+        // ===== VALIDATOR + FOOTER =====
+        FormValidator fv = new FormValidator()
+                .add(txtTenNV, errTen, Validators::tenNguoi)
+                .add(txtCCCD, errCCCD, Validators::cccd)
+                .add(txtSDT, errSDT, Validators::soDienThoai)
+                .add(txtEmail, errEmail, Validators::emailOptional);
 
         JPanel pnlFooter = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 12));
         pnlFooter.setOpaque(false);
@@ -629,6 +675,7 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
         });
 
         btnSave.addActionListener(e -> {
+            if (!fv.validateAll()) return;
             int confirm = JOptionPane.showConfirmDialog(dialog,
                     "Bạn có chắc muốn lưu thay đổi?", "Xác nhận", JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
@@ -651,8 +698,7 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
                         JOptionPane.showMessageDialog(dialog, "Cập nhật thất bại.", "Lỗi", JOptionPane.ERROR_MESSAGE);
                     }
                 } catch (IllegalArgumentException ex) {
-                    errDialog.setText("✗ " + ex.getMessage());
-                    errDialog.setVisible(true);
+                    JOptionPane.showMessageDialog(dialog, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
@@ -1027,10 +1073,13 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
         RoundedTextField txtTenNV = new RoundedTextField(270, 38, 10, "Họ và tên đầy đủ");
         txtTenNV.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         txtTenNV.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JLabel errTen = FormValidator.errorLabel();
         info.add(fieldLabelNV("Họ và tên *"));
         info.add(Box.createRigidArea(new Dimension(0, 4)));
         info.add(txtTenNV);
-        info.add(Box.createRigidArea(new Dimension(0, 12)));
+        info.add(Box.createRigidArea(new Dimension(0, 2)));
+        info.add(errTen);
+        info.add(Box.createRigidArea(new Dimension(0, 8)));
 
         JRadioButton rdoNam = new JRadioButton("Nam");
         JRadioButton rdoNu = new JRadioButton("Nữ");
@@ -1055,17 +1104,23 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
         RoundedTextField txtCCCD = new RoundedTextField(270, 38, 10, "12 chữ số");
         txtCCCD.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         txtCCCD.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JLabel errCCCD = FormValidator.errorLabel();
         info.add(fieldLabelNV("CCCD *"));
         info.add(Box.createRigidArea(new Dimension(0, 4)));
         info.add(txtCCCD);
-        info.add(Box.createRigidArea(new Dimension(0, 12)));
+        info.add(Box.createRigidArea(new Dimension(0, 2)));
+        info.add(errCCCD);
+        info.add(Box.createRigidArea(new Dimension(0, 8)));
 
         RoundedTextField txtSDT = new RoundedTextField(270, 38, 10, "10 chữ số");
         txtSDT.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         txtSDT.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JLabel errSDT = FormValidator.errorLabel();
         info.add(fieldLabelNV("Số điện thoại *"));
         info.add(Box.createRigidArea(new Dimension(0, 4)));
         info.add(txtSDT);
+        info.add(Box.createRigidArea(new Dimension(0, 2)));
+        info.add(errSDT);
 
         topRow.add(info);
         pnlMain.add(topRow);
@@ -1075,10 +1130,13 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
         RoundedTextField txtEmail2 = new RoundedTextField(300, 38, 10, "example@email.com");
         txtEmail2.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         txtEmail2.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JLabel errEmail = FormValidator.errorLabel();
         pnlMain.add(fieldLabelNV("Email"));
         pnlMain.add(Box.createRigidArea(new Dimension(0, 4)));
         pnlMain.add(txtEmail2);
-        pnlMain.add(Box.createRigidArea(new Dimension(0, 12)));
+        pnlMain.add(Box.createRigidArea(new Dimension(0, 2)));
+        pnlMain.add(errEmail);
+        pnlMain.add(Box.createRigidArea(new Dimension(0, 8)));
 
         RoundedTextField txtDiaChi = new RoundedTextField(300, 38, 10, "Địa chỉ (tùy chọn)");
         txtDiaChi.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
@@ -1117,13 +1175,12 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
         pnlMain.add(chkTrangThai);
         pnlMain.add(Box.createVerticalGlue());
 
-        // ===== ERROR + FOOTER =====
-        JLabel errDialog = new JLabel();
-        errDialog.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
-        errDialog.setForeground(Colors.DANGER);
-        errDialog.setAlignmentX(Component.LEFT_ALIGNMENT);
-        errDialog.setVisible(false);
-        pnlMain.add(errDialog);
+        // ===== VALIDATOR + FOOTER =====
+        FormValidator fv = new FormValidator()
+                .add(txtTenNV, errTen, Validators::tenNguoi)
+                .add(txtCCCD, errCCCD, Validators::cccd)
+                .add(txtSDT, errSDT, Validators::soDienThoai)
+                .add(txtEmail2, errEmail, Validators::emailOptional);
 
         JPanel pnlFooter = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 12));
         pnlFooter.setOpaque(false);
@@ -1139,6 +1196,7 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
 
         btnHuy.addActionListener(ev -> dialog.dispose());
         btnThem.addActionListener(ev -> {
+            if (!fv.validateAll()) return;
             try {
                 entity.ChucVu selectedCV = (entity.ChucVu) cboChucVu.getSelectedItem();
                 NhanVien nv = new NhanVien(
@@ -1167,8 +1225,7 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
                             JOptionPane.ERROR_MESSAGE);
                 }
             } catch (IllegalArgumentException ex) {
-                errDialog.setText("✗ " + ex.getMessage());
-                errDialog.setVisible(true);
+                JOptionPane.showMessageDialog(dialog, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         });
 
@@ -1192,19 +1249,7 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
     }
 
     private String taoMaNhanVien() {
-        int year = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
-        int maxNum = 0;
-        for (NhanVien nv : list) {
-            try {
-                String ma = nv.getMaNhanVien();
-                int num = Integer.parseInt(ma.substring(ma.length() - 3));
-                if (num > maxNum) {
-                    maxNum = num;
-                }
-            } catch (Exception ignored) {
-            }
-        }
-        return String.format("NV%d%03d", year, maxNum + 1);
+        return nhanVienSV.sinhMaNhanVien();
     }
 
     @Override

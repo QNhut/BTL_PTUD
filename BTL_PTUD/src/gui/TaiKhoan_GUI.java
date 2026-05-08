@@ -99,15 +99,16 @@ public class TaiKhoan_GUI extends JPanel implements ActionListener {
         if (nv != null && !nv.isGioiTinh()) rbNu.setSelected(true);
         else rbNam.setSelected(true);
 
-        JLabel lblStatus = new JLabel(
-                nv != null && nv.isTrangThai() ? "Đang làm việc" : "Offline");
+        boolean isActive = nv != null && nv.isTrangThai();
+        JLabel lblStatus = new JLabel(isActive ? "● Đang làm việc" : "● Offline");
         lblStatus.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
-        lblStatus.setForeground(Colors.FOREGROUND);
+        lblStatus.setForeground(isActive ? new Color(16, 185, 129) : Colors.MUTED);
 
         // ===== FORM LAYOUT =====
         JPanel formThongTin = new JPanel(new GridBagLayout());
         formThongTin.setOpaque(false);
         formThongTin.setAlignmentX(LEFT_ALIGNMENT);
+        formThongTin.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
 
         GridBagConstraints g = new GridBagConstraints();
         g.fill = GridBagConstraints.HORIZONTAL;
@@ -165,16 +166,23 @@ public class TaiKhoan_GUI extends JPanel implements ActionListener {
         errThongTin = new JLabel();
         errThongTin.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
         errThongTin.setForeground(Colors.DANGER);
+        errThongTin.setAlignmentX(LEFT_ALIGNMENT);
         errThongTin.setVisible(false);
 
         JPanel btnsThongTin = new JPanel();
         btnsThongTin.setLayout(new BoxLayout(btnsThongTin, BoxLayout.Y_AXIS));
         btnsThongTin.setOpaque(false);
         btnsThongTin.setAlignmentX(LEFT_ALIGNMENT);
+        btnsThongTin.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
         btnsThongTin.add(errThongTin);
-        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, Spacings.S3, 0));
+
+        JPanel btnRow = new JPanel();
+        btnRow.setLayout(new BoxLayout(btnRow, BoxLayout.X_AXIS));
         btnRow.setOpaque(false);
+        btnRow.setAlignmentX(LEFT_ALIGNMENT);
+        btnRow.add(Box.createHorizontalGlue());
         btnRow.add(btnDoiMatKhau);
+        btnRow.add(Box.createHorizontalStrut(Spacings.S3));
         btnRow.add(btnLuuThayDoi);
         btnsThongTin.add(btnRow);
 
@@ -192,10 +200,7 @@ public class TaiKhoan_GUI extends JPanel implements ActionListener {
     // HELPER: Build Card chung
     // ============================================================
     private JPanel buildCard(String title, String subtitle, JPanel content, JPanel buttons) {
-        Dimension cSize = content.getPreferredSize();
-        int totalH = cSize.height + 200; // Ước tính chiều cao
-
-        RoundedPanel card = new RoundedPanel(1000, totalH, 14);
+        RoundedPanel card = new RoundedPanel(1000, 100, 14); // height will be recomputed
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBackground(Colors.BACKGROUND);
         card.setAlignmentX(LEFT_ALIGNMENT);
@@ -235,9 +240,10 @@ public class TaiKhoan_GUI extends JPanel implements ActionListener {
         buttons.setAlignmentX(LEFT_ALIGNMENT);
         card.add(buttons);
 
-        Dimension pref = card.getPreferredSize();
-        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, pref.height));
-        card.setHeight(pref.height);
+        // Compute actual preferred height from BoxLayout after all children added
+        int cardH = card.getLayout().preferredLayoutSize(card).height;
+        card.setHeight(cardH);
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, cardH));
 
         return card;
     }
@@ -298,21 +304,6 @@ public class TaiKhoan_GUI extends JPanel implements ActionListener {
         return btn;
     }
 
-    private JButton outlineBtn(String text) {
-        JButton btn = new JButton(text);
-        btn.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
-        btn.setForeground(Colors.FOREGROUND);
-        btn.setBackground(Colors.BACKGROUND);
-        btn.setFocusPainted(false);
-        btn.setOpaque(true);
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Colors.BORDER, 1),
-                BorderFactory.createEmptyBorder(Spacings.S2 + 1, Spacings.S6, Spacings.S2 + 1, Spacings.S6)));
-        btn.addActionListener(this);
-        return btn;
-    }
-
     // XỬ LÝ SỰ KIỆN
     @Override
     public void actionPerformed(ActionEvent e) {
@@ -341,7 +332,7 @@ public class TaiKhoan_GUI extends JPanel implements ActionListener {
 
             try {
                 nv.setTenNhanVien(hoTen);
-                nv.setSoDienThoai(cccd);
+                nv.setSoDienThoai(sdt);
                 nv.setEmail(email.isEmpty() ? null : email);
                 nv.setDiaChi(diaChi.isEmpty() ? null : diaChi);
                 nv.setGioiTinh(gioiTinh);

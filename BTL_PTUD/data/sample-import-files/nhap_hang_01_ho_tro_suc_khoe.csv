@@ -1,12 +1,13 @@
-PhieuGiaoHang,PGH-ANPHUC-01
-DonViGiao,Cong ty Duoc An Phuc
-NgayGiao,04/05/2026
-KhoNhan,Chi nhanh Quan 1
-GhiChu,Giao buoi sang
+Phiếu Giao Hàng,PGH-MEGA-01
+Nhà Cung Cấp,Công ty Mega Lifesciences
+Ngày Nhập,04/05/2026
+Kho Nhận,Chi nhánh Quận 1
+Ghi Chú,Giao buổi sáng - Hỗ trợ sức khỏe
+Người Giao,Nguyễn Văn Minh
 
-MaSanPham,SoLuong,DonViTinh,GiaNhap
+Mã Sản Phẩm,Số Lượng,Đơn Vị Tính,Giá Nhập
 SP2026001,20,Hộp,515000
 SP2026003,12,Hộp,155000
 SP2026005,8,Hộp,655000
 SP2026010,15,Hộp,372000
-TongCong,,,22980000
+Tổng Cộng,,,22980000
