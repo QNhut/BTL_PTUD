@@ -51,6 +51,7 @@ public class ThongKeDoanhThu_GUI extends JPanel implements ActionListener {
 
     // ===== TABLE =====
     private DefaultTableModel tableModel;
+    private JTable tableHoaDon;
 
     private static final NumberFormat VND = constants.Formats.VND;
 
@@ -168,7 +169,9 @@ public class ThongKeDoanhThu_GUI extends JPanel implements ActionListener {
         // --- Panel bên phải: cố định, chứa Lọc + Xuất PDF, không bao giờ bị wrap ---
         btnLoc = new RoundedButton(70, 30, 8, "Lọc", Colors.PRIMARY);
         btnLoc.addActionListener(this);
-        RoundedButton btnXuat = new RoundedButton(140, 30, 8, "Xuất file PDF", Colors.PRIMARY);
+        RoundedButton btnXuat = new RoundedButton(140, 30, 8, "Xuất CSV", Colors.PRIMARY);
+        btnXuat.addActionListener(e -> service.ExcelExporter.xuatTable(this,
+                "BÁO CÁO DOANH THU", "DoanhThu", "BaoCao_DoanhThu", tableHoaDon));
 
         btnViewChart = new RoundedButton(100, 30, 15, "Biểu đồ", Colors.BACKGROUND);
         btnViewChart.setForeground(Colors.TEXT_PRIMARY);
@@ -338,6 +341,7 @@ public class ThongKeDoanhThu_GUI extends JPanel implements ActionListener {
             public boolean isCellEditable(int r, int c) { return false; }
         };
         JTable table = new JTable(tableModel);
+        tableHoaDon = table;
         table.setRowHeight(26);
         table.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
         table.getTableHeader().setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));

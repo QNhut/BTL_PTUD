@@ -216,4 +216,34 @@ public class LoSanPham_DAO {
         }
         return pattern + "0001";
     }
+
+    // Sinh mã lô cơ sở cho preview — LO + YYYY + XXX (lấy số cuối lô hiện có + 1)
+    public String sinhMaLoBase() {
+        String prefix = "LO";
+        int nam = LocalDate.now().getYear();
+        String pattern = prefix + nam;
+        String sql = "SELECT MAX(MaLoSanPham) FROM LoSanPham WHERE MaLoSanPham LIKE ?";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, pattern + "%");
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        String maxMa = rs.getString(1);
+                        if (maxMa != null && maxMa.length() > pattern.length()) {
+                            try {
+                                String phan = maxMa.substring(pattern.length());
+                                if (phan.contains("-")) phan = phan.substring(0, phan.indexOf("-"));
+                                int stt = Integer.parseInt(phan) + 1;
+                                return pattern + String.format("%03d", stt);
+                            } catch (NumberFormatException ignored) {}
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return pattern + "001";
+    }
 }

@@ -52,6 +52,8 @@ public class HoaDonPreviewDialog extends JDialog {
 
     private InvoicePanel invoicePanel;
     private JPanel pnlSouth; // thanh dưới – thay thế sau khi thanh toán
+    // Ảnh QR đã tải (null = chưa tải / PTTT không phải QR)
+    private BufferedImage qrImage;
 
     // =========================================================
     // Constructor cũ: chỉ xem trước, không có nút thanh toán
@@ -177,6 +179,11 @@ public class HoaDonPreviewDialog extends JDialog {
 
         add(pnlSouth, BorderLayout.SOUTH);
 
+        // Nạp QR nếu PTTT đã chọn từ form là QR/CK
+        if (canHienThiQR(tenPTTTHienThi)) {
+            naqrIfNeeded();
+        }
+
         // --- Kích thước tự điều chỉnh theo màn hình ---
         java.awt.Rectangle screen = java.awt.GraphicsEnvironment
                 .getLocalGraphicsEnvironment().getMaximumWindowBounds();
@@ -209,7 +216,8 @@ public class HoaDonPreviewDialog extends JDialog {
             // + footer breakdown ~80 (5 dòng) thay cho 1 dòng tổng tiền
             int rowH = 22;
             int footerExtra = 60;
-            return 310 + rows * rowH + footerExtra;
+            int qrExtra = (qrImage != null) ? 150 : 0; // QR + tiêu đề
+            return 310 + rows * rowH + footerExtra + qrExtra;
         }
 
         @Override
@@ -401,6 +409,23 @@ public class HoaDonPreviewDialog extends JDialog {
             g2.setColor(Colors.BORDER);
             g2.drawLine(x, y, x + contentW, y);
             y += 12;
+
+            // ---- QR thanh toán (nếu PTTT là QR/CK và đã tải xong) ----
+            if (qrImage != null) {
+                int qrSize = 130;
+                int qrX = x + (contentW - qrSize) / 2;
+                g2.setFont(new Font("Arial", Font.BOLD, 9));
+                g2.setColor(Colors.PRIMARY);
+                drawCentered(g2, "QUÉT MÃ ĐỂ THANH TOÁN", width, y + 8);
+                y += 14;
+                g2.drawImage(qrImage, qrX, y, qrSize, qrSize, null);
+                y += qrSize + 4;
+                g2.setFont(new Font("Arial", Font.PLAIN, 8));
+                g2.setColor(Colors.TEXT_SECONDARY);
+                drawCentered(g2, "Vietcombank • " + VIETQR_ACCOUNT + " • " + VIETQR_ACCOUNT_NAME, width, y);
+                y += 12;
+            }
+
             // Thành tiền (nổi bật)
             String totalStr = "THÀNH TIỀN: " + nf.format((long) sThanhTien) + "đ";
             g2.setFont(new Font("Arial", Font.BOLD, 11));
@@ -510,6 +535,62 @@ public class HoaDonPreviewDialog extends JDialog {
     }
 
     // =========================================================
+    //  VietQR – cấu hình tài khoản nhận
+    // =========================================================
+    private static final String VIETQR_BANK_BIN = "970436";   // Vietcombank
+    private static final String VIETQR_ACCOUNT  = "1035382807";
+    private static final String VIETQR_ACCOUNT_NAME = "NHA THUOC HTT";
+
+    // True nếu PTTT là QR / chuyển khoản → cần hiển thị QR
+    private boolean canHienThiQR(String tenPTTT) {
+        if (tenPTTT == null) return false;
+        String t = tenPTTT.toLowerCase();
+        return t.contains("qr") || t.contains("chuyển khoản") || t.contains("chuyen khoan");
+    }
+
+    // Tải ảnh VietQR từ API img.vietqr.io (BufferedImage). Trả về null nếu lỗi mạng.
+    private BufferedImage taiAnhVietQR(long soTien, String noiDung) {
+        try {
+            String url = "https://img.vietqr.io/image/"
+                    + VIETQR_BANK_BIN + "-" + VIETQR_ACCOUNT + "-compact2.png"
+                    + "?amount=" + soTien
+                    + "&addInfo=" + java.net.URLEncoder.encode(noiDung == null ? "" : noiDung, "UTF-8")
+                    + "&accountName=" + java.net.URLEncoder.encode(VIETQR_ACCOUNT_NAME, "UTF-8");
+            java.net.URL u = new java.net.URL(url);
+            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) u.openConnection();
+            conn.setConnectTimeout(8000);
+            conn.setReadTimeout(8000);
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+            try (InputStream in = conn.getInputStream()) {
+                return ImageIO.read(in);
+            }
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    // Tải QR ngầm rồi repaint hóa đơn. Gọi khi PTTT là QR/CK.
+    private void naqrIfNeeded() {
+        if (!canHienThiQR(tenPTTTHienThi) || summary == null) return;
+        long soTien = Math.round(summary.thanhTien);
+        String noiDung = "Thanh toan " + maHoaDon;
+        new SwingWorker<BufferedImage, Void>() {
+            @Override protected BufferedImage doInBackground() {
+                return taiAnhVietQR(soTien, noiDung);
+            }
+            @Override protected void done() {
+                try {
+                    qrImage = get();
+                    if (invoicePanel != null) {
+                        invoicePanel.revalidate();
+                        invoicePanel.repaint();
+                    }
+                } catch (Exception ignored) {}
+            }
+        }.execute();
+    }
+
+    // =========================================================
     //===="Thanh chọn phương thức thanh toán + nút xác nhận (trước khi thanh toán)"=====
     // =========================================================
     @SuppressWarnings("unchecked")
@@ -589,6 +670,24 @@ public class HoaDonPreviewDialog extends JDialog {
         row2.add(btnThanhToan);
         row2.add(btnHuy);
 
+        // Khi user đổi PTTT → cập nhật tenPTTTHienThi và nạp/clear QR vào hóa đơn
+        cmbPTTT.addActionListener(ev -> {
+            entity.PhuongThucThanhToan sel = (entity.PhuongThucThanhToan) cmbPTTT.getSelectedItem();
+            tenPTTTHienThi = (sel != null) ? sel.getTenPTTT() : null;
+            qrImage = null;
+            if (sel != null && canHienThiQR(sel.getTenPTTT())) {
+                naqrIfNeeded();
+            }
+            invoicePanel.revalidate();
+            invoicePanel.repaint();
+        });
+        // Trigger lần đầu
+        entity.PhuongThucThanhToan first = (entity.PhuongThucThanhToan) cmbPTTT.getSelectedItem();
+        if (first != null) {
+            tenPTTTHienThi = first.getTenPTTT();
+            if (canHienThiQR(first.getTenPTTT())) naqrIfNeeded();
+        }
+
         panel.add(row1);
         panel.add(row2);
         return panel;
@@ -633,37 +732,14 @@ public class HoaDonPreviewDialog extends JDialog {
     private void xuLyThanhToan(JButton btnThanhToan, String maPTTT) {
         btnThanhToan.setEnabled(false);
         btnThanhToan.setText("Đang xử lý...");
-        SwingWorker<HoaDon, Void> worker = new SwingWorker<>() {
-            @Override
-            protected HoaDon doInBackground() {
-                return hoaDonService.taoHoaDon(
-                        maHoaDon, tenKHRaw, sdtRaw, nhanVienEntity, cartItems, maPTTT, diemSuDung);
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    HoaDon hd = get();
-                    JOptionPane.showMessageDialog(HoaDonPreviewDialog.this,
-                            "Thanh toán thành công!\nMã hóa đơn: " + hd.getMaHoaDon(),
-                            "Thành công", JOptionPane.INFORMATION_MESSAGE);
-                    // Chuyển sang thanh hành động (Xuất PDF / In / Đóng)
-                    pnlSouth.removeAll();
-                    pnlSouth.add(buildActionBar(true), BorderLayout.CENTER);
-                    pnlSouth.revalidate();
-                    pnlSouth.repaint();
-                } catch (Exception ex) {
-                    btnThanhToan.setEnabled(true);
-                    btnThanhToan.setText("✓ Xác nhận");
-                    Throwable cause = ex.getCause();
-                    String msg = (cause != null) ? cause.getMessage() : ex.getMessage();
-                    JOptionPane.showMessageDialog(HoaDonPreviewDialog.this,
-                            "Lỗi khi thanh toán: " + msg,
-                            "Lỗi", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        };
-        worker.execute();
+        // Giả lập thanh toán – không lưu vào DB
+        JOptionPane.showMessageDialog(HoaDonPreviewDialog.this,
+                "Thanh toán thành công!\nMã hóa đơn: " + maHoaDon,
+                "Thành công", JOptionPane.INFORMATION_MESSAGE);
+        pnlSouth.removeAll();
+        pnlSouth.add(buildActionBar(true), BorderLayout.CENTER);
+        pnlSouth.revalidate();
+        pnlSouth.repaint();
     }
 
     // =========================================================

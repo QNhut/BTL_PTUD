@@ -199,6 +199,10 @@ public class NhaCungCap_GUI extends JPanel implements ActionListener {
     }
 
     // ===== KHỐI: TẢI DỮ LIỆU =====
+    public void refresh() {
+        loadDataSafe();
+    }
+
     private void loadDataSafe() {
         try {
             loadData(nhaCungCapSV.getDSNhaCungCap());

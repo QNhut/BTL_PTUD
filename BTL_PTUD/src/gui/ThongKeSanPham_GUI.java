@@ -149,7 +149,9 @@ public class ThongKeSanPham_GUI extends JPanel {
         // --- Panel bên phải: Chuyển đổi + Xuất file ---
         btnXem = new RoundedButton(80,  30, 8, "Xem", Colors.PRIMARY);
         btnXem.addActionListener(e -> performFilter());
-        RoundedButton btnExport = new RoundedButton(140, 30, 8, "Xuất báo cáo", Colors.PRIMARY);
+        RoundedButton btnExport = new RoundedButton(140, 30, 8, "Xuất CSV", Colors.PRIMARY);
+        btnExport.addActionListener(e -> service.ExcelExporter.xuatTable(this,
+                "BÁO CÁO SẢN PHẨM BÁN CHẠY", "SanPham", "BaoCao_SanPham", tableBanChay));
 
         btnViewChart = new RoundedButton(100, 30, 15, "Biểu đồ", Colors.BACKGROUND);
         btnViewChart.setForeground(Colors.TEXT_PRIMARY);

@@ -193,4 +193,9 @@ public class LoSanPham_Service {
 	public String sinhMaLoTuDong() {
 		return loDAO.sinhMaTuDong();
 	}
+
+	// Sinh mã lô cơ sở cho preview — LO + YYYY + XXX
+	public String sinhMaLoBase() {
+		return loDAO.sinhMaLoBase();
+	}
 }

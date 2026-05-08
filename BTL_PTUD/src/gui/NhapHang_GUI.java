@@ -60,6 +60,7 @@ public class NhapHang_GUI extends JPanel {
 	private final PhieuNhap_Service phieuNhapService = new PhieuNhap_Service();
 	private final NhaCungCap_Service nhaCungCapService = new NhaCungCap_Service();
 	private final LoSanPham_Service loSanPhamService = new LoSanPham_Service();
+	private final NhanVien nhanVienDangNhap;
 	private boolean dangCapNhatBang;
 	private List<ChiTietPhieuNhap> danhSachChiTiet = new ArrayList<ChiTietPhieuNhap>();
 	private File selectedFile;
@@ -118,6 +119,11 @@ public class NhapHang_GUI extends JPanel {
 	private String selectedFileName = null;
 
 	public NhapHang_GUI() {
+		this(null);
+	}
+
+	public NhapHang_GUI(NhanVien nhanVien) {
+		this.nhanVienDangNhap = nhanVien;
 		setLayout(new BorderLayout(10,10));
 		setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 		
@@ -378,7 +384,6 @@ public class NhapHang_GUI extends JPanel {
 		lblTotal.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
 		lblTotalPrice.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
 		lblTotalPrice.setForeground(Colors.PRIMARY);
-
 		
 	}
 
@@ -681,9 +686,10 @@ public class NhapHang_GUI extends JPanel {
 			}
 		};
 
+		String maLoBase = loSanPhamService.sinhMaLoBase();
 		for (int i = 0; i < tableModel.getRowCount(); i++) {
 			previewModel.addRow(new Object[] {
-				taoMaLoTam(i),
+				taoMaLoTam(maLoBase, i),
 				tableModel.getValueAt(i, 0),
 				tableModel.getValueAt(i, 1),
 				tableModel.getValueAt(i, 2),
@@ -703,8 +709,8 @@ public class NhapHang_GUI extends JPanel {
 		return table;
 	}
 
-	private String taoMaLoTam(int rowIndex) {
-		return new SimpleDateFormat("'LO'yyyyMMdd").format(new java.util.Date()) + String.format("-%02d", rowIndex + 1);
+	private String taoMaLoTam(String maLoBase, int rowIndex) {
+		return maLoBase + String.format("-%02d", rowIndex + 1);
 	}
 
 	private String docNhaCungCapDangChon() {
@@ -990,11 +996,6 @@ public class NhapHang_GUI extends JPanel {
 	}
 
 	// ==================== LƯU PHIẾU NHẬP VÀO DB ====================
-
-	// Xử lý khi nhấn "Xác nhận nhập":
-	// 1. Tạo PhieuNhap → lưu DB
-	// 2. Tạo ChiTietPhieuNhap cho mỗi dòng → lưu DB
-	// 3. Tạo LoSanPham cho mỗi dòng (quy đổi đơn vị + tính HSD) → lưu DB
 	private void xuLyLuuPhieuNhap() {
 		try {
 			// 1. Đọc thông tin phiếu từ form
@@ -1014,7 +1015,11 @@ public class NhapHang_GUI extends JPanel {
 			String maPN = phieuNhapService.sinhMaPhieuNhap(phieuNhapService.sinhPrefixHomNay());
 
 			// 3. Tạo PhieuNhap
-			PhieuNhap pn = new PhieuNhap(maPN, ngayNhap, ncc, new NhanVien("NV001"), docGhiChuDangNhap());
+			if (nhanVienDangNhap == null) {
+				JOptionPane.showMessageDialog(this, "Không xác định được nhân viên đăng nhập.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+			PhieuNhap pn = new PhieuNhap(maPN, ngayNhap, ncc, nhanVienDangNhap, docGhiChuDangNhap());
 
 			// 4. Lưu chi tiết + tạo lô sản phẩm qua Service
 			// Đồng bộ số lượng từ bảng vào danh sách

@@ -216,6 +216,10 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
     }
 
     // ===== KHỐI: TẢI DỮ LIỆU =====
+    public void refresh() {
+        loadDataSafe();
+    }
+
     private void loadDataSafe() {
         try {
             ArrayList<NhanVien> dsNV = nhanVienSV.getDSNhanVien();
@@ -462,8 +466,9 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
         // Load ảnh hiện tại nếu có
         if (currentImagePath[0] != null && !currentImagePath[0].isEmpty()) {
             try {
-                File f = new File(currentImagePath[0]);
-                if (f.exists()) {
+                File f = resolveImageFile(currentImagePath[0]);
+                System.out.println("[NhanVien] Load ảnh: path='" + currentImagePath[0] + "' → " + (f != null ? f.getAbsolutePath() : "null") + " exists=" + (f != null && f.exists()));
+                if (f != null && f.exists()) {
                     BufferedImage raw = ImageIO.read(f);
                     if (raw != null) {
                         Image scaled = raw.getScaledInstance(146, 196, Image.SCALE_SMOOTH);
@@ -471,7 +476,7 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
                         lblAnhPreview.setText(null);
                     }
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception ex) { System.out.println("[NhanVien] Exception loading image: " + ex); }
         }
         lblAnhPreview.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent e) {
@@ -488,7 +493,7 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
                         if (!destDir.exists()) destDir.mkdirs();
                         File dest = new File(destDir, destName);
                         Files.copy(sel.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                        currentImagePath[0] = dest.getPath().replace("\\", "/");
+                        currentImagePath[0] = "users/" + destName;
                         BufferedImage raw = ImageIO.read(dest);
                         if (raw != null) {
                             Image scaled = raw.getScaledInstance(146, 196, Image.SCALE_SMOOTH);
@@ -716,6 +721,31 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
     }
 
 
+    // Thử tìm file ảnh theo nhiều prefix khác nhau
+    private File resolveImageFile(String path) {
+        if (path == null || path.isEmpty()) return null;
+        // 1. Absolute hoặc relative so với working dir
+        File f = new File(path);
+        if (f.exists()) return f;
+        // 2. Relative so với working dir + data/img/
+        f = new File("data/img/" + path);
+        if (f.exists()) return f;
+        // 3. Tìm theo tên file trong users/
+        f = new File("data/img/users/" + new File(path).getName());
+        if (f.exists()) return f;
+        // 4. Dùng project root qua class location (phòng khi working dir khác)
+        try {
+            File jar = new File(NhanVien_GUI.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+            // jar là bin/ hoặc .jar — lấy thư mục chứa nó = project root
+            File root = jar.isDirectory() ? jar.getParentFile() : jar.getParentFile();
+            f = new File(root, "data/img/" + path);
+            if (f.exists()) return f;
+            f = new File(root, "data/img/users/" + new File(path).getName());
+            if (f.exists()) return f;
+        } catch (Exception ignored) {}
+        return null;
+    }
+
     private Icon createAvatarIcon(String imagePath, String name, int size) {
         BufferedImage bi = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2 = bi.createGraphics();
@@ -725,8 +755,8 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
         boolean imageLoaded = false;
         if (imagePath != null && !imagePath.isEmpty()) {
             try {
-                File f = new File(imagePath);
-                if (f.exists()) {
+                File f = resolveImageFile(imagePath);
+                if (f != null && f.exists()) {
                     BufferedImage raw = ImageIO.read(f);
                     if (raw != null) {
                         g2.setClip(circle);
@@ -1048,7 +1078,7 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
                         if (!destDir.exists()) destDir.mkdirs();
                         File dest = new File(destDir, destName);
                         Files.copy(sel.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                        selectedImagePath[0] = dest.getPath().replace("\\", "/");
+                        selectedImagePath[0] = "users/" + destName;
                         BufferedImage raw = ImageIO.read(dest);
                         if (raw != null) {
                             Image scaled = raw.getScaledInstance(146, 196, Image.SCALE_SMOOTH);

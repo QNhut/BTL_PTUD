@@ -629,6 +629,10 @@ public class SanPham_GUI extends JPanel {
 		}
 	}
 
+	public void refresh() {
+		taiDuLieu();
+	}
+
 	private void taiDuLieu() {
 		dsGoc = safeCall(() -> spService.layDanhSachSanPham(), new ArrayList<>());
 		mapTonKho = spService.tinhTonKhoTatCa(dsGoc);

@@ -144,7 +144,9 @@ public class ThongKeKhachHang_GUI extends JPanel {
         // --- Panel bên phải: nút cố định, KHÔNG bao giờ wrap ---
         btnXem = new RoundedButton(80,  30, 8, "Xem", Colors.PRIMARY);
         btnXem.addActionListener(e -> performFilter());
-        RoundedButton btnExport = new RoundedButton(140, 30, 8, "Xuất báo cáo", Colors.PRIMARY);
+        RoundedButton btnExport = new RoundedButton(140, 30, 8, "Xuất CSV", Colors.PRIMARY);
+        btnExport.addActionListener(e -> service.ExcelExporter.xuatTable(this,
+                "BÁO CÁO KHÁCH HÀNG", "KhachHang", "BaoCao_KhachHang", tableKhachHang));
 
         btnViewChart = new RoundedButton(100, 30, 15, "Biểu đồ", Colors.BACKGROUND);
         btnViewChart.setForeground(Colors.TEXT_PRIMARY);

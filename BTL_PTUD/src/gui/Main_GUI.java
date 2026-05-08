@@ -36,6 +36,13 @@ public class Main_GUI extends JFrame {
     private JLabel lblSubLogo;
     private ThongKeDoanhThu_GUI thongKeDoanhThuGUI;
     private ThongKeKhachHang_GUI thongKeKhachHangGUI;
+    private ThongKeSanPham_GUI thongKeSanPhamGUI;
+    private SanPham_GUI sanPhamGUI;
+    private NhanVien_GUI nhanVienGUI;
+    private KhachHang_GUI khachHangGUI;
+    private NhaCungCap_GUI nhaCungCapGUI;
+    private KhuyenMai_GUI khuyenMaiGUI;
+    private Thue_GUI thueGUI;
 
     public Main_GUI() {
         this(new TaiKhoan_Service(), null);
@@ -165,17 +172,22 @@ public class Main_GUI extends JFrame {
         add(contentPanel, BorderLayout.CENTER);
 
 //		Danh mục
-        contentPanel.add(new SanPham_GUI(), "SanPham");
-//        contentPanel.add(createEmptyPage("SanPham"), "SanPham");
-        contentPanel.add(new NhanVien_GUI(), "NhanVien");
-        contentPanel.add(new KhachHang_GUI(), "KhachHang");
-        contentPanel.add(new NhaCungCap_GUI(), "NhaCungCap");
-        contentPanel.add(new KhuyenMai_GUI(), "KhuyenMai");
-        contentPanel.add(new Thue_GUI(), "Thue");
+        sanPhamGUI = new SanPham_GUI();
+        contentPanel.add(sanPhamGUI, "SanPham");
+        nhanVienGUI = new NhanVien_GUI();
+        contentPanel.add(nhanVienGUI, "NhanVien");
+        khachHangGUI = new KhachHang_GUI();
+        contentPanel.add(khachHangGUI, "KhachHang");
+        nhaCungCapGUI = new NhaCungCap_GUI();
+        contentPanel.add(nhaCungCapGUI, "NhaCungCap");
+        khuyenMaiGUI = new KhuyenMai_GUI();
+        contentPanel.add(khuyenMaiGUI, "KhuyenMai");
+        thueGUI = new Thue_GUI();
+        contentPanel.add(thueGUI, "Thue");
 
 //		Xử lý
         contentPanel.add(new HoaDon_GUI(taiKhoanDangNhap != null ? taiKhoanDangNhap.getNhanVien() : null), "BanHang");
-        contentPanel.add(new NhapHang_GUI(), "NhapHang");
+        contentPanel.add(new NhapHang_GUI(taiKhoanDangNhap != null ? taiKhoanDangNhap.getNhanVien() : null), "NhapHang");
         contentPanel.add(createEmptyPage("DoiHang"), "DoiHang");
         contentPanel.add(createEmptyPage("TraHang"), "TraHang");
 
@@ -190,7 +202,8 @@ public class Main_GUI extends JFrame {
         contentPanel.add(thongKeDoanhThuGUI, "ThongKeDoanhThu");
         thongKeKhachHangGUI = new ThongKeKhachHang_GUI();
         contentPanel.add(thongKeKhachHangGUI, "ThongKeKhachHang");
-        contentPanel.add(new ThongKeSanPham_GUI(), "ThongKeSanPham");
+        thongKeSanPhamGUI = new ThongKeSanPham_GUI();
+        contentPanel.add(thongKeSanPhamGUI, "ThongKeSanPham");
 
 //		Hê thống
         contentPanel.add(new TaiKhoan_GUI(taiKhoanService, token), "TaiKhoan");
@@ -224,13 +237,16 @@ public class Main_GUI extends JFrame {
         }
         cardLayout.show(contentPanel, pageName);
 
-        // Auto-refresh khi chuyển sang tab thống kê
-        if ("ThongKeDoanhThu".equals(pageName) && thongKeDoanhThuGUI != null) {
-            thongKeDoanhThuGUI.refresh();
-        }
-        if ("ThongKeKhachHang".equals(pageName) && thongKeKhachHangGUI != null) {
-            thongKeKhachHangGUI.refresh();
-        }
+        // Auto-refresh khi chuyển tab
+        if ("SanPham".equals(pageName) && sanPhamGUI != null) sanPhamGUI.refresh();
+        if ("NhanVien".equals(pageName) && nhanVienGUI != null) nhanVienGUI.refresh();
+        if ("KhachHang".equals(pageName) && khachHangGUI != null) khachHangGUI.refresh();
+        if ("NhaCungCap".equals(pageName) && nhaCungCapGUI != null) nhaCungCapGUI.refresh();
+        if ("KhuyenMai".equals(pageName) && khuyenMaiGUI != null) khuyenMaiGUI.refresh();
+        if ("Thue".equals(pageName) && thueGUI != null) thueGUI.refresh();
+        if ("ThongKeDoanhThu".equals(pageName) && thongKeDoanhThuGUI != null) thongKeDoanhThuGUI.refresh();
+        if ("ThongKeKhachHang".equals(pageName) && thongKeKhachHangGUI != null) thongKeKhachHangGUI.refresh();
+        if ("ThongKeSanPham".equals(pageName) && thongKeSanPhamGUI != null) thongKeSanPhamGUI.refresh();
     }
 
     private void xacNhanDangXuat() {
