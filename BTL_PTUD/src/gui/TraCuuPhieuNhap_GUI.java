@@ -374,6 +374,27 @@ public class TraCuuPhieuNhap_GUI extends JPanel {
             ArrayList<PhieuNhap> ds = phieuNhapSV.getDSPhieuNhap();
             fullList.clear();
             if (ds != null) {
+                // Cache để tránh query lại nhiều lần cùng 1 NCC/NV
+                java.util.HashMap<String, NhaCungCap> cacheNCC = new java.util.HashMap<>();
+                java.util.HashMap<String, NhanVien> cacheNV = new java.util.HashMap<>();
+                for (PhieuNhap pn : ds) {
+                    NhaCungCap ncc = pn.getNhaCungCap();
+                    if (ncc != null && ncc.getMaNhaCungCap() != null && ncc.getTenNhaCungCap() == null) {
+                        NhaCungCap full = cacheNCC.computeIfAbsent(
+                                ncc.getMaNhaCungCap(), nhaCungCapSV::layNCCTheoMa);
+                        if (full != null) {
+                            pn.setNhaCungCap(full);
+                        }
+                    }
+                    NhanVien nv = pn.getNhanVien();
+                    if (nv != null && nv.getMaNhanVien() != null && nv.getTenNhanVien() == null) {
+                        NhanVien full = cacheNV.computeIfAbsent(
+                                nv.getMaNhanVien(), nhanVienSV::layNVTheoMa);
+                        if (full != null) {
+                            pn.setNhanVien(full);
+                        }
+                    }
+                }
                 fullList.addAll(ds);
             }
             filteredList.clear();
