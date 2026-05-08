@@ -16,6 +16,7 @@ import entity.PhieuNhap;
 import entity.SanPham;
 
 public class LoSanPham_DAO {
+
     private Connection con;
 
     public ArrayList<LoSanPham> getDSLoSanPham() {
@@ -30,11 +31,13 @@ public class LoSanPham_DAO {
                         lo.setMaLoSanPham(rs.getString("MaLoSanPham"));
                         lo.setSanPham(new SanPham(rs.getString("MaSanPham")));
                         String maPN = rs.getString("MaPhieuNhap");
-                        if (maPN != null && !maPN.trim().isEmpty())
+                        if (maPN != null && !maPN.trim().isEmpty()) {
                             lo.setPhieuNhap(new PhieuNhap(maPN));
+                        }
                         String maKe = rs.getString("MaKeSanPham");
-                        if (maKe != null && !maKe.trim().isEmpty())
+                        if (maKe != null && !maKe.trim().isEmpty()) {
                             lo.setKeSanPham(new KeSanPham(maKe));
+                        }
                         lo.setSoLuong(rs.getInt("SoLuong"));
                         lo.setDonViTinh(rs.getString("DonViTinh"));
                         Date hsd = rs.getDate("HanSuDung");
@@ -106,11 +109,15 @@ public class LoSanPham_DAO {
     }
 
     // Lấy tất cả lô theo mã sản phẩm (kể cả hết hạn), sắp xếp HSD tăng dần.
+    // Lưu ý: để ưu tiên trừ lô "sắp hết hạn nhất" trước (FEFO),
+    //   các lô có HSD = NULL phải được xếp SAU CÙNG (mặc định SQL Server xếp NULL lên trước).
+    //   Tách tie-breaker theo MaLoSanPham để thứ tự ổn định khi 2 lô cùng HSD.
     // Chỉ lấy dữ liệu trực tiếp từ bảng LoSanPham – Service sẽ enrich thêm.
     public ArrayList<LoSanPham> layTheoMaSanPham(String maSanPham) {
         ArrayList<LoSanPham> ds = new ArrayList<>();
         String sql = "SELECT MaLoSanPham, MaSanPham, MaPhieuNhap, MaKeSanPham, SoLuong, DonViTinh, HanSuDung, TrangThai "
-                + "FROM LoSanPham WHERE MaSanPham = ? ORDER BY HanSuDung ASC";
+                + "FROM LoSanPham WHERE MaSanPham = ? "
+                + "ORDER BY CASE WHEN HanSuDung IS NULL THEN 1 ELSE 0 END, HanSuDung ASC, MaLoSanPham ASC";
         try {
             con = ConnectDB.getInstance().getConnection();
             try (PreparedStatement ps = con.prepareStatement(sql)) {
@@ -122,11 +129,13 @@ public class LoSanPham_DAO {
                             lo.setMaLoSanPham(rs.getString("MaLoSanPham"));
                             lo.setSanPham(new SanPham(rs.getString("MaSanPham")));
                             String maPN = rs.getString("MaPhieuNhap");
-                            if (maPN != null && !maPN.trim().isEmpty())
+                            if (maPN != null && !maPN.trim().isEmpty()) {
                                 lo.setPhieuNhap(new PhieuNhap(maPN));
+                            }
                             String maKe = rs.getString("MaKeSanPham");
-                            if (maKe != null && !maKe.trim().isEmpty())
+                            if (maKe != null && !maKe.trim().isEmpty()) {
                                 lo.setKeSanPham(new KeSanPham(maKe));
+                            }
                             lo.setSoLuong(rs.getInt("SoLuong"));
                             lo.setDonViTinh(rs.getString("DonViTinh"));
                             Date hsd = rs.getDate("HanSuDung");
@@ -147,30 +156,91 @@ public class LoSanPham_DAO {
 
     // Giảm số lượng tồn kho theo FEFO (lô gần hết hạn nhất bị trừ trước).
     // Chỉ trừ các lô còn TrangThai=true và chưa hết hạn.
+    // - UPDATE atomic dạng "SoLuong = SoLuong - ? WHERE SoLuong >= ?" để chống race condition
+    //   khi 2 hóa đơn cùng trừ 1 lô song song.
+    // - Kiểm tra rowsAffected để bảo đảm thật sự trừ được; nếu không đủ tồn → throw để
+    //   transaction phía service rollback.
     public void giamSoLuongTheoSanPham(String maSanPham, int soLuongCan) {
+        if (soLuongCan <= 0) {
+            return;
+        }
         ArrayList<LoSanPham> dsLo = layTheoMaSanPham(maSanPham);
+        LocalDate homNay = LocalDate.now();
+
+        // Lọc lô hợp lệ (còn hàng, còn hiệu lực, chưa hết hạn) và sắp xếp FEFO chặt:
+        //   HSD gần nhất → HSD xa hơn → lô không HSD (xếp sau cùng vì coi như "không hết hạn").
+        // Tie-breaker theo MaLoSanPham để thứ tự ổn định khi 2 lô cùng HSD.
+        // Sắp xếp lại ở tầng Java để không phụ thuộc vào thuật tính NULLs-first của SQL Server.
+        ArrayList<LoSanPham> hopLe = new ArrayList<>();
+        for (LoSanPham lo : dsLo) {
+            if (!lo.isTrangThai()) {
+                continue;
+            }
+            if (lo.getSoLuong() <= 0) {
+                continue;
+            }
+            if (lo.getHanSuDung() != null && lo.getHanSuDung().isBefore(homNay)) {
+                continue;
+            }
+            hopLe.add(lo);
+        }
+        hopLe.sort((a, b) -> {
+            LocalDate ha = a.getHanSuDung();
+            LocalDate hb = b.getHanSuDung();
+            if (ha == null && hb == null) {
+                return safe(a.getMaLoSanPham()).compareTo(safe(b.getMaLoSanPham()));
+            }
+            if (ha == null) {
+                return 1;   // lô không HSD xếp sau
+
+                        }if (hb == null) {
+                return -1;
+            }
+            int c = ha.compareTo(hb);   // HSD sớm hơn xếp trước
+            return c != 0 ? c : safe(a.getMaLoSanPham()).compareTo(safe(b.getMaLoSanPham()));
+        });
+
         int conLai = soLuongCan;
-        String sqlCapNhat = "UPDATE LoSanPham SET SoLuong = ?, TrangThai = ? WHERE MaLoSanPham = ?";
+        // Atomic: chỉ trừ khi lô còn đủ số lượng; đồng thời cập nhật TrangThai = 0 nếu hết.
+        String sqlCapNhat
+                = "UPDATE LoSanPham SET SoLuong = SoLuong - ?, "
+                + "TrangThai = CASE WHEN SoLuong - ? <= 0 THEN 0 ELSE 1 END "
+                + "WHERE MaLoSanPham = ? AND SoLuong >= ?";
         try {
             con = ConnectDB.getInstance().getConnection();
             try (PreparedStatement ps = con.prepareStatement(sqlCapNhat)) {
-                for (LoSanPham lo : dsLo) {
-                    if (conLai <= 0) break;
-                    if (!lo.isTrangThai()) continue;
-                    if (lo.getHanSuDung() != null && lo.getHanSuDung().isBefore(LocalDate.now())) continue;
+                for (LoSanPham lo : hopLe) {
+                    if (conLai <= 0) {
+                        break;
+                    }
                     int tru = Math.min(lo.getSoLuong(), conLai);
-                    int soLuongMoi = lo.getSoLuong() - tru;
-                    ps.setInt(1, soLuongMoi);
-                    ps.setBoolean(2, soLuongMoi > 0);
+                    if (tru <= 0) {
+                        continue;
+                    }
+                    ps.setInt(1, tru);
+                    ps.setInt(2, tru);
                     ps.setString(3, lo.getMaLoSanPham());
-                    ps.executeUpdate();
+                    ps.setInt(4, tru);
+                    int rows = ps.executeUpdate();
+                    if (rows == 0) {
+                        // Lô đã bị trừ bởi giao dịch khác giữa lúc ta đọc snapshot → bỏ qua, thử lô tiếp theo
+                        continue;
+                    }
                     conLai -= tru;
                 }
             }
+            if (conLai > 0) {
+                throw new RuntimeException("Không đủ tồn kho để trừ cho sản phẩm "
+                        + maSanPham + " (còn thiếu " + conLai + ")");
+            }
         } catch (SQLException e) {
             e.printStackTrace();
-            throw new RuntimeException("Lỗi giảm tồn kho lô sản phẩm: " + e.getMessage());
+            throw new RuntimeException("Lỗi giảm tồn kho lô sản phẩm: " + e.getMessage(), e);
         }
+    }
+
+    private static String safe(String s) {
+        return s == null ? "" : s;
     }
 
     // Cập nhật kệ chứa của một lô sản phẩm.
@@ -206,7 +276,8 @@ public class LoSanPham_DAO {
                             try {
                                 int stt = Integer.parseInt(maxMa.substring(pattern.length())) + 1;
                                 return pattern + String.format("%03d", stt);
-                            } catch (NumberFormatException ignored) {}
+                            } catch (NumberFormatException ignored) {
+                            }
                         }
                     }
                 }
@@ -233,10 +304,13 @@ public class LoSanPham_DAO {
                         if (maxMa != null && maxMa.length() > pattern.length()) {
                             try {
                                 String phan = maxMa.substring(pattern.length());
-                                if (phan.contains("-")) phan = phan.substring(0, phan.indexOf("-"));
+                                if (phan.contains("-")) {
+                                    phan = phan.substring(0, phan.indexOf("-"));
+                                }
                                 int stt = Integer.parseInt(phan) + 1;
                                 return pattern + String.format("%03d", stt);
-                            } catch (NumberFormatException ignored) {}
+                            } catch (NumberFormatException ignored) {
+                            }
                         }
                     }
                 }

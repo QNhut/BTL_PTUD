@@ -15,7 +15,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
@@ -147,7 +146,7 @@ public class KhuyenMai_GUI extends JPanel implements ActionListener {
     private StyledTable setupTable() {
         tblKhuyenMai = new StyledTable(COLUMN_NAMES, list);
 
-        tblKhuyenMai.setTwoLineColumn(0, 290,
+        tblKhuyenMai.setTwoLineColumn(0, 270,
                 v -> ((KhuyenMai) v).getTenKhuyenMai(),
                 v -> ((KhuyenMai) v).getMaKhuyenMai());
 
@@ -157,7 +156,7 @@ public class KhuyenMai_GUI extends JPanel implements ActionListener {
                     return pct > 0 ? String.format("%.0f%%", pct) : "—";
                 });
 
-        tblKhuyenMai.setTwoLineColumn(2, 190,
+        tblKhuyenMai.setTwoLineColumn(2, 170,
                 v -> "Từ: " + ((KhuyenMai) v).getNgayBatDau().format(FMT),
                 v -> "Đến: " + ((KhuyenMai) v).getNgayKetThuc().format(FMT));
 
@@ -169,9 +168,13 @@ public class KhuyenMai_GUI extends JPanel implements ActionListener {
             KhuyenMai km = (KhuyenMai) value;
             Integer cnt = spCountMap.get(km.getMaKhuyenMai());
             int count = cnt != null ? cnt : 0;
-            JPanel pnl = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+            JPanel pnl = new JPanel(new java.awt.GridBagLayout());
             pnl.setOpaque(true);
             pnl.setBackground(isSelected ? Colors.PRIMARY_LIGHT : Colors.BACKGROUND);
+            java.awt.GridBagConstraints gbc = new java.awt.GridBagConstraints();
+            gbc.anchor = java.awt.GridBagConstraints.WEST;
+            gbc.weightx = 1.0;
+            gbc.insets = new Insets(0, 10, 0, 0);
             if (count > 0) {
                 JLabel lbl = new JLabel(count + " sản phẩm");
                 lbl.setFont(FontStyle.font(FontStyle.XS, FontStyle.BOLD));
@@ -179,12 +182,12 @@ public class KhuyenMai_GUI extends JPanel implements ActionListener {
                 lbl.setOpaque(true);
                 lbl.setBackground(Colors.SUCCESS_LIGHT);
                 lbl.setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 10));
-                pnl.add(lbl);
+                pnl.add(lbl, gbc);
             } else {
                 JLabel lbl = new JLabel("Chưa áp dụng");
                 lbl.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
                 lbl.setForeground(Colors.MUTED);
-                pnl.add(lbl);
+                pnl.add(lbl, gbc);
             }
             return pnl;
         });
@@ -193,14 +196,17 @@ public class KhuyenMai_GUI extends JPanel implements ActionListener {
         // Cột Áp dụng (col 5)
         tblKhuyenMai.setColumnRenderer(5, new TableCellRenderer() {
             private final JPanel pnl = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
-            private final RoundedButton btn = new RoundedButton(80, 32, 8, "Áp dụng", Colors.PRIMARY);
+            private final RoundedButton btn = new RoundedButton(75, 32, 8, "Áp dụng", Colors.PRIMARY);
+
             {
                 btn.setFont(FontStyle.font(FontStyle.XS, FontStyle.BOLD));
                 btn.setForeground(Color.WHITE);
                 pnl.add(btn);
                 pnl.setOpaque(true);
-                pnl.setBorder(BorderFactory.createEmptyBorder(21, 5, 21, 5));
+                // Thêm padding phải để tách nhóm "Áp dụng" với "Chi tiết" ở cột kế bên
+                pnl.setBorder(BorderFactory.createEmptyBorder(21, 5, 21, 18));
             }
+
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value,
                     boolean isSelected, boolean hasFocus, int row, int column) {
@@ -208,10 +214,10 @@ public class KhuyenMai_GUI extends JPanel implements ActionListener {
                 return pnl;
             }
         });
-        tblKhuyenMai.setColumnWidth(5, 120);
+        tblKhuyenMai.setColumnWidth(5, 140);
 
-        tblKhuyenMai.setActionColumn(6, 80);
-        tblKhuyenMai.setDeleteButtonColumn(7, 80);
+        tblKhuyenMai.setActionColumn(6, 100);
+        tblKhuyenMai.setDeleteButtonColumn(7, 100);
 
         tblKhuyenMai.setActionColumnListener((row, obj) -> moDialogChiTietKhuyenMai((KhuyenMai) obj));
 
@@ -479,30 +485,61 @@ public class KhuyenMai_GUI extends JPanel implements ActionListener {
         // ===== TABLE MODEL =====
         final String[] colNames = {"", "Mã SP", "Tên sản phẩm", "Loại", "Đơn vị", "Giá bán"};
         AbstractTableModel tblModel = new AbstractTableModel() {
-            @Override public int getRowCount() { return filtered.size(); }
-            @Override public int getColumnCount() { return colNames.length; }
-            @Override public String getColumnName(int col) { return colNames[col]; }
-            @Override public Class<?> getColumnClass(int col) { return col == 0 ? Boolean.class : String.class; }
-            @Override public boolean isCellEditable(int row, int col) { return col == 0; }
+            @Override
+            public int getRowCount() {
+                return filtered.size();
+            }
+
+            @Override
+            public int getColumnCount() {
+                return colNames.length;
+            }
+
+            @Override
+            public String getColumnName(int col) {
+                return colNames[col];
+            }
+
+            @Override
+            public Class<?> getColumnClass(int col) {
+                return col == 0 ? Boolean.class : String.class;
+            }
+
+            @Override
+            public boolean isCellEditable(int row, int col) {
+                return col == 0;
+            }
+
             @Override
             public Object getValueAt(int row, int col) {
                 SanPham sp = filtered.get(row);
                 switch (col) {
-                    case 0: return checkedSet.contains(sp.getMaSanPham());
-                    case 1: return sp.getMaSanPham();
-                    case 2: return sp.getTenSanPham();
-                    case 3: return sp.getLoaiSanPham() != null ? sp.getLoaiSanPham().getTenLoaiSanPham() : "";
-                    case 4: return sp.getDonViTinh() != null ? sp.getDonViTinh() : "";
-                    case 5: return String.format("%,.0f đ", sp.getGiaThanh());
-                    default: return "";
+                    case 0:
+                        return checkedSet.contains(sp.getMaSanPham());
+                    case 1:
+                        return sp.getMaSanPham();
+                    case 2:
+                        return sp.getTenSanPham();
+                    case 3:
+                        return sp.getLoaiSanPham() != null ? sp.getLoaiSanPham().getTenLoaiSanPham() : "";
+                    case 4:
+                        return sp.getDonViTinh() != null ? sp.getDonViTinh() : "";
+                    case 5:
+                        return String.format("%,.0f đ", sp.getGiaThanh());
+                    default:
+                        return "";
                 }
             }
+
             @Override
             public void setValueAt(Object val, int row, int col) {
                 if (col == 0 && row < filtered.size()) {
                     String maSP = filtered.get(row).getMaSanPham();
-                    if (Boolean.TRUE.equals(val)) checkedSet.add(maSP);
-                    else checkedSet.remove(maSP);
+                    if (Boolean.TRUE.equals(val)) {
+                        checkedSet.add(maSP);
+                    } else {
+                        checkedSet.remove(maSP);
+                    }
                     fireTableCellUpdated(row, 0);
                 }
             }
@@ -569,7 +606,9 @@ public class KhuyenMai_GUI extends JPanel implements ActionListener {
                 return lbl;
             }
         };
-        for (int c = 1; c < colNames.length; c++) tblSP.getColumnModel().getColumn(c).setCellRenderer(rowRenderer);
+        for (int c = 1; c < colNames.length; c++) {
+            tblSP.getColumnModel().getColumn(c).setCellRenderer(rowRenderer);
+        }
 
         // Badge renderer cho cột Loại (col 3)
         tblSP.getColumnModel().getColumn(3).setCellRenderer((t, val, sel, focus, row, col) -> {
@@ -643,7 +682,9 @@ public class KhuyenMai_GUI extends JPanel implements ActionListener {
         cboLoai.setPreferredSize(new Dimension(180, 38));
         cboLoai.setMaximumSize(new Dimension(180, 38));
         cboLoai.setMinimumSize(new Dimension(180, 38));
-        for (String tenLoai : loaiMap.values()) cboLoai.addItem(tenLoai);
+        for (String tenLoai : loaiMap.values()) {
+            cboLoai.addItem(tenLoai);
+        }
 
         Runnable filterTable = () -> {
             filtered.clear();
@@ -654,7 +695,9 @@ public class KhuyenMai_GUI extends JPanel implements ActionListener {
                         || sp.getTenSanPham().toLowerCase().contains(kw);
                 boolean matchLoai = "ALL".equals(activeLoai[0])
                         || (sp.getLoaiSanPham() != null && activeLoai[0].equals(sp.getLoaiSanPham().getMaLoaiSanPham()));
-                if (matchKw && matchLoai) filtered.add(sp);
+                if (matchKw && matchLoai) {
+                    filtered.add(sp);
+                }
             }
             tblModel.fireTableDataChanged();
         };
@@ -762,7 +805,9 @@ public class KhuyenMai_GUI extends JPanel implements ActionListener {
                     + initialSet.size() + " sản phẩm đang áp dụng?",
                     "Xác nhận dừng khuyến mãi",
                     JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-            if (kq != JOptionPane.YES_OPTION) return;
+            if (kq != JOptionPane.YES_OPTION) {
+                return;
+            }
             int n = khuyenMaiSV.goKhuyenMaiKhoiTatCa(km.getMaKhuyenMai());
             refreshSpCountMap();
             tblKhuyenMai.refresh();
@@ -789,10 +834,14 @@ public class KhuyenMai_GUI extends JPanel implements ActionListener {
 
             int added = 0, removed = 0;
             for (String maSP : toAdd) {
-                if (khuyenMaiSV.apDungChoSanPham(maSP, km.getMaKhuyenMai())) added++;
+                if (khuyenMaiSV.apDungChoSanPham(maSP, km.getMaKhuyenMai())) {
+                    added++;
+                }
             }
             for (String maSP : toRemove) {
-                if (khuyenMaiSV.goKhuyenMaiKhoiSanPham(maSP)) removed++;
+                if (khuyenMaiSV.goKhuyenMaiKhoiSanPham(maSP)) {
+                    removed++;
+                }
             }
             refreshSpCountMap();
             tblKhuyenMai.refresh();
@@ -1072,7 +1121,9 @@ public class KhuyenMai_GUI extends JPanel implements ActionListener {
         JButton btnThem = new RoundedButton(170, 40, 15, "Thêm khuyến mãi", Colors.PRIMARY);
         btnHuy.addActionListener(ev -> dialog.dispose());
         btnThem.addActionListener(ev -> {
-            if (!fv.validateAll()) return;
+            if (!fv.validateAll()) {
+                return;
+            }
             // Kiểm tra ngày kết thúc > ngày bắt đầu
             LocalDate ngayBD = LocalDate.parse(txtNgayBatDau.getText().trim(), FMT);
             LocalDate ngayKT = LocalDate.parse(txtNgayKetThuc.getText().trim(), FMT);
@@ -1227,7 +1278,9 @@ public class KhuyenMai_GUI extends JPanel implements ActionListener {
         JButton btnLuu = new RoundedButton(150, 40, 15, "Lưu thay đổi", Colors.PRIMARY);
         btnHuy.addActionListener(ev -> dialog.dispose());
         btnLuu.addActionListener(ev -> {
-            if (!fv.validateAll()) return;
+            if (!fv.validateAll()) {
+                return;
+            }
             LocalDate ngayBD = LocalDate.parse(txtNgayBatDau.getText().trim(), FMT);
             LocalDate ngayKT = LocalDate.parse(txtNgayKetThuc.getText().trim(), FMT);
             if (!ngayKT.isAfter(ngayBD)) {

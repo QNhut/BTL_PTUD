@@ -17,15 +17,17 @@ import entity.KhachHang;
 import entity.NhanVien;
 
 public class HoaDon_DAO {
+
     private Connection con;
 
     // SQL chung để SELECT HoaDon kèm TongTien (tính từ ChiTietHoaDon) và DiemTichLuy (từ KhachHang)
-    private static final String SELECT_HOA_DON =
-        "SELECT hd.MaHoaDon, hd.NgayLap, hd.MaKhachHang, hd.MaNhanVien, hd.MaPTTT, " +
-        "hd.TienHang, hd.TienThue, hd.TienGiamGia, hd.DiemSuDung, hd.ThanhTien, " +
-        "COALESCE((SELECT SUM(c.SoLuong * c.DonGia) FROM ChiTietHoaDon c WHERE c.MaHoaDon = hd.MaHoaDon), 0) AS TongTien, " +
-        "COALESCE(kh.DiemTichLuy, 0) AS DiemTichLuy " +
-        "FROM HoaDon hd LEFT JOIN KhachHang kh ON hd.MaKhachHang = kh.MaKhachHang";
+    // Lưu ý: bảng HoaDon hiện không có các cột TienHang/TienThue/TienGiamGia/DiemSuDung/ThanhTien
+    // → các giá trị này sẽ được suy ra từ TongTien trong mapHoaDon().
+    private static final String SELECT_HOA_DON
+            = "SELECT hd.MaHoaDon, hd.NgayLap, hd.MaKhachHang, hd.MaNhanVien, hd.MaPTTT, "
+            + "COALESCE((SELECT SUM(c.SoLuong * c.DonGia) FROM ChiTietHoaDon c WHERE c.MaHoaDon = hd.MaHoaDon), 0) AS TongTien, "
+            + "COALESCE(kh.DiemTichLuy, 0) AS DiemTichLuy "
+            + "FROM HoaDon hd LEFT JOIN KhachHang kh ON hd.MaKhachHang = kh.MaKhachHang";
 
     public ArrayList<HoaDon> getDSHoaDon() {
         ArrayList<HoaDon> dsHD = new ArrayList<HoaDon>();
@@ -44,10 +46,10 @@ public class HoaDon_DAO {
     }
 
     public boolean taoHoaDon(HoaDon hd) {
-        // TongTien (gross) tính qua ChiTietHoaDon (legacy view).
-        // Lưu thêm breakdown: TienHang, TienThue, TienGiamGia, DiemSuDung, ThanhTien
-        String sql = "INSERT INTO HoaDon (MaHoaDon, NgayLap, MaKhachHang, MaNhanVien, MaPTTT, " +
-                "TienHang, TienThue, TienGiamGia, DiemSuDung, ThanhTien) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        // Bảng HoaDon hiện chỉ có các cột cơ bản; breakdown (TienHang/TienThue/...)
+        // được tính lại từ ChiTietHoaDon khi load nên không cần lưu DB.
+        String sql = "INSERT INTO HoaDon (MaHoaDon, NgayLap, MaKhachHang, MaNhanVien, MaPTTT) "
+                + "VALUES (?, ?, ?, ?, ?)";
         try {
             con = ConnectDB.getInstance().getConnection();
             try (PreparedStatement stmt = con.prepareStatement(sql)) {
@@ -56,11 +58,6 @@ public class HoaDon_DAO {
                 stmt.setString(3, hd.getKhachHang().getMaKhachHang());
                 stmt.setString(4, hd.getNhanVien().getMaNhanVien());
                 stmt.setString(5, hd.getMaPTTT());
-                stmt.setDouble(6, hd.getTienHang());
-                stmt.setDouble(7, hd.getTienThue());
-                stmt.setDouble(8, hd.getTienGiamGia());
-                stmt.setInt(9, hd.getDiemSuDung());
-                stmt.setDouble(10, hd.getThanhTien());
                 return stmt.executeUpdate() > 0;
             }
         } catch (SQLException e) {
@@ -111,22 +108,12 @@ public class HoaDon_DAO {
         int diemTichLuy = rs.getInt("DiemTichLuy");
         HoaDon hd = new HoaDon(maHoaDon, ngayLap, tongTien, diemTichLuy, maPTTT, nhanVien, khachHang);
 
-        // Breakdown (có thể NULL với hóa đơn cũ trước khi migrate)
-        double tienHang = rs.getDouble("TienHang");
-        if (rs.wasNull()) tienHang = tongTien;
-        double tienThue = rs.getDouble("TienThue");
-        if (rs.wasNull()) tienThue = 0;
-        double tienGiamGia = rs.getDouble("TienGiamGia");
-        if (rs.wasNull()) tienGiamGia = 0;
-        int diemSuDung = rs.getInt("DiemSuDung");
-        if (rs.wasNull()) diemSuDung = 0;
-        double thanhTien = rs.getDouble("ThanhTien");
-        if (rs.wasNull()) thanhTien = tienHang + tienThue - diemSuDung * 1000.0;
-        hd.setTienHang(tienHang);
-        hd.setTienThue(tienThue);
-        hd.setTienGiamGia(tienGiamGia);
-        hd.setDiemSuDung(diemSuDung);
-        hd.setThanhTien(Math.max(0, thanhTien));
+        // Bảng HoaDon không lưu breakdown → suy ra từ TongTien (giá hàng).
+        hd.setTienHang(tongTien);
+        hd.setTienThue(0);
+        hd.setTienGiamGia(0);
+        hd.setDiemSuDung(0);
+        hd.setThanhTien(Math.max(0, tongTien));
         return hd;
     }
 
@@ -147,17 +134,19 @@ public class HoaDon_DAO {
                             try {
                                 int stt = Integer.parseInt(maxMa.substring(pattern.length())) + 1;
                                 return pattern + String.format("%03d", stt);
-                            } catch (NumberFormatException ignored) {}
+                            } catch (NumberFormatException ignored) {
+                            }
                         }
                     }
                 }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return pattern + "001";
     }
 
     // ==================== THỐNG KÊ DOANH THU ====================
-
     // Tính doanh thu trong kỳ (lọc liên hợp: năm/tháng/ngày hoặc khoảng ngày).
     // Truyền null cho tham số nào không cần lọc.
     public double tinhDoanhThuKy(Integer nam, Integer thang, Integer ngay,
@@ -170,12 +159,18 @@ public class HoaDon_DAO {
         try {
             con = ConnectDB.getInstance().getConnection();
             try (PreparedStatement ps = con.prepareStatement(sql.toString())) {
-                for (int i = 0; i < params.size(); i++) ps.setObject(i + 1, params.get(i));
+                for (int i = 0; i < params.size(); i++) {
+                    ps.setObject(i + 1, params.get(i));
+                }
                 try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) return rs.getDouble(1);
+                    if (rs.next()) {
+                        return rs.getDouble(1);
+                    }
                 }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return 0;
     }
 
@@ -186,9 +181,13 @@ public class HoaDon_DAO {
         try {
             con = ConnectDB.getInstance().getConnection();
             try (Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                if (rs.next()) return rs.getDouble(1);
+                if (rs.next()) {
+                    return rs.getDouble(1);
+                }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return 0;
     }
 
@@ -202,12 +201,18 @@ public class HoaDon_DAO {
         try {
             con = ConnectDB.getInstance().getConnection();
             try (PreparedStatement ps = con.prepareStatement(sql.toString())) {
-                for (int i = 0; i < params.size(); i++) ps.setObject(i + 1, params.get(i));
+                for (int i = 0; i < params.size(); i++) {
+                    ps.setObject(i + 1, params.get(i));
+                }
                 try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) return rs.getInt(1);
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
                 }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return 0;
     }
 
@@ -215,7 +220,9 @@ public class HoaDon_DAO {
     // @return LinkedHashMap: "Tháng 1" → "Tháng 12" → doanh thu
     public LinkedHashMap<String, Double> thongKeTheoThang(int nam) {
         LinkedHashMap<String, Double> result = new LinkedHashMap<>();
-        for (int t = 1; t <= 12; t++) result.put("Tháng " + t, 0.0);
+        for (int t = 1; t <= 12; t++) {
+            result.put("Tháng " + t, 0.0);
+        }
         String sql = "SELECT MONTH(hd.NgayLap) AS Thang, COALESCE(SUM(c.SoLuong * c.DonGia), 0) AS DT "
                 + "FROM HoaDon hd LEFT JOIN ChiTietHoaDon c ON hd.MaHoaDon = c.MaHoaDon "
                 + "WHERE YEAR(hd.NgayLap) = ? GROUP BY MONTH(hd.NgayLap) ORDER BY Thang";
@@ -229,7 +236,9 @@ public class HoaDon_DAO {
                     }
                 }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return result;
     }
 
@@ -252,7 +261,9 @@ public class HoaDon_DAO {
                     }
                 }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return result;
     }
 
@@ -269,10 +280,14 @@ public class HoaDon_DAO {
                 ps.setDate(1, Date.valueOf(tuNgay));
                 ps.setDate(2, Date.valueOf(denNgay));
                 try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) result.put(rs.getString("Ngay"), rs.getDouble("DT"));
+                    while (rs.next()) {
+                        result.put(rs.getString("Ngay"), rs.getDouble("DT"));
+                    }
                 }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return result;
     }
 
@@ -302,10 +317,12 @@ public class HoaDon_DAO {
         try {
             con = ConnectDB.getInstance().getConnection();
             try (PreparedStatement ps = con.prepareStatement(sql.toString())) {
-                for (int i = 0; i < params.size(); i++) ps.setObject(i + 1, params.get(i));
+                for (int i = 0; i < params.size(); i++) {
+                    ps.setObject(i + 1, params.get(i));
+                }
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
-                        result.add(new Object[] {
+                        result.add(new Object[]{
                             rs.getString("MaHoaDon"),
                             rs.getTimestamp("NgayLap").toLocalDateTime().toLocalDate(),
                             rs.getString("TenNhanVien"),
@@ -318,7 +335,9 @@ public class HoaDon_DAO {
                     }
                 }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return result;
     }
 
@@ -326,7 +345,9 @@ public class HoaDon_DAO {
     // @return LinkedHashMap: "0h" .. "23h" → doanh thu
     public LinkedHashMap<String, Double> thongKeTheoGio(int nam, int thang, int ngay) {
         LinkedHashMap<String, Double> result = new LinkedHashMap<>();
-        for (int h = 0; h < 24; h++) result.put(h + "h", 0.0);
+        for (int h = 0; h < 24; h++) {
+            result.put(h + "h", 0.0);
+        }
         String sql = "SELECT DATEPART(HOUR, hd.NgayLap) AS Gio, COALESCE(SUM(c.SoLuong * c.DonGia), 0) AS DT "
                 + "FROM HoaDon hd LEFT JOIN ChiTietHoaDon c ON hd.MaHoaDon = c.MaHoaDon "
                 + "WHERE YEAR(hd.NgayLap) = ? AND MONTH(hd.NgayLap) = ? AND DAY(hd.NgayLap) = ? "
@@ -343,7 +364,9 @@ public class HoaDon_DAO {
                     }
                 }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return result;
     }
 
@@ -356,9 +379,18 @@ public class HoaDon_DAO {
             params.add(Date.valueOf(tuNgay));
             params.add(Date.valueOf(denNgay));
         } else {
-            if (nam != null)   { sql.append(" AND YEAR(hd.NgayLap) = ?");  params.add(nam); }
-            if (thang != null) { sql.append(" AND MONTH(hd.NgayLap) = ?"); params.add(thang); }
-            if (ngay != null)  { sql.append(" AND DAY(hd.NgayLap) = ?");   params.add(ngay); }
+            if (nam != null) {
+                sql.append(" AND YEAR(hd.NgayLap) = ?");
+                params.add(nam);
+            }
+            if (thang != null) {
+                sql.append(" AND MONTH(hd.NgayLap) = ?");
+                params.add(thang);
+            }
+            if (ngay != null) {
+                sql.append(" AND DAY(hd.NgayLap) = ?");
+                params.add(ngay);
+            }
         }
     }
 }

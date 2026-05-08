@@ -246,13 +246,14 @@ public class TraCuuHoaDon_GUI extends JPanel {
                     }
                     return map.values();
                 },
-                kh -> kh.getTenKhachHang() != null ? kh.getTenKhachHang() : "",
+                // Hiển thị dòng chính = SDT, dòng phụ = tên (chỉ tham khảo)
                 kh -> kh.getSoDienThoai() != null ? kh.getSoDienThoai() : "",
-                (kh, kw) -> (kh.getTenKhachHang() != null && kh.getTenKhachHang().toLowerCase().contains(kw))
-                || (kh.getSoDienThoai() != null && kh.getSoDienThoai().toLowerCase().contains(kw))
+                kh -> kh.getTenKhachHang() != null ? kh.getTenKhachHang() : "",
+                // Chỉ lọc theo số điện thoại
+                (kh, kw) -> kh.getSoDienThoai() != null && kh.getSoDienThoai().toLowerCase().contains(kw)
         );
         khSuggest.setOnSelect(kh -> {
-            khSuggest.setTextSilently(kh.getTenKhachHang());
+            khSuggest.setTextSilently(kh.getSoDienThoai() != null ? kh.getSoDienThoai() : "");
             search();
         });
         khSuggest.setEnabled(false);
@@ -271,8 +272,8 @@ public class TraCuuHoaDon_GUI extends JPanel {
                 },
                 nv -> nv.getTenNhanVien() != null ? nv.getTenNhanVien() : "",
                 nv -> nv.getMaNhanVien() != null ? nv.getMaNhanVien() : "",
-                (nv, kw) -> (nv.getTenNhanVien() != null && nv.getTenNhanVien().toLowerCase().contains(kw))
-                || (nv.getMaNhanVien() != null && nv.getMaNhanVien().toLowerCase().contains(kw))
+                // Chỉ lọc theo tên nhân viên
+                (nv, kw) -> nv.getTenNhanVien() != null && nv.getTenNhanVien().toLowerCase().contains(kw)
         );
         nvSuggest.setOnSelect(nv -> {
             nvSuggest.setTextSilently(nv.getTenNhanVien());
@@ -397,6 +398,11 @@ public class TraCuuHoaDon_GUI extends JPanel {
     // ─────────────────────────────────────────────────────────
     // DATA & LOGIC
     // ─────────────────────────────────────────────────────────
+    //===="Reload toàn bộ dữ liệu từ DB (gọi từ Main_GUI khi mở lại tab)"=====
+    public void refresh() {
+        loadData();
+    }
+
     //====="Tải toàn bộ hóa đơn từ DB vào fullList và hiển thị lên bảng"=====
     private void loadData() {
         try {
@@ -460,11 +466,11 @@ public class TraCuuHoaDon_GUI extends JPanel {
             case "Mã hóa đơn":
                 return hd.getMaHoaDon() != null && hd.getMaHoaDon().toLowerCase().contains(kw);
             case "Khách hàng":
-                return safeKHName(hd).toLowerCase().contains(kw)
-                        || safeKHPhone(hd).toLowerCase().contains(kw);
+                // Chỉ tìm theo số điện thoại
+                return safeKHPhone(hd).toLowerCase().contains(kw);
             case "Nhân viên tạo":
-                return safeNVName(hd).toLowerCase().contains(kw)
-                        || safeNVMa(hd).toLowerCase().contains(kw);
+                // Chỉ tìm theo tên nhân viên
+                return safeNVName(hd).toLowerCase().contains(kw);
             default:
                 return true;
         }

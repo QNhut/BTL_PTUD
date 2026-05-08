@@ -29,24 +29,21 @@ import javax.swing.AbstractCellEditor;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.ButtonGroup;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.ButtonGroup;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JRadioButton;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import service.HoaDon_Service;
@@ -69,6 +66,13 @@ public class HoaDon_GUI extends JPanel {
     private JPanel pnlProductList;
     private Set<SanPham> selectedList = new HashSet<>();
     private List<SanPham> currentList;
+    private Map<String, SanPham_Service.TonKhoInfo> tonKhoCache = new HashMap<>();
+
+    // Flag chia sẻ cross-GUI: đánh dấu danh sách SP/tồn kho cần reload
+    // Được đặt true sau khi: thanh toán, nhập hàng, đổi hàng, trả hàng.
+    // refresh() chỉ query DB lại nếu flag = true → tránh load lại vô ích khi user
+    // chỉ chuyển tab qua lại.
+    public static volatile boolean stockDirty = true;
     private JLabel lblcontentRight;
 
     private static final int CARD_WIDTH = 210;
@@ -141,7 +145,6 @@ public class HoaDon_GUI extends JPanel {
     private JComboBox cmbPTTT;
     private java.util.List<entity.PhuongThucThanhToan> dsPTTT = new java.util.ArrayList<>();
 
-
     public HoaDon_GUI() {
         this(null);
     }
@@ -171,12 +174,13 @@ public class HoaDon_GUI extends JPanel {
         pnlContent.add(pnlContentTop = new JPanel());
         pnlContentTop.setLayout(new BoxLayout(pnlContentTop, BoxLayout.X_AXIS));
         pnlContentTop.setBackground(Colors.BACKGROUND);
-        pnlContentTop.setPreferredSize(new Dimension(0, 470));
-        pnlContentTop.setMaximumSize(new Dimension(Integer.MAX_VALUE, 500));
+        // Tăng chiều cao lên 500 để đủ chỗ cho 2 hàng card + thanh cuộn ngang (~17px)
+        pnlContentTop.setPreferredSize(new Dimension(0, 500));
+        pnlContentTop.setMaximumSize(new Dimension(Integer.MAX_VALUE, 520));
         pnlContentTop.setMinimumSize(new Dimension(0, 200));
 
 //		Bên trái: danh sách sản phẩm
-        pnlContentTop.add(pnlContentTopLeft = new RoundedPanel(700, 470, 15));
+        pnlContentTop.add(pnlContentTopLeft = new RoundedPanel(700, 500, 15));
         pnlContentTopLeft.setBackground(Colors.BACKGROUND);
         pnlContentTopLeft.setLayout(new BorderLayout(10, 10));
         pnlContentTopLeft.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -262,7 +266,7 @@ public class HoaDon_GUI extends JPanel {
             });
             item.addActionListener(ev -> {
                 btnCongDung.setText("▼ " + loai.getTenLoaiSP());
-                // Lọc sản phẩm theo loại
+                // Lọc sản phẩm theo loại, dùng cache tồn kho sẵn có
                 List<SanPham> filtered = new ArrayList<>();
                 for (SanPham sp : currentList) {
                     if (sp.getLoaiSP() != null
@@ -270,14 +274,7 @@ public class HoaDon_GUI extends JPanel {
                         filtered.add(sp);
                     }
                 }
-                Map<String, SanPham_Service.TonKhoInfo> tonKhoMap = sanPhamService.tinhTonKhoTatCa(filtered);
-                pnlProductList.removeAll();
-                for (SanPham sp : filtered) {
-                    SanPham_Service.TonKhoInfo info = tonKhoMap.get(sp.getMaSanPham());
-                    int tonKho = (info != null) ? info.tonKho : 0;
-                    pnlProductList.add(createProductCard(sp, selectedList.contains(sp), tonKho));
-                }
-                updateLayout(filtered.size());
+                renderCards(filtered);
             });
             popupCongDung.add(item);
         }
@@ -312,21 +309,14 @@ public class HoaDon_GUI extends JPanel {
         btnSearch.addActionListener(ev -> {
             String kw = txtSearch.getText().trim();
             List<SanPham> filtered = sanPhamService.timKiem(currentList, kw);
-            Map<String, SanPham_Service.TonKhoInfo> tonKhoMap = sanPhamService.tinhTonKhoTatCa(filtered);
-            pnlProductList.removeAll();
-            for (SanPham sp : filtered) {
-                SanPham_Service.TonKhoInfo info = tonKhoMap.get(sp.getMaSanPham());
-                int tonKho = (info != null) ? info.tonKho : 0;
-                pnlProductList.add(createProductCard(sp, selectedList.contains(sp), tonKho));
-            }
-            updateLayout(filtered.size());
+            renderCards(filtered);
         });
         txtSearch.addActionListener(ev -> btnSearch.doClick());
 
         pnlContentTop.add(Box.createHorizontalStrut(20));
 
 //		Bên phải: thông tin hóa đơn (BorderLayout: CENTER = form cuộn, SOUTH = summary cố định)
-        pnlContentTop.add(pnlContentTopRight = new RoundedPanel(350, 470, 15));
+        pnlContentTop.add(pnlContentTopRight = new RoundedPanel(350, 500, 15));
         pnlContentTopRight.setBackground(Colors.BACKGROUND);
         pnlContentTopRight.setLayout(new BorderLayout(0, 0));
         pnlContentTopRight.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -406,7 +396,9 @@ public class HoaDon_GUI extends JPanel {
         @SuppressWarnings("unchecked")
         JComboBox<entity.PhuongThucThanhToan> cmbPTTTTyped = new JComboBox<>();
         cmbPTTT = cmbPTTTTyped;
-        for (entity.PhuongThucThanhToan pt : dsPTTT) cmbPTTTTyped.addItem(pt);
+        for (entity.PhuongThucThanhToan pt : dsPTTT) {
+            cmbPTTTTyped.addItem(pt);
+        }
         cmbPTTTTyped.setRenderer((lst, value, index, isSel, hasFocus) -> {
             JLabel lbl = new JLabel(value != null ? value.getTenPTTT() : "");
             lbl.setOpaque(true);
@@ -454,9 +446,19 @@ public class HoaDon_GUI extends JPanel {
         lblTenKHError.setVisible(false);
         pnlKHInfo.add(lblTenKHError);
         txtTenKH.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            @Override public void insertUpdate(javax.swing.event.DocumentEvent e) { lblTenKHError.setVisible(false); }
-            @Override public void removeUpdate(javax.swing.event.DocumentEvent e) { lblTenKHError.setVisible(false); }
-            @Override public void changedUpdate(javax.swing.event.DocumentEvent e) {}
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                lblTenKHError.setVisible(false);
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                lblTenKHError.setVisible(false);
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+            }
         });
 
         pnlKHInfo.add(Box.createVerticalStrut(6));
@@ -474,12 +476,25 @@ public class HoaDon_GUI extends JPanel {
         lblSDTStatus.setVisible(false);
         pnlKHInfo.add(lblSDTStatus);
         txtSDT.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            @Override public void insertUpdate(javax.swing.event.DocumentEvent e) { lblSDTStatus.setVisible(false); }
-            @Override public void removeUpdate(javax.swing.event.DocumentEvent e) { lblSDTStatus.setVisible(false); }
-            @Override public void changedUpdate(javax.swing.event.DocumentEvent e) {}
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                lblSDTStatus.setVisible(false);
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                lblSDTStatus.setVisible(false);
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+            }
         });
         txtSDT.addFocusListener(new java.awt.event.FocusAdapter() {
-            @Override public void focusLost(java.awt.event.FocusEvent e) { timKhachHangTheoSDT(); }
+            @Override
+            public void focusLost(java.awt.event.FocusEvent e) {
+                timKhachHangTheoSDT();
+            }
         });
         txtSDT.addActionListener(e -> timKhachHangTheoSDT());
 
@@ -510,7 +525,9 @@ public class HoaDon_GUI extends JPanel {
             boolean on = chkDungDiem.isSelected();
             txtDiemSuDung.setEnabled(on);
             lblDiemLabel.setVisible(on);
-            if (!on) txtDiemSuDung.setText("0");
+            if (!on) {
+                txtDiemSuDung.setText("0");
+            }
             updateSummary();
         });
         pnlPoints.add(chkDungDiem);
@@ -537,9 +554,19 @@ public class HoaDon_GUI extends JPanel {
         pnlPoints.add(lblDiemError);
 
         txtDiemSuDung.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            @Override public void insertUpdate(javax.swing.event.DocumentEvent e) { updateSummary(); }
-            @Override public void removeUpdate(javax.swing.event.DocumentEvent e) { updateSummary(); }
-            @Override public void changedUpdate(javax.swing.event.DocumentEvent e) {}
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                updateSummary();
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                updateSummary();
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+            }
         });
         pnlForm.add(pnlPoints);
 
@@ -602,9 +629,9 @@ public class HoaDon_GUI extends JPanel {
         pnlContentBottomRight.add(rowGiamDiem);
         pnlContentBottomRight.add(Box.createVerticalStrut(5));
 
-        lblValTamTinh  = (JLabel) ((JPanel) row1).getComponent(1);
-        lblValThue     = (JLabel) ((JPanel) row2).getComponent(1);
-        lblValGiamKM   = (JLabel) rowGiamKM.getComponent(1);
+        lblValTamTinh = (JLabel) ((JPanel) row1).getComponent(1);
+        lblValThue = (JLabel) ((JPanel) row2).getComponent(1);
+        lblValGiamKM = (JLabel) rowGiamKM.getComponent(1);
         lblValGiamDiem = (JLabel) rowGiamDiem.getComponent(1);
 
         JPanel divider = new JPanel();
@@ -620,9 +647,12 @@ public class HoaDon_GUI extends JPanel {
         lblValThanhTien = (JLabel) ((JPanel) row3).getComponent(1);
 
         // Compat refs
-        lblLeft1 = (JLabel) ((JPanel) row1).getComponent(0);  lblRight1 = lblValTamTinh;
-        lblLeft2 = (JLabel) ((JPanel) row2).getComponent(0);  lblRight2 = lblValThue;
-        lblLeft3 = (JLabel) ((JPanel) row3).getComponent(0);  lblRight3 = lblValThanhTien;
+        lblLeft1 = (JLabel) ((JPanel) row1).getComponent(0);
+        lblRight1 = lblValTamTinh;
+        lblLeft2 = (JLabel) ((JPanel) row2).getComponent(0);
+        lblRight2 = lblValThue;
+        lblLeft3 = (JLabel) ((JPanel) row3).getComponent(0);
+        lblRight3 = lblValThanhTien;
 
         pnlFixed.add(Box.createVerticalStrut(6));
 
@@ -810,6 +840,9 @@ public class HoaDon_GUI extends JPanel {
 
 //	Xóa hàng của sản phẩm sp khỏi table
     private void removeRowFromTable(SanPham sp) {
+        if (tblSelected != null && tblSelected.isEditing()) {
+            tblSelected.getCellEditor().cancelCellEditing();
+        }
         for (int i = 0; i < tableModel.getRowCount(); i++) {
             if (tableModel.getValueAt(i, 0).equals(sp.getTenSP())) {
                 tableModel.removeRow(i);
@@ -819,6 +852,9 @@ public class HoaDon_GUI extends JPanel {
     }
 
     private void refreshSelectedList() {
+        if (tblSelected != null && tblSelected.isEditing()) {
+            tblSelected.getCellEditor().cancelCellEditing();
+        }
         tableModel.setRowCount(0);
         for (SanPham sp : selectedList) {
             addRowToTable(sp);
@@ -874,9 +910,13 @@ public class HoaDon_GUI extends JPanel {
 
     // Lấy số điểm sử dụng từ ô nhập (0 nếu trống/khách lẻ).
     private int parseDiemSuDung() {
-        if (txtDiemSuDung == null || !txtDiemSuDung.isEnabled()) return 0;
+        if (txtDiemSuDung == null || !txtDiemSuDung.isEnabled()) {
+            return 0;
+        }
         String s = txtDiemSuDung.getText().trim();
-        if (s.isEmpty()) return 0;
+        if (s.isEmpty()) {
+            return 0;
+        }
         try {
             int v = Integer.parseInt(s);
             return Math.max(0, v);
@@ -993,8 +1033,9 @@ public class HoaDon_GUI extends JPanel {
                 addRowToTable(sp);
             }
             lblsubTitleBottom.setText(String.format("%d sản phẩm đã chọn", selectedList.size()));
-            loadProducts(currentList);
-            updateSummary(); // cập nhật tóm tắt và trạng thái nút
+            // Chỉ vẽ lại card từ cache; KHÔNG query DB lại → nhanh hơn nhiều
+            renderCards(currentList);
+            updateSummary();
         });
 
         card.add(top);
@@ -1136,7 +1177,9 @@ public class HoaDon_GUI extends JPanel {
                 hasError = true;
             }
 
-            if (hasError) return;
+            if (hasError) {
+                return;
+            }
         }
 
         List<HoaDon_Service.CartItem> items = buildCartItems();
@@ -1194,13 +1237,22 @@ public class HoaDon_GUI extends JPanel {
     //===="Reset toàn bộ form về trạng thái ban đầu sau khi thanh toán thành công"=====
     public void resetSauThanhToan() {
         selectedList.clear();
+        if (tblSelected != null && tblSelected.isEditing()) {
+            tblSelected.getCellEditor().cancelCellEditing();
+        }
         tableModel.setRowCount(0);
         txtTenKH.setText("");
         txtSDT.setText("");
         txtSearch.setText("");
-        if (rdoKhachLe != null) rdoKhachLe.setSelected(true);
-        if (pnlKHInfo != null) pnlKHInfo.setVisible(false);
-        if (pnlPoints != null) pnlPoints.setVisible(false);
+        if (rdoKhachLe != null) {
+            rdoKhachLe.setSelected(true);
+        }
+        if (pnlKHInfo != null) {
+            pnlKHInfo.setVisible(false);
+        }
+        if (pnlPoints != null) {
+            pnlPoints.setVisible(false);
+        }
         khachHangHienTai = null;
         setMemberMode(null);
         lblsubTitleBottom.setText("0 sản phẩm đã chọn");
@@ -1211,12 +1263,33 @@ public class HoaDon_GUI extends JPanel {
         updateSummary();
     }
 
+    //===="Refresh nhẹ: chỉ tải lại danh sách & tồn kho từ DB NẾU có thay đổi."=====
+    // Dùng khi user chuyển tab quay lại màn hình bán hàng (Main_GUI gọi).
+    public void refresh() {
+        if (!stockDirty) {
+            return; // dữ liệu vẫn tươi → bỏ qua, tránh query DB vô ích
+        }
+        try {
+            List<SanPham> freshList = loadProductsFromDB();
+            loadProducts(freshList);
+            updateSummary();
+            stockDirty = false;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
     private void loadProducts(List<SanPham> list) {
         currentList = list;
-        Map<String, SanPham_Service.TonKhoInfo> tonKhoMap = sanPhamService.tinhTonKhoTatCa(list);
+        tonKhoCache = sanPhamService.tinhTonKhoTatCa(list);
+        renderCards(list);
+    }
+
+    // Render lại danh sách card từ cache tồn kho đã có (không query DB)
+    private void renderCards(List<SanPham> list) {
         pnlProductList.removeAll();
         for (SanPham sp : list) {
-            SanPham_Service.TonKhoInfo info = tonKhoMap.get(sp.getMaSanPham());
+            SanPham_Service.TonKhoInfo info = tonKhoCache.get(sp.getMaSanPham());
             int tonKho = (info != null) ? info.tonKho : 0;
             pnlProductList.add(createProductCard(sp, selectedList.contains(sp), tonKho));
         }

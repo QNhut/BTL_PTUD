@@ -256,9 +256,11 @@ public class ChiTietDialog extends JDialog {
 
         JScrollPane sp = new JScrollPane(table);
         sp.setBorder(BorderFactory.createLineBorder(new Color(230, 233, 238), 1));
-        int h = Math.min(rows.size(), 8) * 34 + 38;
-        sp.setPreferredSize(new Dimension(0, Math.max(120, h)));
-        sp.setMaximumSize(new Dimension(Integer.MAX_VALUE, Math.max(120, h)));
+        // Hiển thị tối đa 12 dòng (trước đây 8) và chiều cao tối thiểu lớn hơn
+        int h = Math.min(rows.size(), 12) * 34 + 38;
+        int target = Math.max(260, h);
+        sp.setPreferredSize(new Dimension(0, target));
+        sp.setMaximumSize(new Dimension(Integer.MAX_VALUE, target));
         return sp;
     }
 
@@ -276,26 +278,37 @@ public class ChiTietDialog extends JDialog {
         };
         card.setOpaque(false);
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBorder(new EmptyBorder(14, 16, 14, 16));
+        card.setBorder(new EmptyBorder(10, 14, 10, 14));
 
         for (SummaryRow r : rows) {
-            JPanel row = new JPanel(new BorderLayout());
+            JPanel row = new JPanel(new BorderLayout(12, 0));
             row.setOpaque(false);
-            row.setBorder(new EmptyBorder(4, 0, 4, 0));
+            row.setBorder(new EmptyBorder(2, 0, 2, 0));
             JLabel lblK = new JLabel(r.label + ":");
             lblK.setFont(FontStyle.font(FontStyle.SM, r.bold ? FontStyle.BOLD : FontStyle.NORMAL));
             lblK.setForeground(r.bold ? Colors.TEXT_PRIMARY : Colors.TEXT_SECONDARY);
 
             JLabel lblV = new JLabel(r.value);
             lblV.setHorizontalAlignment(SwingConstants.RIGHT);
-            lblV.setFont(FontStyle.font(r.bold ? FontStyle.LG : FontStyle.SM, FontStyle.BOLD));
+            // Thu nhỏ font (BASE thay LG cho dòng tổng) để gọn gàng hơn
+            lblV.setFont(FontStyle.font(r.bold ? FontStyle.BASE : FontStyle.SM, FontStyle.BOLD));
             lblV.setForeground(r.valueColor != null ? r.valueColor : Colors.TEXT_PRIMARY);
 
             row.add(lblK, BorderLayout.WEST);
             row.add(lblV, BorderLayout.EAST);
             card.add(row);
         }
-        return card;
+
+        // Bọc card vào panel ngoài: căn phải, chiếm khoảng 45% bề rộng
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        wrapper.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JPanel spacer = new JPanel();
+        spacer.setOpaque(false);
+        wrapper.add(spacer, BorderLayout.CENTER);
+        wrapper.add(card, BorderLayout.EAST);
+        card.setPreferredSize(new Dimension(380, card.getPreferredSize().height));
+        return wrapper;
     }
 
     private String escape(String s) {

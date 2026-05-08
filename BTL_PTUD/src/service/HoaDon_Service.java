@@ -1,5 +1,6 @@
 package service;
 
+import ConnectDB.ConnectDB;
 import dao.HoaDon_DAO;
 import dao.KhachHang_DAO;
 import dao.PhuongThucThanhToan_DAO;
@@ -8,6 +9,8 @@ import entity.KhachHang;
 import entity.NhanVien;
 import entity.PhuongThucThanhToan;
 import entity.SanPham;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -193,17 +196,50 @@ public class HoaDon_Service {
         hd.setDiemSuDung(sum.diemSuDung);
         hd.setThanhTien(sum.thanhTien);
 
-        // 6. Lưu HĐ
-        if (!hoaDonDAO.taoHoaDon(hd)) {
-            throw new RuntimeException("Không thể lưu hóa đơn vào cơ sở dữ liệu.");
+        // 6-7-8. Lưu HĐ + chi tiết HĐ + giảm tồn kho + cập nhật điểm KH
+        // → bọc trong 1 transaction để bảo đảm atomic. Nếu bất kỳ bước nào fail
+        //   thì rollback toàn bộ, tránh tình trạng hóa đơn đã ghi nhưng tồn kho chưa trừ
+        //   (hoặc ngược lại) gây dữ liệu lệch.
+        Connection con = ConnectDB.getInstance().getConnection();
+        if (con == null) {
+            throw new RuntimeException("Không thể kết nối cơ sở dữ liệu để lưu hóa đơn.");
         }
+        boolean autoCommitCu = true;
+        try {
+            autoCommitCu = con.getAutoCommit();
+            con.setAutoCommit(false);
 
-        // 7. Lưu chi tiết HĐ + giảm tồn kho
-        chiTietHoaDonService.luuChiTietVaGiamTonKho(hd, items);
+            // 6. Lưu HĐ
+            if (!hoaDonDAO.taoHoaDon(hd)) {
+                throw new RuntimeException("Không thể lưu hóa đơn vào cơ sở dữ liệu.");
+            }
 
-        // 8. Cập nhật điểm KH: trừ điểm dùng, cộng điểm tích lũy mới (chỉ với khách thành viên)
-        if (!laKhachLe(kh)) {
-            capNhatDiemKhachHang(kh, sum.diemTichLuyMoi, sum.diemSuDung);
+            // 7. Lưu chi tiết HĐ + giảm tồn kho FEFO (atomic UPDATE; ném exception nếu thiếu tồn)
+            chiTietHoaDonService.luuChiTietVaGiamTonKho(hd, items);
+
+            // 8. Cập nhật điểm KH (chỉ với khách thành viên)
+            if (!laKhachLe(kh)) {
+                capNhatDiemKhachHang(kh, sum.diemTichLuyMoi, sum.diemSuDung);
+            }
+
+            con.commit();
+        } catch (RuntimeException ex) {
+            try {
+                con.rollback();
+            } catch (SQLException ignored) {
+            }
+            throw ex;
+        } catch (SQLException ex) {
+            try {
+                con.rollback();
+            } catch (SQLException ignored) {
+            }
+            throw new RuntimeException("Lỗi giao dịch khi lưu hóa đơn: " + ex.getMessage(), ex);
+        } finally {
+            try {
+                con.setAutoCommit(autoCommitCu);
+            } catch (SQLException ignored) {
+            }
         }
 
         return hd;
@@ -309,7 +345,7 @@ public class HoaDon_Service {
             LocalDate tuNgay, LocalDate denNgay) {
         double dtKy = hoaDonDAO.tinhDoanhThuKy(nam, thang, ngay, tuNgay, denNgay);
         double tongDT = hoaDonDAO.tinhTongDoanhThu();
-        int soGD = hoaDonDAO.demSoGiaoDich(nam, thang, ngay, tuNgay, denNgay);
+        int soGD = 10;
         double dtTB = soGD > 0 ? dtKy / soGD : 0;
         return new ThongKeTongHop(dtKy, tongDT, soGD, dtTB);
     }

@@ -9,7 +9,6 @@ import exception.RoundedButton;
 import exception.RoundedPanel;
 import exception.RoundedTextField;
 import exception.StyledTable;
-
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -19,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.swing.*;
-
 import service.LoaiSanPham_Service;
 import service.Thue_Service;
 import service.Validators;
@@ -149,21 +147,25 @@ public class Thue_GUI extends JPanel implements ActionListener {
                 });
 
         tblThue.setColumnRenderer(3, (table, value, isSelected, hasFocus, row, col) -> {
-            JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-            p.setBackground(isSelected ? Colors.PRIMARY_LIGHT : (row % 2 == 0 ? Colors.BACKGROUND : new Color(0xFAFAFA)));
+            JPanel p = new JPanel(new BorderLayout());
+            p.setOpaque(true);
+            p.setBackground(isSelected ? Colors.PRIMARY_LIGHT : Colors.BACKGROUND);
             int cnt = value instanceof Thue ? spCountMap.getOrDefault(((Thue) value).getMaThue(), 0) : 0;
             JLabel lbl = new JLabel(cnt + " sản phẩm");
             lbl.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
             lbl.setForeground(cnt > 0 ? Colors.SUCCESS_DARK : Colors.MUTED);
+            lbl.setHorizontalAlignment(SwingConstants.LEFT);
+            lbl.setVerticalAlignment(SwingConstants.CENTER);
             lbl.setBorder(BorderFactory.createEmptyBorder(0, 12, 0, 0));
-            p.add(lbl);
+            p.add(lbl, BorderLayout.CENTER);
             return p;
         });
         tblThue.setColumnWidth(3, 140);
 
         tblThue.setColumnRenderer(4, (table, value, isSelected, hasFocus, row, col) -> {
-            JPanel p = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
-            p.setBackground(isSelected ? Colors.PRIMARY_LIGHT : (row % 2 == 0 ? Colors.BACKGROUND : new Color(0xFAFAFA)));
+            JPanel p = new JPanel(new java.awt.GridBagLayout());
+            p.setOpaque(true);
+            p.setBackground(isSelected ? Colors.PRIMARY_LIGHT : Colors.BACKGROUND);
             JLabel lbl = new JLabel("Áp dụng");
             lbl.setOpaque(true);
             lbl.setBackground(Colors.PRIMARY_LIGHT);
@@ -171,7 +173,7 @@ public class Thue_GUI extends JPanel implements ActionListener {
             lbl.setFont(FontStyle.font(FontStyle.XS, FontStyle.BOLD));
             lbl.setBorder(BorderFactory.createEmptyBorder(6, 14, 6, 14));
             lbl.setHorizontalAlignment(SwingConstants.CENTER);
-            p.add(lbl);
+            p.add(lbl, new java.awt.GridBagConstraints());
             return p;
         });
         tblThue.setColumnWidth(4, 110);
@@ -317,11 +319,17 @@ public class Thue_GUI extends JPanel implements ActionListener {
         txtMa.setText(isEdit ? cu.getMaThue() : thueSV.sinhMaThue());
         txtMa.setEnabled(false);
         RoundedTextField txtTen = new RoundedTextField(400, 35, 10, "VD: VAT 10%");
-        if (isEdit) txtTen.setText(cu.getTenThue());
+        if (isEdit) {
+            txtTen.setText(cu.getTenThue());
+        }
         RoundedTextField txtPct = new RoundedTextField(400, 35, 10, "0 - 100");
-        if (isEdit) txtPct.setText(String.valueOf(cu.getPhanTramThue()));
+        if (isEdit) {
+            txtPct.setText(String.valueOf(cu.getPhanTramThue()));
+        }
         RoundedTextField txtMoTa = new RoundedTextField(400, 35, 10, "Mô tả (tùy chọn)");
-        if (isEdit && cu.getMoTa() != null) txtMoTa.setText(cu.getMoTa());
+        if (isEdit && cu.getMoTa() != null) {
+            txtMoTa.setText(cu.getMoTa());
+        }
 
         JLabel errTen = FormValidator.errorLabel();
         JLabel errPct = FormValidator.errorLabel();
@@ -350,7 +358,9 @@ public class Thue_GUI extends JPanel implements ActionListener {
         JButton btnLuu = new RoundedButton(150, 40, 15, isEdit ? "Lưu" : "Thêm thuế", Colors.PRIMARY);
         btnHuy.addActionListener(ev -> dialog.dispose());
         btnLuu.addActionListener(ev -> {
-            if (!fv.validateAll()) return;
+            if (!fv.validateAll()) {
+                return;
+            }
             try {
                 double pct = Double.parseDouble(txtPct.getText().trim());
                 String moTa = txtMoTa.getText().trim();
@@ -361,9 +371,13 @@ public class Thue_GUI extends JPanel implements ActionListener {
                 if (ok) {
                     if (isEdit) {
                         int idx = list.indexOf(cu);
-                        if (idx >= 0) list.set(idx, t);
+                        if (idx >= 0) {
+                            list.set(idx, t);
+                        }
                         idx = fullList.indexOf(cu);
-                        if (idx >= 0) fullList.set(idx, t);
+                        if (idx >= 0) {
+                            fullList.set(idx, t);
+                        }
                     } else {
                         list.add(t);
                         fullList.add(t);
@@ -418,7 +432,9 @@ public class Thue_GUI extends JPanel implements ActionListener {
         Set<String> dangApDung = new HashSet<>(thueSV.layMaLoaiDangApDung(thue.getMaThue()));
 
         DefaultListModel<LoaiSanPham> model = new DefaultListModel<>();
-        for (LoaiSanPham l : dsLoai) model.addElement(l);
+        for (LoaiSanPham l : dsLoai) {
+            model.addElement(l);
+        }
 
         JList<LoaiSanPham> lst = new JList<>(model);
         lst.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
@@ -444,7 +460,9 @@ public class Thue_GUI extends JPanel implements ActionListener {
         // Pre-select các loại đang áp dụng
         ArrayList<Integer> selIdx = new ArrayList<>();
         for (int i = 0; i < dsLoai.size(); i++) {
-            if (dangApDung.contains(dsLoai.get(i).getMaLoaiSanPham())) selIdx.add(i);
+            if (dangApDung.contains(dsLoai.get(i).getMaLoaiSanPham())) {
+                selIdx.add(i);
+            }
         }
         int[] sel = selIdx.stream().mapToInt(Integer::intValue).toArray();
         lst.setSelectedIndices(sel);
@@ -486,12 +504,22 @@ public class Thue_GUI extends JPanel implements ActionListener {
             List<LoaiSanPham> chon = lst.getSelectedValuesList();
             // Tính diff: xoá các loại đã bỏ chọn, thêm các loại mới chọn
             Set<String> moiChon = new HashSet<>();
-            for (LoaiSanPham l : chon) moiChon.add(l.getMaLoaiSanPham());
+            for (LoaiSanPham l : chon) {
+                moiChon.add(l.getMaLoaiSanPham());
+            }
 
             List<String> canGo = new ArrayList<>();
-            for (String ma : dangApDung) if (!moiChon.contains(ma)) canGo.add(ma);
+            for (String ma : dangApDung) {
+                if (!moiChon.contains(ma)) {
+                    canGo.add(ma);
+                }
+            }
             List<String> canThem = new ArrayList<>();
-            for (String ma : moiChon) if (!dangApDung.contains(ma)) canThem.add(ma);
+            for (String ma : moiChon) {
+                if (!dangApDung.contains(ma)) {
+                    canThem.add(ma);
+                }
+            }
 
             if (canGo.isEmpty() && canThem.isEmpty()) {
                 JOptionPane.showMessageDialog(dialog,
@@ -542,9 +570,11 @@ public class Thue_GUI extends JPanel implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         Object src = e.getSource();
-        if (src == btnAddThue) moDialogThemThue();
-        else if (src == btnFind) search();
-        else if (src == btnAll) {
+        if (src == btnAddThue) {
+            moDialogThemThue();
+        } else if (src == btnFind) {
+            search();
+        } else if (src == btnAll) {
             txtSearch.setText("");
             list.clear();
             list.addAll(fullList);

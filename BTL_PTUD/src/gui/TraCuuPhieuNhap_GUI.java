@@ -369,6 +369,11 @@ public class TraCuuPhieuNhap_GUI extends JPanel {
     // ─────────────────────────────────────────────────────────
     // DATA & LOGIC
     // ─────────────────────────────────────────────────────────
+    //===="Reload toàn bộ dữ liệu từ DB (gọi từ Main_GUI khi mở lại tab)"=====
+    public void refresh() {
+        loadData();
+    }
+
     private void loadData() {
         try {
             ArrayList<PhieuNhap> ds = phieuNhapSV.getDSPhieuNhap();

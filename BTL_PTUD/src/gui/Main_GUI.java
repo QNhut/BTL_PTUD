@@ -43,6 +43,9 @@ public class Main_GUI extends JFrame {
     private NhaCungCap_GUI nhaCungCapGUI;
     private KhuyenMai_GUI khuyenMaiGUI;
     private Thue_GUI thueGUI;
+    private HoaDon_GUI hoaDonGUI;
+    private TraCuuHoaDon_GUI traCuuHoaDonGUI;
+    private TraCuuPhieuNhap_GUI traCuuPhieuNhapGUI;
 
     public Main_GUI() {
         this(new TaiKhoan_Service(), null);
@@ -186,14 +189,17 @@ public class Main_GUI extends JFrame {
         contentPanel.add(thueGUI, "Thue");
 
 //		Xử lý
-        contentPanel.add(new HoaDon_GUI(taiKhoanDangNhap != null ? taiKhoanDangNhap.getNhanVien() : null), "BanHang");
+        hoaDonGUI = new HoaDon_GUI(taiKhoanDangNhap != null ? taiKhoanDangNhap.getNhanVien() : null);
+        contentPanel.add(hoaDonGUI, "BanHang");
         contentPanel.add(new NhapHang_GUI(taiKhoanDangNhap != null ? taiKhoanDangNhap.getNhanVien() : null), "NhapHang");
-        contentPanel.add(createEmptyPage("DoiHang"), "DoiHang");
-        contentPanel.add(createEmptyPage("TraHang"), "TraHang");
+        contentPanel.add(new DoiHang_GUI(), "DoiHang");
+        contentPanel.add(new TraHang_GUI(), "TraHang");
 
 //		Tra cứu
-        contentPanel.add(new TraCuuHoaDon_GUI(), "TraCuuHoaDon");
-        contentPanel.add(new TraCuuPhieuNhap_GUI(), "TraCuuPhieuNhap");
+        traCuuHoaDonGUI = new TraCuuHoaDon_GUI();
+        contentPanel.add(traCuuHoaDonGUI, "TraCuuHoaDon");
+        traCuuPhieuNhapGUI = new TraCuuPhieuNhap_GUI();
+        contentPanel.add(traCuuPhieuNhapGUI, "TraCuuPhieuNhap");
         contentPanel.add(new TraCuuDoiHang(), "TraCuuDoiHang");
         contentPanel.add(new TraCuuTraHang(), "TraCuuTraHang");
 
@@ -238,15 +244,42 @@ public class Main_GUI extends JFrame {
         cardLayout.show(contentPanel, pageName);
 
         // Auto-refresh khi chuyển tab
-        if ("SanPham".equals(pageName) && sanPhamGUI != null) sanPhamGUI.refresh();
-        if ("NhanVien".equals(pageName) && nhanVienGUI != null) nhanVienGUI.refresh();
-        if ("KhachHang".equals(pageName) && khachHangGUI != null) khachHangGUI.refresh();
-        if ("NhaCungCap".equals(pageName) && nhaCungCapGUI != null) nhaCungCapGUI.refresh();
-        if ("KhuyenMai".equals(pageName) && khuyenMaiGUI != null) khuyenMaiGUI.refresh();
-        if ("Thue".equals(pageName) && thueGUI != null) thueGUI.refresh();
-        if ("ThongKeDoanhThu".equals(pageName) && thongKeDoanhThuGUI != null) thongKeDoanhThuGUI.refresh();
-        if ("ThongKeKhachHang".equals(pageName) && thongKeKhachHangGUI != null) thongKeKhachHangGUI.refresh();
-        if ("ThongKeSanPham".equals(pageName) && thongKeSanPhamGUI != null) thongKeSanPhamGUI.refresh();
+        if ("BanHang".equals(pageName) && hoaDonGUI != null) {
+            hoaDonGUI.refresh();
+        }
+        if ("SanPham".equals(pageName) && sanPhamGUI != null) {
+            sanPhamGUI.refresh();
+        }
+        if ("NhanVien".equals(pageName) && nhanVienGUI != null) {
+            nhanVienGUI.refresh();
+        }
+        if ("KhachHang".equals(pageName) && khachHangGUI != null) {
+            khachHangGUI.refresh();
+        }
+        if ("NhaCungCap".equals(pageName) && nhaCungCapGUI != null) {
+            nhaCungCapGUI.refresh();
+        }
+        if ("KhuyenMai".equals(pageName) && khuyenMaiGUI != null) {
+            khuyenMaiGUI.refresh();
+        }
+        if ("Thue".equals(pageName) && thueGUI != null) {
+            thueGUI.refresh();
+        }
+        if ("ThongKeDoanhThu".equals(pageName) && thongKeDoanhThuGUI != null) {
+            thongKeDoanhThuGUI.refresh();
+        }
+        if ("ThongKeKhachHang".equals(pageName) && thongKeKhachHangGUI != null) {
+            thongKeKhachHangGUI.refresh();
+        }
+        if ("ThongKeSanPham".equals(pageName) && thongKeSanPhamGUI != null) {
+            thongKeSanPhamGUI.refresh();
+        }
+        if ("TraCuuHoaDon".equals(pageName) && traCuuHoaDonGUI != null) {
+            traCuuHoaDonGUI.refresh();
+        }
+        if ("TraCuuPhieuNhap".equals(pageName) && traCuuPhieuNhapGUI != null) {
+            traCuuPhieuNhapGUI.refresh();
+        }
     }
 
     private void xacNhanDangXuat() {

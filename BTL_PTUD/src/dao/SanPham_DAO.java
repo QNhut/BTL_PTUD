@@ -14,12 +14,13 @@ import entity.SanPham;
 import entity.Thue;
 
 public class SanPham_DAO {
+
     private Connection con;
 
     public ArrayList<SanPham> getDSSanPham() {
         ArrayList<SanPham> dsSanPham = new ArrayList<SanPham>();
         String sql = "SELECT sp.MaSanPham, sp.TenSanPham, sp.CongDung, sp.ThanhPhan, sp.HanSuDung, sp.GiaThanh, "
-                + "sp.NoiSanXuat, sp.MaLoaiSanPham, sp.MaKhuyenMai, sp.MaThue, sp.TrangThai, sp.HinhAnh, "
+                + "sp.NoiSanXuat, sp.MaLoaiSanPham, sp.MaKhuyenMai, sp.MaThue, sp.TrangThai, sp.HinhAnh, sp.DonViTinh, "
                 + "lsp.TenLoaiSanPham, lsp.MoTa AS MoTaLoai, "
                 + "km.TenKhuyenMai, km.PhanTramGG, km.NgayBatDau, km.NgayKetThuc, km.TrangThai AS TrangThaiKM, "
                 + "t.TenThue, t.PhanTramThue, t.MoTa AS MoTaThue "
@@ -82,14 +83,16 @@ public class SanPham_DAO {
                 stmt.setDouble(6, sp.getGiaThanh());
                 stmt.setString(7, sp.getNoiSanXuat());
                 stmt.setString(8, sp.getLoaiSanPham().getMaLoaiSanPham());
-                if (sp.getKhuyenMai() != null && sp.getKhuyenMai().getMaKhuyenMai() != null)
-                    stmt.setString(9, sp.getKhuyenMai().getMaKhuyenMai());
-                else
+                if (sp.getKhuyenMai() != null && sp.getKhuyenMai().getMaKhuyenMai() != null) {
+                    stmt.setString(9, sp.getKhuyenMai().getMaKhuyenMai()); 
+                }else {
                     stmt.setNull(9, java.sql.Types.NVARCHAR);
-                if (sp.getThue() != null && sp.getThue().getMaThue() != null)
-                    stmt.setString(10, sp.getThue().getMaThue());
-                else
+                }
+                if (sp.getThue() != null && sp.getThue().getMaThue() != null) {
+                    stmt.setString(10, sp.getThue().getMaThue()); 
+                }else {
                     stmt.setNull(10, java.sql.Types.NVARCHAR);
+                }
                 stmt.setBoolean(11, sp.isTrangThai());
                 stmt.setString(12, sp.getHinhAnh());
                 return stmt.executeUpdate() > 0;
@@ -113,14 +116,16 @@ public class SanPham_DAO {
                 stmt.setDouble(5, sp.getGiaThanh());
                 stmt.setString(6, sp.getNoiSanXuat());
                 stmt.setString(7, sp.getLoaiSanPham().getMaLoaiSanPham());
-                if (sp.getKhuyenMai() != null && sp.getKhuyenMai().getMaKhuyenMai() != null)
-                    stmt.setString(8, sp.getKhuyenMai().getMaKhuyenMai());
-                else
+                if (sp.getKhuyenMai() != null && sp.getKhuyenMai().getMaKhuyenMai() != null) {
+                    stmt.setString(8, sp.getKhuyenMai().getMaKhuyenMai()); 
+                }else {
                     stmt.setNull(8, java.sql.Types.NVARCHAR);
-                if (sp.getThue() != null && sp.getThue().getMaThue() != null)
-                    stmt.setString(9, sp.getThue().getMaThue());
-                else
+                }
+                if (sp.getThue() != null && sp.getThue().getMaThue() != null) {
+                    stmt.setString(9, sp.getThue().getMaThue()); 
+                }else {
                     stmt.setNull(9, java.sql.Types.NVARCHAR);
+                }
                 stmt.setBoolean(10, sp.isTrangThai());
                 stmt.setString(11, sp.getHinhAnh());
                 stmt.setString(12, sp.getMaSanPham());
@@ -187,8 +192,12 @@ public class SanPham_DAO {
         sp.setThue(thue);
         sp.setTrangThai(rs.getBoolean("TrangThai"));
         sp.setHinhAnh(rs.getString("HinhAnh"));
-        // DonViTinh nằm trong LoSanPham, không có trong bảng SanPham
-        sp.setDonViTinh(null);
+        // Lấy DonViTinh từ bảng SanPham (nếu có trong ResultSet)
+        try {
+            sp.setDonViTinh(rs.getString("DonViTinh"));
+        } catch (SQLException ignored) {
+            sp.setDonViTinh(null);
+        }
         return sp;
     }
 
@@ -212,35 +221,44 @@ public class SanPham_DAO {
                     }
                 }
             }
-        } catch (java.sql.SQLException e) { e.printStackTrace(); }
+        } catch (java.sql.SQLException e) {
+            e.printStackTrace();
+        }
         return pattern + "001";
     }
 
     // ==================== THỐNG KÊ ====================
-
     public int demTongSanPham() {
         String sql = "SELECT COUNT(*) FROM SanPham WHERE TrangThai = 1";
         try {
             con = ConnectDB.getInstance().getConnection();
             try (Statement stmt = con.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
-                if (rs.next()) return rs.getInt(1);
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return 0;
     }
 
     public int demSanPhamKhuyenMai() {
         String sql = "SELECT COUNT(*) FROM SanPham sp "
-                   + "JOIN KhuyenMai km ON sp.MaKhuyenMai = km.MaKhuyenMai "
-                   + "WHERE sp.TrangThai = 1 AND km.TrangThai = 1 "
-                   + "AND km.PhanTramGG > 0 "
-                   + "AND CAST(GETDATE() AS DATE) BETWEEN km.NgayBatDau AND km.NgayKetThuc";
+                + "JOIN KhuyenMai km ON sp.MaKhuyenMai = km.MaKhuyenMai "
+                + "WHERE sp.TrangThai = 1 AND km.TrangThai = 1 "
+                + "AND km.PhanTramGG > 0 "
+                + "AND CAST(GETDATE() AS DATE) BETWEEN km.NgayBatDau AND km.NgayKetThuc";
         try {
             con = ConnectDB.getInstance().getConnection();
             try (Statement stmt = con.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
-                if (rs.next()) return rs.getInt(1);
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return 0;
     }
 
@@ -249,19 +267,25 @@ public class SanPham_DAO {
         try {
             con = ConnectDB.getInstance().getConnection();
             try (Statement stmt = con.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
-                if (rs.next()) return rs.getInt(1);
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return 0;
     }
 
     public java.util.LinkedHashMap<String, Integer> soLuongBanTheoThang(int nam) {
         java.util.LinkedHashMap<String, Integer> map = new java.util.LinkedHashMap<>();
-        for (int i = 1; i <= 12; i++) map.put("T" + i, 0);
+        for (int i = 1; i <= 12; i++) {
+            map.put("T" + i, 0);
+        }
         String sql = "SELECT MONTH(hd.NgayLap) AS Thang, SUM(ct.SoLuong) AS SL "
-                   + "FROM HoaDon hd JOIN ChiTietHoaDon ct ON hd.MaHoaDon = ct.MaHoaDon "
-                   + "WHERE YEAR(hd.NgayLap) = ? "
-                   + "GROUP BY MONTH(hd.NgayLap) ORDER BY Thang";
+                + "FROM HoaDon hd JOIN ChiTietHoaDon ct ON hd.MaHoaDon = ct.MaHoaDon "
+                + "WHERE YEAR(hd.NgayLap) = ? "
+                + "GROUP BY MONTH(hd.NgayLap) ORDER BY Thang";
         try {
             con = ConnectDB.getInstance().getConnection();
             try (PreparedStatement ps = con.prepareStatement(sql)) {
@@ -272,7 +296,9 @@ public class SanPham_DAO {
                     }
                 }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return map;
     }
 
@@ -280,15 +306,15 @@ public class SanPham_DAO {
         ArrayList<Object[]> rows = new ArrayList<>();
         boolean hasDate = (tuNgay != null && denNgay != null);
         String sql = "SELECT sp.MaSanPham, sp.TenSanPham, lsp.TenLoaiSanPham, "
-                   + "SUM(ct.SoLuong) AS SoLuongBan, "
-                   + "SUM(ct.SoLuong * ct.DonGia) AS DoanhThu "
-                   + "FROM SanPham sp "
-                   + "JOIN LoaiSanPham lsp ON sp.MaLoaiSanPham = lsp.MaLoaiSanPham "
-                   + "JOIN ChiTietHoaDon ct ON sp.MaSanPham = ct.MaSanPham "
-                   + "JOIN HoaDon hd ON ct.MaHoaDon = hd.MaHoaDon "
-                   + (hasDate ? "WHERE CAST(hd.NgayLap AS DATE) BETWEEN ? AND ? " : "")
-                   + "GROUP BY sp.MaSanPham, sp.TenSanPham, lsp.TenLoaiSanPham "
-                   + "ORDER BY SoLuongBan DESC";
+                + "SUM(ct.SoLuong) AS SoLuongBan, "
+                + "SUM(ct.SoLuong * ct.DonGia) AS DoanhThu "
+                + "FROM SanPham sp "
+                + "JOIN LoaiSanPham lsp ON sp.MaLoaiSanPham = lsp.MaLoaiSanPham "
+                + "JOIN ChiTietHoaDon ct ON sp.MaSanPham = ct.MaSanPham "
+                + "JOIN HoaDon hd ON ct.MaHoaDon = hd.MaHoaDon "
+                + (hasDate ? "WHERE CAST(hd.NgayLap AS DATE) BETWEEN ? AND ? " : "")
+                + "GROUP BY sp.MaSanPham, sp.TenSanPham, lsp.TenLoaiSanPham "
+                + "ORDER BY SoLuongBan DESC";
         try {
             con = ConnectDB.getInstance().getConnection();
             try (PreparedStatement ps = con.prepareStatement(sql)) {
@@ -308,19 +334,21 @@ public class SanPham_DAO {
                     }
                 }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return rows;
     }
 
     public ArrayList<Object[]> layDanhSachSPTonKhoThap() {
         ArrayList<Object[]> rows = new ArrayList<>();
         String sql = "SELECT sp.TenSanPham, ISNULL(SUM(ls.SoLuong), 0) AS TonKho "
-                   + "FROM SanPham sp "
-                   + "LEFT JOIN LoSanPham ls ON sp.MaSanPham = ls.MaSanPham AND ls.TrangThai = 1 AND ls.HanSuDung > GETDATE() "
-                   + "WHERE sp.TrangThai = 1 "
-                   + "GROUP BY sp.MaSanPham, sp.TenSanPham "
-                   + "HAVING ISNULL(SUM(ls.SoLuong), 0) < 50 "
-                   + "ORDER BY TonKho ASC";
+                + "FROM SanPham sp "
+                + "LEFT JOIN LoSanPham ls ON sp.MaSanPham = ls.MaSanPham AND ls.TrangThai = 1 AND ls.HanSuDung > GETDATE() "
+                + "WHERE sp.TrangThai = 1 "
+                + "GROUP BY sp.MaSanPham, sp.TenSanPham "
+                + "HAVING ISNULL(SUM(ls.SoLuong), 0) < 50 "
+                + "ORDER BY TonKho ASC";
         try {
             con = ConnectDB.getInstance().getConnection();
             try (Statement stmt = con.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
@@ -334,7 +362,9 @@ public class SanPham_DAO {
                     });
                 }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return rows;
     }
 }
