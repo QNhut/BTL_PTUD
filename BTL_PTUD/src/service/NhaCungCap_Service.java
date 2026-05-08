@@ -14,6 +14,10 @@ public class NhaCungCap_Service {
         return nhaCungCapDAO.getDSNhaCungCap();
     }
 
+    public NhaCungCap layNCCTheoMa(String maNCC) {
+        return nhaCungCapDAO.layNCCTheoMaNCC(maNCC);
+    }
+
     public int getSoLuongNCC() {
         return nhaCungCapDAO.getDSNhaCungCap().size();
     }

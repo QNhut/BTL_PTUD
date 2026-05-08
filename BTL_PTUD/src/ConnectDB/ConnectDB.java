@@ -16,7 +16,7 @@ public class ConnectDB {
     public void connect() {
         String url = "jdbc:sqlserver://localhost:1433;databaseName=QLBanHang";
         String user = "sa";
-        String password = "YourStrong!Passw0rd";
+        String password = "Tluan2208*";
         try {
             con = DriverManager.getConnection(url, user, password);
         } catch (SQLException e) {

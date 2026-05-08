@@ -192,10 +192,10 @@ public class Main_GUI extends JFrame {
         contentPanel.add(createEmptyPage("TraHang"), "TraHang");
 
 //		Tra cứu
-//        contentPanel.add(new TraCuuHoaDon_GUI(), "TraCuuHoaDon");
-        contentPanel.add(createEmptyPage("TraCuuPhieuNhap"), "TraCuuPhieuNhap");
-        contentPanel.add(createEmptyPage("TraCuuDoiHang"), "TraCuuDoiHang");
-        contentPanel.add(createEmptyPage("TraCuuTraHang"), "TraCuuTraHang");
+        contentPanel.add(new TraCuuHoaDon_GUI(), "TraCuuHoaDon");
+        contentPanel.add(new TraCuuPhieuNhap_GUI(), "TraCuuPhieuNhap");
+        contentPanel.add(new TraCuuDoiHang(), "TraCuuDoiHang");
+        contentPanel.add(new TraCuuTraHang(), "TraCuuTraHang");
 
 //		Thống kê
         thongKeDoanhThuGUI = new ThongKeDoanhThu_GUI();

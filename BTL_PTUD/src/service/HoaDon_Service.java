@@ -51,20 +51,37 @@ public class HoaDon_Service {
             this.giaGoc = giaGoc;
         }
 
-        public SanPham getSanPham() { return sanPham; }
-        public int getSoLuong() { return soLuong; }
-        public double getDonGia() { return donGia; }
-        public double getGiaGoc() { return giaGoc; }
+        public SanPham getSanPham() {
+            return sanPham;
+        }
+
+        public int getSoLuong() {
+            return soLuong;
+        }
+
+        public double getDonGia() {
+            return donGia;
+        }
+
+        public double getGiaGoc() {
+            return giaGoc;
+        }
 
         // Thành tiền 1 dòng (sau KM, trước thuế).
-        public double getThanhTien() { return soLuong * donGia; }
+        public double getThanhTien() {
+            return soLuong * donGia;
+        }
 
         // Tiền giảm trên 1 dòng do khuyến mãi sản phẩm.
-        public double getTienGiamGia() { return Math.max(0, soLuong * (giaGoc - donGia)); }
+        public double getTienGiamGia() {
+            return Math.max(0, soLuong * (giaGoc - donGia));
+        }
 
         // % thuế của dòng (lấy từ sản phẩm). 0 nếu không có.
         public double getPhanTramThue() {
-            if (sanPham == null || sanPham.getThue() == null) return 0;
+            if (sanPham == null || sanPham.getThue() == null) {
+                return 0;
+            }
             return sanPham.getThue().getPhanTramThue();
         }
 
@@ -76,6 +93,7 @@ public class HoaDon_Service {
 
     // Tổng hợp các con số tiền của 1 hóa đơn.
     public static class HoaDonSummary {
+
         public final double tienHang;       // sum(qty * donGia) — sau KM, trước thuế
         public final double tienThue;       // sum(line tax)
         public final double tienGiamGia;    // sum(qty * (giaGoc - donGia))
@@ -85,7 +103,7 @@ public class HoaDon_Service {
         public final int diemTichLuyMoi;    // điểm cộng thêm cho KH
 
         public HoaDonSummary(double tienHang, double tienThue, double tienGiamGia,
-                             int diemSuDung, double thanhTien, int diemTichLuyMoi) {
+                int diemSuDung, double thanhTien, int diemTichLuyMoi) {
             this.tienHang = tienHang;
             this.tienThue = tienThue;
             this.tienGiamGia = tienGiamGia;
@@ -106,7 +124,9 @@ public class HoaDon_Service {
                 tienGiamGia += it.getTienGiamGia();
             }
         }
-        if (diemSuDung < 0) diemSuDung = 0;
+        if (diemSuDung < 0) {
+            diemSuDung = 0;
+        }
         double tienGiamTuDiem = diemSuDung * (double) VND_PER_POINT_USE;
         // Không cho phép điểm dùng vượt quá (tienHang + tienThue) để tránh thanhTien âm
         double maxGiamDiem = tienHang + tienThue;
@@ -141,7 +161,9 @@ public class HoaDon_Service {
         if (nhanVien == null) {
             throw new IllegalArgumentException("Không xác định được nhân viên lập hóa đơn.");
         }
-        if (diemSuDung < 0) diemSuDung = 0;
+        if (diemSuDung < 0) {
+            diemSuDung = 0;
+        }
 
         // 1. Tìm hoặc tạo khách hàng (member nếu có SĐT, khách lẻ mặc định nếu không)
         KhachHang kh = timHoacTaoKhachHang(tenKhachHang, soDienThoai);
@@ -235,12 +257,20 @@ public class HoaDon_Service {
 
     // Cập nhật điểm khách hàng: trừ điểm đã sử dụng, sau đó cộng điểm tích lũy mới.
     private void capNhatDiemKhachHang(KhachHang kh, int diemThem, int diemDung) {
-        if (kh == null) return;
-        if (diemThem <= 0 && diemDung <= 0) return;
+        if (kh == null) {
+            return;
+        }
+        if (diemThem <= 0 && diemDung <= 0) {
+            return;
+        }
         KhachHang khMoi = khachHangDAO.layKHTheoSDT(kh.getSoDienThoai());
-        if (khMoi == null) return;
+        if (khMoi == null) {
+            return;
+        }
         int diemMoi = khMoi.getDiemTichLuy() - diemDung + diemThem;
-        if (diemMoi < 0) diemMoi = 0;
+        if (diemMoi < 0) {
+            diemMoi = 0;
+        }
         khMoi.setDiemTichLuy(diemMoi);
         khachHangDAO.updateKhachHang(khMoi);
     }
@@ -258,13 +288,14 @@ public class HoaDon_Service {
 
     // DTO tổng hợp các chỉ số thống kê cho summary cards
     public static class ThongKeTongHop {
+
         public final double doanhThuKy;
         public final double tongDoanhThu;
         public final int soGiaoDich;
         public final double doanhThuTrungBinh;
 
         public ThongKeTongHop(double doanhThuKy, double tongDoanhThu,
-                              int soGiaoDich, double doanhThuTrungBinh) {
+                int soGiaoDich, double doanhThuTrungBinh) {
             this.doanhThuKy = doanhThuKy;
             this.tongDoanhThu = tongDoanhThu;
             this.soGiaoDich = soGiaoDich;
@@ -275,7 +306,7 @@ public class HoaDon_Service {
     // Lấy tổng hợp thống kê cho summary cards.
     // Tính toán doanh thu kỳ, tổng DT, số giao dịch, DT trung bình.
     public ThongKeTongHop layThongKeTongHop(Integer nam, Integer thang, Integer ngay,
-                                             LocalDate tuNgay, LocalDate denNgay) {
+            LocalDate tuNgay, LocalDate denNgay) {
         double dtKy = hoaDonDAO.tinhDoanhThuKy(nam, thang, ngay, tuNgay, denNgay);
         double tongDT = hoaDonDAO.tinhTongDoanhThu();
         int soGD = hoaDonDAO.demSoGiaoDich(nam, thang, ngay, tuNgay, denNgay);
@@ -300,7 +331,7 @@ public class HoaDon_Service {
 
     // Lấy dữ liệu xu hướng (line chart) theo 3 mức tương tự.
     public LinkedHashMap<String, Double> layDuLieuXuHuong(Integer nam, Integer thang, Integer ngay,
-                                                          LocalDate tuNgay, LocalDate denNgay) {
+            LocalDate tuNgay, LocalDate denNgay) {
         // Nếu có ngày cụ thể → dùng biểu đồ theo giờ
         if (ngay != null && thang != null && nam != null) {
             return hoaDonDAO.thongKeTheoGio(nam, thang, ngay);
@@ -331,6 +362,7 @@ public class HoaDon_Service {
             LocalDate tuNgay, LocalDate denNgay) {
         return hoaDonDAO.layDanhSachTheoKy(nam, thang, ngay, tuNgay, denNgay);
     }
+
     //===""=""Lấy danh sách phương thức thanh toán đang hoạt động"====="
     public List<PhuongThucThanhToan> getDSPhuongThucThanhToan() {
         List<PhuongThucThanhToan> ds = pttDAO.getDSPhuongThuc();
@@ -341,6 +373,11 @@ public class HoaDon_Service {
             }
         }
         return active;
+    }
+
+    //===Lấy phương thức thanh toán theo mã (cho màn hình tra cứu)===
+    public PhuongThucThanhToan layPTTTTheoMa(String maPTTT) {
+        return pttDAO.layTheoMa(maPTTT);
     }
 
     //===="Kiểm tra tồn kho đủ cho từng sản phẩm trong giỏ hàng (dùng quy đổi đơn vị)"=====
