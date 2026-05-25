@@ -1,8 +1,11 @@
 package constants;
+
 import java.awt.Color;
 
 public final class Colors {
-    private Colors() {}
+
+    private Colors() {
+    }
 
     // ===== CORE COLORS =====
     public static final Color PRIMARY = hex("#18B48D");   // Nút chính
@@ -26,15 +29,15 @@ public final class Colors {
     public static final Color TEXT_PRIMARY = hex("#111827");   // (17,24,39)
     public static final Color TEXT_SECONDARY = hex("#6B7280"); // (107,114,128)
 
-    public static final Color MUTED = hex("#737373"); 
-    
+    public static final Color MUTED = hex("#737373");
+
     //Thanh menu
     public static final Color SELECTED_MENU = hex("#f44725"); // màu nền chức năng được chọn
     // ===== BORDER =====
     public static final Color BORDER = hex("#E0E0E0");
 
     // NEW (border nhẹ hơn)
-    public static final Color BORDER_LIGHT = hex("#E5E7EB"); 
+    public static final Color BORDER_LIGHT = hex("#E5E7EB");
 
     // ===== SPECIAL =====
     // Badge / trạng thái đã thêm
@@ -42,25 +45,27 @@ public final class Colors {
 
     // Button riêng
     public static final Color PRIMARY_BUTTON = hex("#00A86B");
-    
+
     // Hover button
-    public static final Color BLUE_HOVER = hex("#dbeafe"); 
+    public static final Color BLUE_HOVER = hex("#dbeafe");
     public static final Color GREEN_HOVER = hex("#DCFCE7");// hover trạng thái thành công
     public static final Color PURPLE_HOVER = hex("#F3E8FF");
     public static final Color BROWN_HOVER = hex("#ffedd5");
     public static final Color YELLOW_HOVER = hex("#fefce8"); //hover trạng thái cảnh báo
     // ===== WARNING / LOT STATUS =====
-    public static final Color WARNING_BG  = hex("#FFFBEB"); // nền cảnh báo vàng
-    public static final Color WARNING_FG  = hex("#92400E"); // chữ cảnh báo vàng
-    public static final Color WARNING_BD  = hex("#FDE68A"); // viền cảnh báo vàng
-    public static final Color DANGER_LIGHT  = hex("#FFF1F2"); // nền lô hết hạn
+    public static final Color WARNING_BG = hex("#FFFBEB"); // nền cảnh báo vàng
+    public static final Color WARNING_FG = hex("#92400E"); // chữ cảnh báo vàng
+    public static final Color WARNING_BD = hex("#FDE68A"); // viền cảnh báo vàng
+    public static final Color DANGER_LIGHT = hex("#FFF1F2"); // nền lô hết hạn
     public static final Color DANGER_BORDER = hex("#FFC1C7"); // viền lô hết hạn
 
     // ===== INPUT INVALID (form validation) =====
-    public static final Color INPUT_INVALID_BG     = hex("#FFF5F5"); // nền ô nhập sai
+    public static final Color INPUT_INVALID_BG = hex("#FFF5F5"); // nền ô nhập sai
     public static final Color INPUT_INVALID_BORDER = hex("#F44725"); // viền ô nhập sai (= DANGER)
-    public static final Color INPUT_NORMAL_BORDER  = hex("#C8C8C8"); // viền ô mặc định
-    public static final Color INPUT_FOCUS_BORDER   = hex("#6496FF"); // viền ô khi focus
+    public static final Color INPUT_NORMAL_BORDER = hex("#C8C8C8"); // viền ô mặc định
+    public static final Color INPUT_FOCUS_BORDER = hex("#6496FF"); // viền ô khi focus
+
+    public static final Color BACKGROUND_HOME = hex("#001718");
 
     // ===== UTILS =====
     public static Color hex(String hex) {

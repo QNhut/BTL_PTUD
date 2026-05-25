@@ -194,6 +194,7 @@ public class Main_GUI extends JFrame {
         contentPanel.add(new NhapHang_GUI(taiKhoanDangNhap != null ? taiKhoanDangNhap.getNhanVien() : null), "NhapHang");
         contentPanel.add(new DoiHang_GUI(), "DoiHang");
         contentPanel.add(new TraHang_GUI(), "TraHang");
+        contentPanel.add(new DatTruoc_GUI(), "DatTruoc");
 
 //		Tra cứu
         traCuuHoaDonGUI = new TraCuuHoaDon_GUI();
@@ -202,6 +203,7 @@ public class Main_GUI extends JFrame {
         contentPanel.add(traCuuPhieuNhapGUI, "TraCuuPhieuNhap");
         contentPanel.add(new TraCuuDoiHang(), "TraCuuDoiHang");
         contentPanel.add(new TraCuuTraHang(), "TraCuuTraHang");
+        contentPanel.add(new TraCuuDatThuoc_GUI(), "TraCuuDatThuoc");
 
 //		Thống kê
         thongKeDoanhThuGUI = new ThongKeDoanhThu_GUI();
@@ -391,7 +393,13 @@ public class Main_GUI extends JFrame {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            new DangNhap_GUI().setVisible(true);
+            TaiKhoan_Service tkService = new TaiKhoan_Service();
+            String savedToken = tkService.layTokenDaLuu();
+            if (savedToken != null && tkService.tokenHopLe(savedToken)) {
+                new Main_GUI(tkService, savedToken).setVisible(true);
+            } else {
+                new DangNhap_GUI().setVisible(true);
+            }
         });
     }
 }

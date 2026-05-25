@@ -127,93 +127,87 @@ public class TraCuuHoaDon_GUI extends JPanel {
         pnlNorth.add(buildCardTitleRow());
         card.add(pnlNorth, BorderLayout.NORTH);
 
-        //====="CENTER – Hàng tìm kiếm: pairTimKiem bên trái (WEST), pairTuKhoa giãn rộng (CENTER)"=====
-        JPanel pnlCenter = new JPanel();
-        pnlCenter.setLayout(new BoxLayout(pnlCenter, BoxLayout.X_AXIS));
-        pnlCenter.setOpaque(false);
-        pnlCenter.setBorder(BorderFactory.createEmptyBorder(4, 12, 8, 12));
+        // ===Hang tat ca fields: 4 cot deu nhau===
+        JPanel pnlFields = new JPanel();
+        pnlFields.setLayout(new BoxLayout(pnlFields, BoxLayout.X_AXIS));
+        pnlFields.setOpaque(false);
+        pnlFields.setBorder(BorderFactory.createEmptyBorder(4, 12, 12, 12));
 
-        // Cặp: label "Tìm kiếm theo" + cboTimKiemTheo – căn trái (WEST)
         JPanel pairTimKiem = new JPanel();
         pairTimKiem.setLayout(new BoxLayout(pairTimKiem, BoxLayout.Y_AXIS));
         pairTimKiem.setOpaque(false);
+        pairTimKiem.setAlignmentY(Component.TOP_ALIGNMENT);
         JLabel lblTimKiemTheo = fieldLabel("Tìm kiếm theo");
         lblTimKiemTheo.setAlignmentX(Component.LEFT_ALIGNMENT);
         pairTimKiem.add(lblTimKiemTheo);
         pairTimKiem.add(Box.createVerticalStrut(4));
         cboTimKiemTheo = new RoundedComboBox<>(10);
-        cboTimKiemTheo.addItem("Mã hóa đơn");
-        cboTimKiemTheo.addItem("Khách hàng");
-        cboTimKiemTheo.addItem("Nhân viên tạo");
-        cboTimKiemTheo.setPreferredSize(new Dimension(200, 50));
+        cboTimKiemTheo.addItem("M\u00e3 h\u00f3a \u0111\u01a1n");
+        cboTimKiemTheo.addItem("Kh\u00e1ch h\u00e0ng");
+        cboTimKiemTheo.addItem("Nh\u00e2n vi\u00ean t\u1ea1o");
         cboTimKiemTheo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        cboTimKiemTheo.setMaximumSize(new Dimension(200, 44));
         pairTimKiem.add(cboTimKiemTheo);
-        pairTimKiem.setMaximumSize(new Dimension(216, Integer.MAX_VALUE));
-        pnlCenter.add(pairTimKiem);
-        pnlCenter.add(Box.createHorizontalStrut(16));
+        pnlFields.add(pairTimKiem);
+        pnlFields.add(Box.createHorizontalStrut(10));
 
-        // Cặp: label "Từ khóa" + txtKeyword – giãn rộng (CENTER)
         JPanel pairTuKhoa = new JPanel();
         pairTuKhoa.setLayout(new BoxLayout(pairTuKhoa, BoxLayout.Y_AXIS));
-        pairTuKhoa.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 20));
         pairTuKhoa.setOpaque(false);
+        pairTuKhoa.setAlignmentY(Component.TOP_ALIGNMENT);
         JLabel lblTuKhoa = fieldLabel("Từ khóa");
         lblTuKhoa.setAlignmentX(Component.LEFT_ALIGNMENT);
         pairTuKhoa.add(lblTuKhoa);
         pairTuKhoa.add(Box.createVerticalStrut(4));
-        txtKeyword = new RoundedTextField(800, 50, 10, "Nhập mã hóa đơn...");
+        txtKeyword = new RoundedTextField(800, 44, 10, "Nhập mã hóa đơn...");
         txtKeyword.setAlignmentX(Component.LEFT_ALIGNMENT);
-        txtKeyword.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
+        txtKeyword.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
         pairTuKhoa.add(txtKeyword);
-        pairTuKhoa.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
-        pnlCenter.add(pairTuKhoa);
+        pnlFields.add(pairTuKhoa);
+        pnlFields.add(Box.createHorizontalStrut(10));
 
-        card.add(pnlCenter, BorderLayout.CENTER);
-
-        //====="SOUTH – Hàng ngày lọc + nút Xóa lọc và Tìm kiếm (nhãn nằm trên spinner)"=====
-        JPanel pnlSouth = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
-        pnlSouth.setOpaque(false);
-        pnlSouth.setBorder(BorderFactory.createEmptyBorder(0, 12, 8, 12));
-
-        // Cặp: label "Từ ngày" + spnTuNgay
         JPanel pairTuNgay = new JPanel();
         pairTuNgay.setLayout(new BoxLayout(pairTuNgay, BoxLayout.Y_AXIS));
         pairTuNgay.setOpaque(false);
-        JLabel lblTuNgay = fieldLabel("Từ ngày");
+        pairTuNgay.setAlignmentY(Component.TOP_ALIGNMENT);
+        JLabel lblTuNgay = fieldLabel("T\u1eeb ng\u00e0y");
         lblTuNgay.setAlignmentX(Component.LEFT_ALIGNMENT);
         pairTuNgay.add(lblTuNgay);
         pairTuNgay.add(Box.createVerticalStrut(4));
         spnTuNgay = makeDateSpinner();
         spnTuNgay.setAlignmentX(Component.LEFT_ALIGNMENT);
+        spnTuNgay.setMaximumSize(new Dimension(200, 44));
         pairTuNgay.add(spnTuNgay);
-        pnlSouth.add(pairTuNgay);
-        pnlSouth.add(Box.createHorizontalStrut(10));
-        // Cặp: label "Đến ngày" + spnDenNgay
+        pnlFields.add(pairTuNgay);
+        pnlFields.add(Box.createHorizontalStrut(10));
+
         JPanel pairDenNgay = new JPanel();
         pairDenNgay.setLayout(new BoxLayout(pairDenNgay, BoxLayout.Y_AXIS));
         pairDenNgay.setOpaque(false);
-        JLabel lblDenNgay = fieldLabel("Đến ngày");
+        pairDenNgay.setAlignmentY(Component.TOP_ALIGNMENT);
+        JLabel lblDenNgay = fieldLabel("\u0110\u1ebfn ng\u00e0y");
         lblDenNgay.setAlignmentX(Component.LEFT_ALIGNMENT);
         pairDenNgay.add(lblDenNgay);
         pairDenNgay.add(Box.createVerticalStrut(4));
         spnDenNgay = makeDateSpinner();
         spnDenNgay.setAlignmentX(Component.LEFT_ALIGNMENT);
+        spnDenNgay.setMaximumSize(new Dimension(200, 44));
         pairDenNgay.add(spnDenNgay);
-        pnlSouth.add(pairDenNgay);
-        pnlSouth.add(Box.createHorizontalStrut(345));
+        pnlFields.add(pairDenNgay);
+        pnlFields.add(Box.createHorizontalStrut(10));
 
+        card.add(pnlFields, BorderLayout.CENTER);
+
+        // ===Hang nut bam can phai===
         pairButton = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        pairButton.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0));
-        pairButton.setBackground(Colors.BACKGROUND);
-
-        btnXoaLoc = new RoundedButton(130, 50, 10, "\u2715  Xóa lọc", Colors.SECONDARY);
+        pairButton.setOpaque(false);
+        pairButton.setBorder(BorderFactory.createEmptyBorder(0, 12, 12, 12));
+        btnXoaLoc = new RoundedButton(130, 44, 10, "\u2715  X\u00f3a l\u1ecdc", Colors.SECONDARY);
         btnXoaLoc.setForeground(Colors.TEXT_PRIMARY);
         pairButton.add(btnXoaLoc);
-
-        btnTimKiem = new RoundedButton(150, 50, 10, "\uD83D\uDD0D  Tìm kiếm", Colors.PRIMARY);
+        btnTimKiem = new RoundedButton(150, 44, 10, "\uD83D\uDD0D  T\u00ecm ki\u1ebfm", Colors.PRIMARY);
         pairButton.add(btnTimKiem);
-        pnlSouth.add(pairButton);
-        card.add(pnlSouth, BorderLayout.SOUTH);
+        card.add(pairButton, BorderLayout.SOUTH);
 
         //====="Gắn sự kiện cho các thành phần điều khiển bộ lọc"=====
         cboTimKiemTheo.addActionListener(e -> {
@@ -610,6 +604,9 @@ public class TraCuuHoaDon_GUI extends JPanel {
         JLabel l = new JLabel(text);
         l.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
         l.setForeground(Colors.TEXT_PRIMARY);
+        l.setHorizontalAlignment(SwingConstants.LEFT);
+        l.setAlignmentX(Component.LEFT_ALIGNMENT);
+        l.setMaximumSize(new Dimension(Integer.MAX_VALUE, l.getPreferredSize().height));
         return l;
     }
 
@@ -660,13 +657,13 @@ public class TraCuuHoaDon_GUI extends JPanel {
     //====="Lấy tên khách hàng từ hóa đơn, trả về chuỗi rỗng nếu không có"=====
     private String safeKHName(HoaDon hd) {
         return hd.getKhachHang() != null && hd.getKhachHang().getTenKhachHang() != null
-                ? hd.getKhachHang().getTenKhachHang() : "";
+                ? hd.getKhachHang().getTenKhachHang() : "Khách vãng lai";
     }
 
     //====="Lấy số điện thoại khách hàng từ hóa đơn, trả về chuỗi rỗng nếu không có"=====
     private String safeKHPhone(HoaDon hd) {
         return hd.getKhachHang() != null && hd.getKhachHang().getSoDienThoai() != null
-                ? hd.getKhachHang().getSoDienThoai() : "";
+                ? hd.getKhachHang().getSoDienThoai() : "Không có";
     }
 
     //====="Lấy tên nhân viên tạo hóa đơn, trả về chuỗi rỗng nếu không có"=====

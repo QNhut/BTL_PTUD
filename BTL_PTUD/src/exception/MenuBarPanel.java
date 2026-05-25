@@ -31,12 +31,14 @@ public class MenuBarPanel extends JPanel {
         xuLy.addSubMenu("Tạo phiếu nhập", "data/img/icons/open-box.png", "NhapHang");
         xuLy.addSubMenu("Đổi hàng", "data/img/icons/commercial.png", "DoiHang");
         xuLy.addSubMenu("Trả hàng", "data/img/icons/exchange.png", "TraHang");
+        xuLy.addSubMenu("Đặt Thuốc", "", "DatTruoc");
 
         MenuButton traCuu = createMenu("TRA CỨU");
         traCuu.addSubMenu("Hoá đơn", "data/img/icons/invoice.png", "TraCuuHoaDon");
         traCuu.addSubMenu("Phiếu nhập", "data/img/icons/invoice_1.png", "TraCuuPhieuNhap");
         traCuu.addSubMenu("Đổi hàng", "data/img/icons/commercial.png", "TraCuuDoiHang");
         traCuu.addSubMenu("Trả hàng", "data/img/icons/exchange.png", "TraCuuTraHang");
+        traCuu.addSubMenu("Đặc thuốc", "", "TraCuuDatThuoc");
 
         MenuButton thongKe = createMenu("THỐNG KÊ");
         thongKe.addSubMenu("Doanh thu", "data/img/icons/up.png", "ThongKeDoanhThu");

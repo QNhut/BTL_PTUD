@@ -78,7 +78,7 @@ public class NhanVien_DAO {
             stmt.setString(2, nv.getTenNhanVien());
             stmt.setBoolean(3, nv.isGioiTinh());
             stmt.setString(4, nv.getSoDienThoai());
-            stmt.setString(5, nv.getEmail());
+            stmt.setString(5, nv.getEmail() != null ? nv.getEmail() : "");
             stmt.setString(6, nv.getCCCD());
 
             if (nv.getDiaChi() == null) {
@@ -120,7 +120,7 @@ public class NhanVien_DAO {
             stmt.setString(1, nv.getTenNhanVien());
             stmt.setBoolean(2, nv.isGioiTinh());
             stmt.setString(3, nv.getSoDienThoai());
-            stmt.setString(4, nv.getEmail());
+            stmt.setString(4, nv.getEmail() != null ? nv.getEmail() : "");
             stmt.setString(5, nv.getCCCD());
 
             if (nv.getDiaChi() == null) {
@@ -229,12 +229,15 @@ public class NhanVien_DAO {
                             try {
                                 int stt = Integer.parseInt(maxMa.substring(pattern.length())) + 1;
                                 return pattern + String.format("%03d", stt);
-                            } catch (NumberFormatException ignored) {}
+                            } catch (NumberFormatException ignored) {
+                            }
                         }
                     }
                 }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return pattern + "001";
     }
 }

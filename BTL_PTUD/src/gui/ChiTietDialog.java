@@ -13,13 +13,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 
-/**
- * Dialog hiển thị chi tiết phiếu/hóa đơn dạng card với: - Header: icon + tiêu
- * đề + nút đóng - 2 card thông tin trái-phải (LinkedHashMap label → value) -
- * Bảng danh sách sản phẩm - Khu vực tổng kết tiền (label, value, isHighlight)
- *
- * Dùng chung cho TraCuuHoaDon, TraCuuPhieuNhap, TraCuuDoiHang, TraCuuTraHang.
- */
+// ===Dialog chi tiết dùng chung: header + 2 card info + bảng SP + tổng kết===
 public class ChiTietDialog extends JDialog {
 
     public static final NumberFormat MONEY = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
@@ -60,7 +54,7 @@ public class ChiTietDialog extends JDialog {
         body.setBackground(Color.WHITE);
         body.setBorder(new EmptyBorder(0, 20, 20, 20));
 
-        // Hàng 2 card thông tin
+        // ===2 card thông tin trái/phải===
         JPanel infoRow = new JPanel(new GridLayout(1, 2, 16, 0));
         infoRow.setOpaque(false);
         infoRow.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -69,7 +63,7 @@ public class ChiTietDialog extends JDialog {
         body.add(infoRow);
         body.add(Box.createVerticalStrut(16));
 
-        // Tiêu đề bảng sản phẩm
+        // ===Tiêu đề section bảng===
         if (productSectionTitle != null) {
             JLabel lblSection = new JLabel(productSectionTitle);
             lblSection.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
@@ -79,7 +73,7 @@ public class ChiTietDialog extends JDialog {
             body.add(Box.createVerticalStrut(8));
         }
 
-        // Bảng sản phẩm
+        // ===Bảng sản phẩm===
         if (columnNames != null && rows != null) {
             JComponent table = buildProductTable(columnNames, rows, rightAlignColumns);
             table.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -87,7 +81,7 @@ public class ChiTietDialog extends JDialog {
             body.add(Box.createVerticalStrut(16));
         }
 
-        // Tổng kết
+        // ===Card tổng kết===
         if (summary != null && !summary.isEmpty()) {
             JPanel summaryCard = buildSummaryCard(summary);
             summaryCard.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -107,7 +101,7 @@ public class ChiTietDialog extends JDialog {
         setLocationRelativeTo(parent);
     }
 
-    // ─── Header ──────────────────────────────────────────────
+    // ===buildHeader: icon + tiêu đề + nút đóng X===
     private JPanel buildHeader(String iconEmoji, String title) {
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(Color.WHITE);
@@ -137,7 +131,7 @@ public class ChiTietDialog extends JDialog {
         return header;
     }
 
-    // ─── Card thông tin (label : value) ──────────────────────
+    // ===buildInfoCard: card nền xám bo góc, danh sách label:value===
     private JPanel buildInfoCard(String iconEmoji, String title, LinkedHashMap<String, String> info) {
         JPanel card = new JPanel() {
             @Override
@@ -153,7 +147,7 @@ public class ChiTietDialog extends JDialog {
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(new EmptyBorder(14, 16, 14, 16));
 
-        // Tiêu đề card
+        // ===Hàng tiêu đề card: icon + tên===
         JPanel titleRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         titleRow.setOpaque(false);
         titleRow.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -168,7 +162,7 @@ public class ChiTietDialog extends JDialog {
         card.add(titleRow);
         card.add(Box.createVerticalStrut(10));
 
-        // Các dòng label : value
+        // ===Duyệt map → mỗi entry thành 1 hàng label:value===
         for (var entry : info.entrySet()) {
             JPanel row = new JPanel(new BorderLayout(8, 0));
             row.setOpaque(false);
@@ -196,7 +190,7 @@ public class ChiTietDialog extends JDialog {
         return card;
     }
 
-    // ─── Bảng sản phẩm ────────────────────────────────────────
+    // ===buildProductTable: JTable read-only, cột chỉ định căn phải===
     private JComponent buildProductTable(String[] cols, List<Object[]> rows, int[] rightCols) {
         DefaultTableModel model = new DefaultTableModel(cols, 0) {
             @Override
@@ -256,15 +250,15 @@ public class ChiTietDialog extends JDialog {
 
         JScrollPane sp = new JScrollPane(table);
         sp.setBorder(BorderFactory.createLineBorder(new Color(230, 233, 238), 1));
-        // Hiển thị tối đa 12 dòng (trước đây 8) và chiều cao tối thiểu lớn hơn
-        int h = Math.min(rows.size(), 12) * 34 + 38;
+        // ===Chiều cao: tối đa 12 dòng, tối thiểu 260px===
+        int h = Math.min(rows.size(), 6) * 34 + 38;
         int target = Math.max(260, h);
         sp.setPreferredSize(new Dimension(0, target));
         sp.setMaximumSize(new Dimension(Integer.MAX_VALUE, target));
         return sp;
     }
 
-    // ─── Card tổng kết ────────────────────────────────────────
+    // ===buildSummaryCard: card nền xám, mỗi SummaryRow thành 1 hàng label↔giá===
     private JPanel buildSummaryCard(List<SummaryRow> rows) {
         JPanel card = new JPanel() {
             @Override
@@ -290,7 +284,6 @@ public class ChiTietDialog extends JDialog {
 
             JLabel lblV = new JLabel(r.value);
             lblV.setHorizontalAlignment(SwingConstants.RIGHT);
-            // Thu nhỏ font (BASE thay LG cho dòng tổng) để gọn gàng hơn
             lblV.setFont(FontStyle.font(r.bold ? FontStyle.BASE : FontStyle.SM, FontStyle.BOLD));
             lblV.setForeground(r.valueColor != null ? r.valueColor : Colors.TEXT_PRIMARY);
 
@@ -299,16 +292,9 @@ public class ChiTietDialog extends JDialog {
             card.add(row);
         }
 
-        // Bọc card vào panel ngoài: căn phải, chiếm khoảng 45% bề rộng
-        JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.setOpaque(false);
-        wrapper.setAlignmentX(Component.LEFT_ALIGNMENT);
-        JPanel spacer = new JPanel();
-        spacer.setOpaque(false);
-        wrapper.add(spacer, BorderLayout.CENTER);
-        wrapper.add(card, BorderLayout.EAST);
-        card.setPreferredSize(new Dimension(380, card.getPreferredSize().height));
-        return wrapper;
+        card.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, card.getPreferredSize().height));
+        return card;
     }
 
     private String escape(String s) {

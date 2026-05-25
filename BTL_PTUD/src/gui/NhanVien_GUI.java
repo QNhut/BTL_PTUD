@@ -476,11 +476,15 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
                         lblAnhPreview.setText(null);
                     }
                 }
-            } catch (Exception ex) { System.out.println("[NhanVien] Exception loading image: " + ex); }
+            } catch (Exception ex) {
+                System.out.println("[NhanVien] Exception loading image: " + ex);
+            }
         }
         lblAnhPreview.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent e) {
-                if (!editMode[0]) return;
+                if (!editMode[0]) {
+                    return;
+                }
                 JFileChooser chooser = new JFileChooser();
                 chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
                         "Ảnh (PNG, JPG, JPEG)", "png", "jpg", "jpeg", "gif"));
@@ -490,7 +494,9 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
                         String ext = sel.getName().contains(".") ? sel.getName().substring(sel.getName().lastIndexOf('.')) : ".png";
                         String destName = nhanVien.getMaNhanVien().toLowerCase() + ext;
                         File destDir = new File("data/img/users");
-                        if (!destDir.exists()) destDir.mkdirs();
+                        if (!destDir.exists()) {
+                            destDir.mkdirs();
+                        }
                         File dest = new File(destDir, destName);
                         Files.copy(sel.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
                         currentImagePath[0] = "users/" + destName;
@@ -608,8 +614,12 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
         java.util.ArrayList<entity.ChucVu> dsCV = nhanVienSV.getDSChucVu();
         JComboBox<entity.ChucVu> cboChucVu = new JComboBox<>();
         cboChucVu.addItem(null);
-        for (entity.ChucVu cv : dsCV) cboChucVu.addItem(cv);
-        if (nhanVien.getChucVu() != null) cboChucVu.setSelectedItem(nhanVien.getChucVu());
+        for (entity.ChucVu cv : dsCV) {
+            cboChucVu.addItem(cv);
+        }
+        if (nhanVien.getChucVu() != null) {
+            cboChucVu.setSelectedItem(nhanVien.getChucVu());
+        }
         cboChucVu.setRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> lst, Object value,
@@ -641,7 +651,7 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
                 .add(txtTenNV, errTen, Validators::tenNguoi)
                 .add(txtCCCD, errCCCD, Validators::cccd)
                 .add(txtSDT, errSDT, Validators::soDienThoai)
-                .add(txtEmail, errEmail, Validators::emailOptional);
+                .add(txtEmail, errEmail, Validators::email);
 
         JPanel pnlFooter = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 12));
         pnlFooter.setOpaque(false);
@@ -680,7 +690,9 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
         });
 
         btnSave.addActionListener(e -> {
-            if (!fv.validateAll()) return;
+            if (!fv.validateAll()) {
+                return;
+            }
             int confirm = JOptionPane.showConfirmDialog(dialog,
                     "Bạn có chắc muốn lưu thay đổi?", "Xác nhận", JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
@@ -720,29 +732,41 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
         dialog.setVisible(true);
     }
 
-
     // Thử tìm file ảnh theo nhiều prefix khác nhau
     private File resolveImageFile(String path) {
-        if (path == null || path.isEmpty()) return null;
+        if (path == null || path.isEmpty()) {
+            return null;
+        }
         // 1. Absolute hoặc relative so với working dir
         File f = new File(path);
-        if (f.exists()) return f;
+        if (f.exists()) {
+            return f;
+        }
         // 2. Relative so với working dir + data/img/
         f = new File("data/img/" + path);
-        if (f.exists()) return f;
+        if (f.exists()) {
+            return f;
+        }
         // 3. Tìm theo tên file trong users/
         f = new File("data/img/users/" + new File(path).getName());
-        if (f.exists()) return f;
+        if (f.exists()) {
+            return f;
+        }
         // 4. Dùng project root qua class location (phòng khi working dir khác)
         try {
             File jar = new File(NhanVien_GUI.class.getProtectionDomain().getCodeSource().getLocation().toURI());
             // jar là bin/ hoặc .jar — lấy thư mục chứa nó = project root
             File root = jar.isDirectory() ? jar.getParentFile() : jar.getParentFile();
             f = new File(root, "data/img/" + path);
-            if (f.exists()) return f;
+            if (f.exists()) {
+                return f;
+            }
             f = new File(root, "data/img/users/" + new File(path).getName());
-            if (f.exists()) return f;
-        } catch (Exception ignored) {}
+            if (f.exists()) {
+                return f;
+            }
+        } catch (Exception ignored) {
+        }
         return null;
     }
 
@@ -1075,7 +1099,9 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
                         String ext = sel.getName().contains(".") ? sel.getName().substring(sel.getName().lastIndexOf('.')) : ".png";
                         String destName = maNV.toLowerCase() + ext;
                         File destDir = new File("data/img/users");
-                        if (!destDir.exists()) destDir.mkdirs();
+                        if (!destDir.exists()) {
+                            destDir.mkdirs();
+                        }
                         File dest = new File(destDir, destName);
                         Files.copy(sel.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
                         selectedImagePath[0] = "users/" + destName;
@@ -1180,7 +1206,9 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
         java.util.ArrayList<entity.ChucVu> dsCV = nhanVienSV.getDSChucVu();
         JComboBox<entity.ChucVu> cboChucVu = new JComboBox<>();
         cboChucVu.addItem(null);
-        for (entity.ChucVu cv : dsCV) cboChucVu.addItem(cv);
+        for (entity.ChucVu cv : dsCV) {
+            cboChucVu.addItem(cv);
+        }
         cboChucVu.setRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> lst, Object value,
@@ -1210,7 +1238,7 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
                 .add(txtTenNV, errTen, Validators::tenNguoi)
                 .add(txtCCCD, errCCCD, Validators::cccd)
                 .add(txtSDT, errSDT, Validators::soDienThoai)
-                .add(txtEmail2, errEmail, Validators::emailOptional);
+                .add(txtEmail2, errEmail, Validators::email);
 
         JPanel pnlFooter = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 12));
         pnlFooter.setOpaque(false);
@@ -1226,7 +1254,9 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
 
         btnHuy.addActionListener(ev -> dialog.dispose());
         btnThem.addActionListener(ev -> {
-            if (!fv.validateAll()) return;
+            if (!fv.validateAll()) {
+                return;
+            }
             try {
                 entity.ChucVu selectedCV = (entity.ChucVu) cboChucVu.getSelectedItem();
                 NhanVien nv = new NhanVien(
