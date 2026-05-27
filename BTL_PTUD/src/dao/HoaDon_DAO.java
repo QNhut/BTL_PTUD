@@ -24,10 +24,11 @@ public class HoaDon_DAO {
     // Lưu ý: bảng HoaDon hiện không có các cột TienHang/TienThue/TienGiamGia/DiemSuDung/ThanhTien
     // → các giá trị này sẽ được suy ra từ TongTien trong mapHoaDon().
     private static final String SELECT_HOA_DON
-            = "SELECT hd.MaHoaDon, hd.NgayLap, hd.MaKhachHang, hd.MaNhanVien, hd.MaPTTT, "
+            = "SELECT hd.MaHoaDon, hd.NgayLap, hd.TrangThai, hd.GhiChu, hd.MaKhachHang, hd.MaNhanVien, hd.MaPTTT, "
             + "COALESCE((SELECT SUM(c.SoLuong * c.DonGia) FROM ChiTietHoaDon c WHERE c.MaHoaDon = hd.MaHoaDon), 0) AS TongTien, "
-            + "COALESCE(kh.DiemTichLuy, 0) AS DiemTichLuy "
-            + "FROM HoaDon hd LEFT JOIN KhachHang kh ON hd.MaKhachHang = kh.MaKhachHang";
+            + "COALESCE(kh.DiemTichLuy, 0) AS DiemTichLuy, kh.TenKhachHang, kh.SoDienThoai, nv.TenNhanVien "
+            + "FROM HoaDon hd LEFT JOIN KhachHang kh ON hd.MaKhachHang = kh.MaKhachHang "
+            + "LEFT JOIN NhanVien nv ON hd.MaNhanVien = nv.MaNhanVien";
 
     public ArrayList<HoaDon> getDSHoaDon() {
         ArrayList<HoaDon> dsHD = new ArrayList<HoaDon>();
@@ -46,24 +47,91 @@ public class HoaDon_DAO {
     }
 
     public boolean taoHoaDon(HoaDon hd) {
-        // Bảng HoaDon hiện chỉ có các cột cơ bản; breakdown (TienHang/TienThue/...)
-        // được tính lại từ ChiTietHoaDon khi load nên không cần lưu DB.
-        String sql = "INSERT INTO HoaDon (MaHoaDon, NgayLap, MaKhachHang, MaNhanVien, MaPTTT) "
-                + "VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO HoaDon (MaHoaDon, NgayLap, TrangThai, MaKhachHang, MaNhanVien, MaPTTT, GhiChu) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?)";
         try {
             con = ConnectDB.getInstance().getConnection();
             try (PreparedStatement stmt = con.prepareStatement(sql)) {
                 stmt.setString(1, hd.getMaHoaDon());
                 stmt.setTimestamp(2, java.sql.Timestamp.valueOf(hd.getNgayLap()));
-                stmt.setString(3, hd.getKhachHang().getMaKhachHang());
-                stmt.setString(4, hd.getNhanVien().getMaNhanVien());
-                stmt.setString(5, hd.getMaPTTT());
+                stmt.setNString(3, hd.getTrangThai() != null ? hd.getTrangThai() : HoaDon.TRANG_THAI_DA_THANH_TOAN);
+                stmt.setString(4, hd.getKhachHang().getMaKhachHang());
+                stmt.setString(5, hd.getNhanVien().getMaNhanVien());
+                stmt.setString(6, hd.getMaPTTT());
+                stmt.setNString(7, hd.getGhiChu());
                 return stmt.executeUpdate() > 0;
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return false;
+    }
+
+    public boolean capNhatTrangThai(String maHD, String trangThai) {
+        String sql = "UPDATE HoaDon SET TrangThai = ? WHERE MaHoaDon = ?";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (PreparedStatement stmt = con.prepareStatement(sql)) {
+                stmt.setNString(1, trangThai);
+                stmt.setString(2, maHD);
+                return stmt.executeUpdate() > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // Cập nhật TrangThai bằng Connection có sẵn (dùng trong transaction).
+    public boolean capNhatTrangThai(java.sql.Connection con, String maHD, String trangThai) throws SQLException {
+        String sql = "UPDATE HoaDon SET TrangThai = ? WHERE MaHoaDon = ?";
+        try (PreparedStatement stmt = con.prepareStatement(sql)) {
+            stmt.setNString(1, trangThai);
+            stmt.setString(2, maHD);
+            return stmt.executeUpdate() > 0;
+        }
+    }
+
+    // Cập nhật MaPTTT bằng Connection có sẵn (dùng trong transaction).
+    public boolean capNhatMaPTTT(java.sql.Connection con, String maHD, String maPTTT) throws SQLException {
+        String sql = "UPDATE HoaDon SET MaPTTT = ? WHERE MaHoaDon = ?";
+        try (PreparedStatement stmt = con.prepareStatement(sql)) {
+            stmt.setString(1, maPTTT);
+            stmt.setString(2, maHD);
+            return stmt.executeUpdate() > 0;
+        }
+    }
+
+    // Cập nhật NgayLap (thực tế thanh toán) và GhiChu (ghi nhận trễ/đúng hẹn) trong transaction.
+    public boolean capNhatNgayLapVaGhiChu(java.sql.Connection con, String maHD,
+            LocalDateTime ngayLap, String ghiChu) throws SQLException {
+        String sql = "UPDATE HoaDon SET NgayLap = ?, GhiChu = ? WHERE MaHoaDon = ?";
+        try (PreparedStatement stmt = con.prepareStatement(sql)) {
+            stmt.setTimestamp(1, java.sql.Timestamp.valueOf(ngayLap));
+            stmt.setNString(2, ghiChu);
+            stmt.setString(3, maHD);
+            return stmt.executeUpdate() > 0;
+        }
+    }
+
+    // Lấy danh sách hóa đơn theo trạng thái (ví dụ "Chờ thanh toán").
+    public ArrayList<HoaDon> layDSHoaDonTheoTrangThai(String trangThai) {
+        ArrayList<HoaDon> ds = new ArrayList<>();
+        String sql = SELECT_HOA_DON + " WHERE hd.TrangThai = ? ORDER BY hd.NgayLap DESC";
+        try {
+            con = ConnectDB.getInstance().getConnection();
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setNString(1, trangThai);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        ds.add(mapHoaDon(rs));
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return ds;
     }
 
     public HoaDon layHDTheoMa(String maHD) {
@@ -101,14 +169,29 @@ public class HoaDon_DAO {
     private HoaDon mapHoaDon(ResultSet rs) throws SQLException {
         String maHoaDon = rs.getString("MaHoaDon");
         LocalDateTime ngayLap = rs.getTimestamp("NgayLap").toLocalDateTime();
-        KhachHang khachHang = new KhachHang(rs.getString("MaKhachHang"));
-        NhanVien nhanVien = new NhanVien(rs.getString("MaNhanVien"));
+        String trangThai = rs.getString("TrangThai");
+        String maKH = rs.getString("MaKhachHang");
+        String tenKH = rs.getString("TenKhachHang");
+        String sdtKH = rs.getString("SoDienThoai");
+        KhachHang khachHang;
+        if (maKH != null && tenKH != null && !tenKH.isBlank() && sdtKH != null && !sdtKH.isBlank()) {
+            khachHang = new KhachHang(maKH, tenKH, sdtKH, null, true, 0, true);
+        } else {
+            khachHang = new KhachHang(maKH);
+        }
+        String maNV = rs.getString("MaNhanVien");
+        String tenNV = rs.getString("TenNhanVien");
+        NhanVien nhanVien = new NhanVien(maNV);
+        if (tenNV != null && !tenNV.isBlank()) {
+            nhanVien.setTenNhanVien(tenNV);
+        }
         String maPTTT = rs.getString("MaPTTT");
         double tongTien = rs.getDouble("TongTien");
         int diemTichLuy = rs.getInt("DiemTichLuy");
         HoaDon hd = new HoaDon(maHoaDon, ngayLap, tongTien, diemTichLuy, maPTTT, nhanVien, khachHang);
+        hd.setTrangThai(trangThai);
+        hd.setGhiChu(rs.getString("GhiChu"));
 
-        // Bảng HoaDon không lưu breakdown → suy ra từ TongTien (giá hàng).
         hd.setTienHang(tongTien);
         hd.setTienThue(0);
         hd.setTienGiamGia(0);

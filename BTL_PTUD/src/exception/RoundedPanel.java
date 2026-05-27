@@ -11,6 +11,7 @@ import javax.swing.JPanel;
 //======CÁCH DÙNG=======
 //Gọi JPanel jplA = new RoundedPanel(int width, int height, int radius)
 //Ví dụ: JPanel jplA = new RoundedPanel(200, 30, 20)
+@SuppressWarnings("serial")
 public class RoundedPanel extends JPanel {
 
     private int cornerRadius;

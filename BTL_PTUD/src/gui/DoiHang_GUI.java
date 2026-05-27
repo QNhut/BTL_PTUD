@@ -11,6 +11,7 @@ import entity.SanPham;
 import exception.RoundedButton;
 import exception.RoundedPanel;
 import exception.RoundedToggleButton;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.text.DecimalFormat;
@@ -20,6 +21,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 
+@SuppressWarnings("serial")
 public class DoiHang_GUI extends JPanel {
 
     // ===DAOs & Services===
@@ -44,6 +46,9 @@ public class DoiHang_GUI extends JPanel {
     private JPanel pnlReasonListPanel, pnlReasonManualPanel;
     private JComboBox<String> cbReasonPreset;
     private JTextField txtReasonCustom;
+    private JComboBox<entity.PhuongThucThanhToan> cbPhuongThuc;
+    private JPanel pnlPhuongThucRow;
+    private final dao.PhuongThucThanhToan_DAO ptttDAO = new dao.PhuongThucThanhToan_DAO();
 
     // ===Trạng thái===
     private final DecimalFormat df = new DecimalFormat("#,###");
@@ -73,7 +78,7 @@ public class DoiHang_GUI extends JPanel {
 
         JPanel pnlCenter = new JPanel(new GridLayout(1, 2, 20, 0));
         pnlCenter.setOpaque(false);
-        pnlCenter.setBorder(new EmptyBorder(20, 25, 25, 25));
+        pnlCenter.setBorder(new EmptyBorder(20, 20, 20, 20));
         pnlCenter.add(createLeftPanel());
         pnlCenter.add(createRightPanel());
         add(pnlCenter, BorderLayout.CENTER);
@@ -81,20 +86,21 @@ public class DoiHang_GUI extends JPanel {
 
     // ===Header tiêu đề màn hình===
     private JPanel createHeader() {
-        JPanel pnl = new JPanel(new BorderLayout());
-        pnl.setBackground(Colors.PRIMARY);
-        pnl.setBorder(new EmptyBorder(25, 25, 20, 25));
+        JPanel pnl = new JPanel();
+        pnl.setLayout(new BoxLayout(pnl, BoxLayout.Y_AXIS));
+        pnl.setBackground(Colors.BACKGROUND);
+        pnl.setBorder(new EmptyBorder(20, 25, 0, 25));
 
-        JLabel lblTitle = new JLabel("↩ Quản Lý Đổi Hàng");
-        lblTitle.setFont(FontStyle.font(FontStyle.LG, FontStyle.BOLD));
-        lblTitle.setForeground(Color.WHITE);
+        JLabel lblTitle = new JLabel("Đổi hàng");
+        lblTitle.setFont(FontStyle.font(FontStyle.XXL, FontStyle.BOLD));
+        lblTitle.setForeground(Colors.FOREGROUND);
 
         JLabel lblSub = new JLabel("Tìm hóa đơn cũ để chọn sản phẩm cần đổi và chọn sản phẩm mới từ tồn kho");
         lblSub.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
-        lblSub.setForeground(new Color(220, 220, 220));
+        lblSub.setForeground(Colors.MUTED);
 
-        pnl.add(lblTitle, BorderLayout.NORTH);
-        pnl.add(lblSub, BorderLayout.SOUTH);
+        pnl.add(lblTitle);
+        pnl.add(lblSub);
         return pnl;
     }
 
@@ -109,13 +115,13 @@ public class DoiHang_GUI extends JPanel {
 
     // ===Card tìm kiếm hóa đơn theo mã===
     private JPanel createSearchSection() {
-        RoundedPanel pnl = new RoundedPanel(0, 110, 12);
+        RoundedPanel pnl = new RoundedPanel(0, 130, 12);
         pnl.setBackground(Color.WHITE);
         pnl.setLayout(new BorderLayout(0, 8));
         pnl.setBorder(new EmptyBorder(18, 20, 18, 20));
 
-        JLabel lblTitle = new JLabel("📋 Đơn Hàng Cũ");
-        lblTitle.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
+        JLabel lblTitle = new JLabel("Đơn Hàng Cũ");
+        lblTitle.setFont(FontStyle.font(FontStyle.LG, FontStyle.BOLD));
         lblTitle.setForeground(Colors.TEXT_PRIMARY);
 
         JLabel lblHint = new JLabel("Nhập mã hóa đơn để tìm kiếm");
@@ -129,7 +135,7 @@ public class DoiHang_GUI extends JPanel {
                 BorderFactory.createEmptyBorder(5, 10, 5, 10)));
         txtSearchMaHD.addActionListener(e -> searchInvoice());
 
-        RoundedButton btnSearch = new RoundedButton(100, 38, 8, "🔍 Tìm", Colors.PRIMARY);
+        RoundedButton btnSearch = new RoundedButton(100, 45, 8, "Tìm", Colors.PRIMARY);
         btnSearch.setForeground(Color.WHITE);
         btnSearch.addActionListener(e -> searchInvoice());
 
@@ -160,15 +166,15 @@ public class DoiHang_GUI extends JPanel {
         pnlHeader.setOpaque(false);
         pnlHeader.setBorder(new EmptyBorder(0, 0, 8, 0));
 
-        JLabel lblTitle = new JLabel("🔄 Danh sách sản phẩm trong hóa đơn");
-        lblTitle.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
+        JLabel lblTitle = new JLabel("Danh sách sản phẩm trong hóa đơn");
+        lblTitle.setFont(FontStyle.font(FontStyle.LG, FontStyle.BOLD));
         lblTitle.setForeground(Colors.TEXT_PRIMARY);
 
         JPanel pnlBtnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         pnlBtnRow.setOpaque(false);
-        RoundedButton btnSelectQty = new RoundedButton(160, 32, 6, "↩ Chọn SL Đổi", Colors.PRIMARY);
+        RoundedButton btnSelectQty = new RoundedButton(160, 32, 6, "Chọn SL Đổi", Colors.PRIMARY);
         btnSelectQty.setForeground(Color.WHITE);
-        btnSelectQty.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
+        btnSelectQty.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
         btnSelectQty.addActionListener(e -> selectReturnQuantity());
         pnlBtnRow.add(btnSelectQty);
 
@@ -228,7 +234,7 @@ public class DoiHang_GUI extends JPanel {
 
         ButtonGroup modeGroup = new ButtonGroup();
         btnModeList = new RoundedToggleButton(190, 34, 12, "≡ Chọn từ danh sách", Colors.PRIMARY);
-        btnModeManual = new RoundedToggleButton(160, 34, 12, "✏ Nhập thủ công", Colors.PRIMARY);
+        btnModeManual = new RoundedToggleButton(160, 34, 12, "Nhập thủ công", Colors.PRIMARY);
         btnModeList.setSelected(true);
         modeGroup.add(btnModeList);
         modeGroup.add(btnModeManual);
@@ -364,8 +370,8 @@ public class DoiHang_GUI extends JPanel {
 
         JPanel pnlHeader = new JPanel(new BorderLayout());
         pnlHeader.setOpaque(false);
-        JLabel lblTitle = new JLabel("✅ Sản Phẩm Đã Chọn Đổi");
-        lblTitle.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
+        JLabel lblTitle = new JLabel("Sản Phẩm Đã Chọn Đổi");
+        lblTitle.setFont(FontStyle.font(FontStyle.LG, FontStyle.BOLD));
         lblTitle.setForeground(Colors.TEXT_PRIMARY);
         JLabel lblSub = new JLabel("Danh sách sản phẩm được chọn đổi từ hóa đơn cũ");
         lblSub.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
@@ -397,7 +403,7 @@ public class DoiHang_GUI extends JPanel {
         pnlActions.setOpaque(false);
         pnlActions.setBorder(new EmptyBorder(6, 0, 0, 0));
 
-        RoundedButton btnRemove = new RoundedButton(90, 34, 6, "🗑 Xóa", Colors.DANGER);
+        RoundedButton btnRemove = new RoundedButton(90, 34, 6, "Xóa", Colors.DANGER);
         RoundedButton btnClear = new RoundedButton(110, 34, 6, "Xóa tất cả", Colors.BORDER);
         btnRemove.setForeground(Color.WHITE);
         btnClear.setForeground(Colors.TEXT_PRIMARY);
@@ -417,8 +423,8 @@ public class DoiHang_GUI extends JPanel {
         pnl.setLayout(new BorderLayout(0, 10));
         pnl.setBorder(new EmptyBorder(18, 20, 18, 20));
 
-        JLabel lblTitle = new JLabel("📊 Tổng Kết Đổi Hàng");
-        lblTitle.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
+        JLabel lblTitle = new JLabel("Tổng Kết Đổi Hàng");
+        lblTitle.setFont(FontStyle.font(FontStyle.LG, FontStyle.BOLD));
         lblTitle.setForeground(Colors.TEXT_PRIMARY);
         pnl.add(lblTitle, BorderLayout.NORTH);
 
@@ -441,11 +447,44 @@ public class DoiHang_GUI extends JPanel {
 
         updateSummaryLabels();
 
-        RoundedButton btnConfirm = new RoundedButton(0, 44, 10, "✓ Xác Nhận Đổi Hàng", Colors.PRIMARY);
+        RoundedButton btnConfirm = new RoundedButton(0, 44, 10, "Xác Nhận Đổi Hàng", Colors.PRIMARY);
+        setButtonIcon(btnConfirm, "commercial.png", 16, 16);
         btnConfirm.setForeground(Color.WHITE);
         btnConfirm.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
         btnConfirm.addActionListener(e -> confirmExchange());
-        pnl.add(btnConfirm, BorderLayout.SOUTH);
+
+        // Hàng chọn hình thức thanh toán (chỉ hiện khi khách cần trả thêm)
+        pnlPhuongThucRow = new JPanel(new BorderLayout(0, 4));
+        pnlPhuongThucRow.setOpaque(false);
+        pnlPhuongThucRow.setBorder(new EmptyBorder(0, 0, 8, 0));
+        pnlPhuongThucRow.setVisible(false);
+
+        JLabel lblPTTT = new JLabel("Hình thức thanh toán:");
+        lblPTTT.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
+        lblPTTT.setForeground(Colors.TEXT_PRIMARY);
+
+        cbPhuongThuc = new JComboBox<>();
+        for (entity.PhuongThucThanhToan pt : ptttDAO.getDSPhuongThuc()) {
+            cbPhuongThuc.addItem(pt);
+        }
+        cbPhuongThuc.setRenderer((list, value, index, isSelected, cellHasFocus) -> {
+            JLabel lbl = new JLabel(value != null ? value.getTenPTTT() : "");
+            lbl.setOpaque(true);
+            lbl.setBackground(isSelected ? Colors.PRIMARY_LIGHT : Color.WHITE);
+            lbl.setForeground(Colors.TEXT_PRIMARY);
+            lbl.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
+            lbl.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+            return lbl;
+        });
+        cbPhuongThuc.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
+        pnlPhuongThucRow.add(lblPTTT, BorderLayout.NORTH);
+        pnlPhuongThucRow.add(cbPhuongThuc, BorderLayout.CENTER);
+
+        JPanel pnlSouthWrapper = new JPanel(new BorderLayout(0, 0));
+        pnlSouthWrapper.setOpaque(false);
+        pnlSouthWrapper.add(pnlPhuongThucRow, BorderLayout.NORTH);
+        pnlSouthWrapper.add(btnConfirm, BorderLayout.CENTER);
+        pnl.add(pnlSouthWrapper, BorderLayout.SOUTH);
         return pnl;
     }
 
@@ -467,19 +506,19 @@ public class DoiHang_GUI extends JPanel {
 
         HoaDon hd = doiHangService.getHoaDonByMa(ma);
         if (hd == null) {
-            JOptionPane.showMessageDialog(this, "❌ Không tìm thấy hóa đơn: " + ma);
+            JOptionPane.showMessageDialog(this, "Không tìm thấy hóa đơn: " + ma);
             clearOldOrder();
             return;
         }
 
         String check = doiHangService.checkDieuKienDoiHang(hd);
         if (!check.equals("OK")) {
-            int opt = JOptionPane.showConfirmDialog(this,
-                    "⚠️ " + check + "\nBạn có muốn tiếp tục không?",
-                    "Cảnh báo", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-            if (opt != JOptionPane.YES_OPTION) {
-                return;
-            }
+            JOptionPane.showMessageDialog(this,
+                    check,
+                    "Không thể đổi hàng", JOptionPane.WARNING_MESSAGE);
+            clearOldOrder();
+            clearNewOrder();
+            return;
         }
 
         List<ChiTietHoaDon> details = doiHangService.getChiTietHoaDon(ma);
@@ -548,7 +587,8 @@ public class DoiHang_GUI extends JPanel {
         tbl.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         tbl.getTableHeader().setBackground(Colors.SECONDARY);
 
-        RoundedButton btnAdd = new RoundedButton(120, 36, 6, "➕ Thêm", Colors.PRIMARY);
+        RoundedButton btnAdd = new RoundedButton(120, 36, 6, "Thêm", Colors.PRIMARY);
+        setButtonIcon(btnAdd, "open-box.png", 14, 14);
         RoundedButton btnCancel = new RoundedButton(90, 36, 6, "Hủy", Colors.TEXT_SECONDARY);
         btnAdd.setForeground(Color.WHITE);
         btnCancel.setForeground(Color.WHITE);
@@ -567,7 +607,10 @@ public class DoiHang_GUI extends JPanel {
                 if (returnItem.linkedOrderItem != null) {
                     newOrderItems.remove(returnItem.linkedOrderItem);
                 }
-                returnItem.returnQty = returnItem.boughtQty;
+                // Giữ returnQty đã đặt qua "Chọn SL Đổi"; nếu chưa đặt thì mặc định toàn bộ
+                if (returnItem.returnQty <= 0) {
+                    returnItem.returnQty = returnItem.boughtQty;
+                }
                 OrderItem newItem = new OrderItem(chosen, returnItem.returnQty);
                 newOrderItems.add(newItem);
                 returnItem.linkedOrderItem = newItem;
@@ -666,6 +709,11 @@ public class DoiHang_GUI extends JPanel {
                 + "<td><b>" + diffLabel + "</b></td>"
                 + "<td align='right'><b><font color='" + diffColor + "'>" + diffValue + "</font></b></td>"
                 + "</tr></table></html>");
+
+        // Hiển thị hình thức thanh toán chỉ khi khách cần trả thêm
+        if (pnlPhuongThucRow != null) {
+            pnlPhuongThucRow.setVisible(diff > 0);
+        }
     }
 
     // ===Xóa dòng được chọn khỏi đơn hàng mới===
@@ -741,11 +789,11 @@ public class DoiHang_GUI extends JPanel {
     // ===Validate và thực hiện giao dịch đổi hàng===
     private void confirmExchange() {
         if (currentInvoiceItems.stream().noneMatch(i -> i.returnQty > 0)) {
-            JOptionPane.showMessageDialog(this, "⚠️ Vui lòng tìm hóa đơn và chọn sản phẩm cần đổi!");
+            JOptionPane.showMessageDialog(this, "Vui lòng tìm hóa đơn và chọn sản phẩm cần đổi!");
             return;
         }
         if (newOrderItems.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "⚠️ Vui lòng chọn ít nhất một sản phẩm mới!");
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn ít nhất một sản phẩm mới!");
             return;
         }
 
@@ -753,32 +801,28 @@ public class DoiHang_GUI extends JPanel {
         String lyDo;
         if (btnModeList.isSelected()) {
             if (cbReasonPreset.getSelectedIndex() == 0) {
-                JOptionPane.showMessageDialog(this, "⚠️ Vui lòng chọn lý do đổi hàng!");
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn lý do đổi hàng!");
                 return;
             }
             lyDo = cbReasonPreset.getSelectedItem().toString();
         } else {
             String custom = txtReasonCustom.getText().trim();
             if (custom.isEmpty() || custom.equals("Nhập lý do đổi hàng...")) {
-                JOptionPane.showMessageDialog(this, "⚠️ Vui lòng nhập lý do đổi hàng!");
+                JOptionPane.showMessageDialog(this, "Vui lòng nhập lý do đổi hàng!");
                 return;
             }
             lyDo = custom;
         }
 
-        double diff = newOrderTotal - oldOrderTotal;
-        String diffText = diff > 0
-                ? "Khách cần trả thêm: " + df.format(diff) + " đ"
-                : diff < 0 ? "Cửa hàng hoàn lại: " + df.format(Math.abs(diff)) + " đ"
-                        : "Không chênh lệch";
-
-        String msg = String.format(
-                "Xác nhận đổi hàng?\n• Lý do: %s\n• Tổng hàng cũ trả: %s đ\n• Tổng hàng mới lấy: %s đ\n• %s",
-                lyDo, df.format(oldOrderTotal), df.format(newOrderTotal), diffText);
-
-        int confirm = JOptionPane.showConfirmDialog(this, msg, "Xác nhận giao dịch", JOptionPane.YES_NO_OPTION);
-        if (confirm != JOptionPane.YES_OPTION) {
-            return;
+        // Nếu khách cần thanh toán thêm → bắt buộc chọn hình thức thanh toán
+        String maPTTT = null;
+        if (newOrderTotal > oldOrderTotal) {
+            entity.PhuongThucThanhToan selectedPT = (entity.PhuongThucThanhToan) cbPhuongThuc.getSelectedItem();
+            if (selectedPT == null) {
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn hình thức thanh toán!");
+                return;
+            }
+            maPTTT = selectedPT.getMaPTTT();
         }
 
         try {
@@ -786,17 +830,16 @@ public class DoiHang_GUI extends JPanel {
             List<ChiTietHoaDon> news = buildNewList();
             String maHD = txtSearchMaHD.getText().trim();
 
-            boolean ok = doiHangService.thucHienGiaoDichDoiHang(maHD, returns, news, lyDo);
+            boolean ok = doiHangService.thucHienGiaoDichDoiHang(maHD, returns, news, lyDo, maPTTT);
             if (ok) {
                 HoaDon_GUI.stockDirty = true;
-                showPreviewDialog();
-                JOptionPane.showMessageDialog(this, "✅ Đổi hàng thành công! Dữ liệu kho đã được cập nhật.");
+                showPreviewDialog(maPTTT);
                 resetForm();
             } else {
-                JOptionPane.showMessageDialog(this, "❌ Lỗi khi cập nhật dữ liệu kho.");
+                JOptionPane.showMessageDialog(this, "Lỗi khi cập nhật dữ liệu kho.");
             }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "❌ Lỗi: " + e.getMessage());
+            JOptionPane.showMessageDialog(this, "Lỗi: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -822,7 +865,7 @@ public class DoiHang_GUI extends JPanel {
     }
 
     // ===Hiện dialog preview hóa đơn đổi hàng===
-    private void showPreviewDialog() {
+    private void showPreviewDialog(String maPTTT) {
         try {
             String maHD = txtSearchMaHD.getText().trim();
             HoaDon oldHD = hoaDonDAO.layHDTheoMa(maHD);
@@ -840,13 +883,27 @@ public class DoiHang_GUI extends JPanel {
             String thoiGian = java.time.LocalDateTime.now()
                     .format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
 
-            HoaDonPreviewDialog preview = new HoaDonPreviewDialog(
-                    (javax.swing.JFrame) SwingUtilities.getWindowAncestor(this),
-                    tenKH, "", tenNV, thoiGian, inModel);
+            HoaDonPreviewDialog preview;
+            if (maPTTT != null) {
+                entity.PhuongThucThanhToan selectedPT = (entity.PhuongThucThanhToan) cbPhuongThuc.getSelectedItem();
+                String tenPTTT = (selectedPT != null) ? selectedPT.getTenPTTT() : maPTTT;
+                long soTienTraThem = Math.round(newOrderTotal - oldOrderTotal);
+                preview = new HoaDonPreviewDialog(
+                        (javax.swing.JFrame) SwingUtilities.getWindowAncestor(this),
+                        tenKH, "", tenNV, thoiGian, inModel, tenPTTT, soTienTraThem);
+            } else {
+                preview = new HoaDonPreviewDialog(
+                        (javax.swing.JFrame) SwingUtilities.getWindowAncestor(this),
+                        tenKH, "", tenNV, thoiGian, inModel);
+            }
             preview.setVisible(true);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+    }
+
+    public void refresh() {
+        resetForm();
     }
 
     // ===Reset toàn bộ form sau khi đổi hàng thành công===
@@ -867,6 +924,24 @@ public class DoiHang_GUI extends JPanel {
         modelNewOrder.setRowCount(0);
         updateSummaryLabels();
         loadData();
+    }
+
+    private void setButtonIcon(AbstractButton button, String iconFile, int w, int h) {
+        ImageIcon icon = loadUiIcon(iconFile, w, h);
+        if (icon != null) {
+            button.setIcon(icon);
+            button.setIconTextGap(6);
+            button.setHorizontalTextPosition(SwingConstants.RIGHT);
+        }
+    }
+
+    private ImageIcon loadUiIcon(String iconFile, int w, int h) {
+        ImageIcon raw = new ImageIcon("data/img/icons/" + iconFile);
+        if (raw.getIconWidth() <= 0 || raw.getIconHeight() <= 0) {
+            return null;
+        }
+        Image scaled = raw.getImage().getScaledInstance(w, h, Image.SCALE_SMOOTH);
+        return new ImageIcon(scaled);
     }
 
     // ===Model SP cũ trong hóa đơn (cần trả lại)===

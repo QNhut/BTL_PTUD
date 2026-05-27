@@ -8,14 +8,18 @@ import exception.RoundedButton;
 import exception.RoundedPanel;
 import exception.RoundedTextField;
 import exception.StyledTable;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import javax.swing.*;
 import service.KhachHang_Service;
-import service.Validators;
+import util.AsyncLoader;
+import util.MaskUtil;
+import util.Validators;
 
+@SuppressWarnings("serial")
 public class KhachHang_GUI extends JPanel implements ActionListener {
 
     private JPanel pnlTitle, pnlContent, pnlCategory;
@@ -38,7 +42,6 @@ public class KhachHang_GUI extends JPanel implements ActionListener {
     private ArrayList<KhachHang> fullList = new ArrayList<>();
     private KhachHang_Service khachHangSV;
     private StyledTable tblKhachHang;
-    private JPanel item;
 
     private static final String[] COLUMN_NAMES = {"Khách hàng", "Liên hệ", "Giới tính", "Điểm tích lũy", "Trạng thái", "", ""};
 
@@ -139,8 +142,8 @@ public class KhachHang_GUI extends JPanel implements ActionListener {
                 v -> ((KhachHang) v).getMaKhachHang());
 
         tblKhachHang.setIconTwoLineColumn(1, 220,
-                "\u2709", v -> ((KhachHang) v).getEmail(),
-                "\u260E", v -> ((KhachHang) v).getSoDienThoai());
+                "✉", v -> MaskUtil.email(((KhachHang) v).getEmail()),
+                "☎", v -> MaskUtil.phone(((KhachHang) v).getSoDienThoai()));
 
         tblKhachHang.setSingleTextColumn(2, 100,
                 v -> ((KhachHang) v).isGioiTinh() ? "Nam" : "Nữ");
@@ -212,16 +215,13 @@ public class KhachHang_GUI extends JPanel implements ActionListener {
     }
 
     private void loadDataSafe() {
-        try {
-            ArrayList<KhachHang> dsKH = khachHangSV.getDSKhachHang();
-            if (dsKH == null || dsKH.isEmpty()) {
-                System.out.println("[KhachHang_GUI] Cảnh báo: Danh sách khách hàng rỗng");
+        AsyncLoader.run(
+            () -> khachHangSV.getDSKhachHang(),
+            dsKH -> {
+                if (dsKH != null) loadData(dsKH);
+                updateCategoryAsync();
             }
-            loadData(dsKH);
-        } catch (Exception e) {
-            System.out.println("[KhachHang_GUI] Lỗi khi tải dữ liệu khách hàng:");
-            e.printStackTrace();
-        }
+        );
     }
 
     public void loadData(ArrayList<KhachHang> dsKH) {
@@ -322,14 +322,27 @@ public class KhachHang_GUI extends JPanel implements ActionListener {
     }
 
     private void updateCategory() {
-        pnlCategory.removeAll();
-        pnlCategory.add(statCard("Tổng khách hàng", khachHangSV.getSoLuongKhachHang(), Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
-        pnlCategory.add(statCard("Đang hoạt động", khachHangSV.getSoLuongKhachHangHoatDong(), Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
-        pnlCategory.add(statCard("Ngừng hoạt động", khachHangSV.getSoLuongKhachHangNgungHoatDong(), Colors.SECONDARY, Colors.DANGER, Colors.DANGER));
-        pnlCategory.revalidate();
-        pnlCategory.repaint();
-        pnlContent.revalidate();
-        pnlContent.repaint();
+        updateCategoryAsync();
+    }
+
+    private void updateCategoryAsync() {
+        AsyncLoader.run(
+            () -> new int[]{
+                khachHangSV.getSoLuongKhachHang(),
+                khachHangSV.getSoLuongKhachHangHoatDong(),
+                khachHangSV.getSoLuongKhachHangNgungHoatDong()
+            },
+            counts -> {
+                pnlCategory.removeAll();
+                pnlCategory.add(statCard("Tổng khách hàng", counts[0], Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
+                pnlCategory.add(statCard("Đang hoạt động", counts[1], Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
+                pnlCategory.add(statCard("Ngừng hoạt động", counts[2], Colors.SECONDARY, Colors.DANGER, Colors.DANGER));
+                pnlCategory.revalidate();
+                pnlCategory.repaint();
+                pnlContent.revalidate();
+                pnlContent.repaint();
+            }
+        );
     }
 
     private JPanel statCard(String title, int value, Color bg, Color valColor, Color titleColor) {
@@ -445,9 +458,9 @@ public class KhachHang_GUI extends JPanel implements ActionListener {
 
         JPanel pnlInfoRight = createInfoBox("THÔNG TIN LIÊN HỆ", 260,
                 new String[]{"Số điện thoại", "Email"},
-                new String[]{khachHang.getSoDienThoai(),
-                    khachHang.getEmail() != null ? khachHang.getEmail() : ""},
-                new String[]{"\u260E", "\u2709"});
+                new String[]{MaskUtil.phone(khachHang.getSoDienThoai()),
+                    khachHang.getEmail() != null ? MaskUtil.email(khachHang.getEmail()) : ""},
+                new String[]{"☎", "✉"});
         pnlInfoRight.setPreferredSize(new Dimension(260, 200));
         pnlInfoRight.setMaximumSize(new Dimension(260, 200));
 

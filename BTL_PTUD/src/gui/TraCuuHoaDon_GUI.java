@@ -12,6 +12,7 @@ import exception.RoundedButton;
 import exception.RoundedComboBox;
 import exception.RoundedTextField;
 import exception.StyledTable;
+
 import java.awt.*;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
@@ -21,12 +22,16 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import javax.swing.*;
+import com.toedter.calendar.JDateChooser;
 import service.ChiTietHoaDon_Service;
 import service.HoaDon_Service;
 import service.KhachHang_Service;
 import service.NhanVien_Service;
 import service.SanPham_Service;
+import util.AsyncLoader;
+import util.MaskUtil;
 
+@SuppressWarnings("serial")
 public class TraCuuHoaDon_GUI extends JPanel {
 
     // ── Services / Data ────────────────────────────────────────
@@ -41,10 +46,8 @@ public class TraCuuHoaDon_GUI extends JPanel {
     // ── Filter controls ────────────────────────────────────────
     private RoundedComboBox<String> cboTimKiemTheo;
     private RoundedTextField txtKeyword;
-    private JSpinner spnTuNgay;
-    private JSpinner spnDenNgay;
-    private boolean tuNgayActive = false;
-    private boolean denNgayActive = false;
+    private JDateChooser dtcTuNgay;
+    private JDateChooser dtcDenNgay;
     private RoundedButton btnTimKiem;
     private RoundedButton btnXoaLoc;
 
@@ -59,7 +62,7 @@ public class TraCuuHoaDon_GUI extends JPanel {
 
     private static final String[] COLUMN_NAMES = {
         "Mã hóa đơn", "Khách hàng", "Nhân viên tạo",
-        "Thời gian", "Tổng tiền", "Thao tác"
+        "Thời gian", "Tổng tiền", "Trạng thái", "Thao tác"
     };
 
     private static final DateTimeFormatter DATE_FMT
@@ -95,12 +98,12 @@ public class TraCuuHoaDon_GUI extends JPanel {
         header.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel lblTitle = new JLabel("Tra cứu hóa đơn");
-        lblTitle.setFont(FontStyle.font(FontStyle.XL, FontStyle.BOLD));
-        lblTitle.setForeground(Colors.TEXT_PRIMARY);
+        lblTitle.setFont(FontStyle.font(FontStyle.XXL, FontStyle.BOLD));
+        lblTitle.setForeground(Colors.FOREGROUND);
 
         JLabel lblNote = new JLabel("Tìm kiếm và xem chi tiết hóa đơn trong hệ thống");
         lblNote.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
-        lblNote.setForeground(Colors.TEXT_SECONDARY);
+        lblNote.setForeground(Colors.MUTED);
 
         header.add(lblTitle);
         header.add(Box.createVerticalStrut(4));
@@ -142,11 +145,11 @@ public class TraCuuHoaDon_GUI extends JPanel {
         pairTimKiem.add(lblTimKiemTheo);
         pairTimKiem.add(Box.createVerticalStrut(4));
         cboTimKiemTheo = new RoundedComboBox<>(10);
-        cboTimKiemTheo.addItem("M\u00e3 h\u00f3a \u0111\u01a1n");
-        cboTimKiemTheo.addItem("Kh\u00e1ch h\u00e0ng");
-        cboTimKiemTheo.addItem("Nh\u00e2n vi\u00ean t\u1ea1o");
+        cboTimKiemTheo.addItem("Mã hóa đơn");
+        cboTimKiemTheo.addItem("Khách hàng");
+        cboTimKiemTheo.addItem("Nhân viên tạo");
         cboTimKiemTheo.setAlignmentX(Component.LEFT_ALIGNMENT);
-        cboTimKiemTheo.setMaximumSize(new Dimension(200, 44));
+        cboTimKiemTheo.setMaximumSize(new Dimension(250, 44));
         pairTimKiem.add(cboTimKiemTheo);
         pnlFields.add(pairTimKiem);
         pnlFields.add(Box.createHorizontalStrut(10));
@@ -159,7 +162,7 @@ public class TraCuuHoaDon_GUI extends JPanel {
         lblTuKhoa.setAlignmentX(Component.LEFT_ALIGNMENT);
         pairTuKhoa.add(lblTuKhoa);
         pairTuKhoa.add(Box.createVerticalStrut(4));
-        txtKeyword = new RoundedTextField(800, 44, 10, "Nhập mã hóa đơn...");
+        txtKeyword = new RoundedTextField(650, 44, 10, "Nhập mã hóa đơn...");
         txtKeyword.setAlignmentX(Component.LEFT_ALIGNMENT);
         txtKeyword.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
         pairTuKhoa.add(txtKeyword);
@@ -170,14 +173,17 @@ public class TraCuuHoaDon_GUI extends JPanel {
         pairTuNgay.setLayout(new BoxLayout(pairTuNgay, BoxLayout.Y_AXIS));
         pairTuNgay.setOpaque(false);
         pairTuNgay.setAlignmentY(Component.TOP_ALIGNMENT);
-        JLabel lblTuNgay = fieldLabel("T\u1eeb ng\u00e0y");
+        JLabel lblTuNgay = fieldLabel("Từ ngày");
         lblTuNgay.setAlignmentX(Component.LEFT_ALIGNMENT);
         pairTuNgay.add(lblTuNgay);
         pairTuNgay.add(Box.createVerticalStrut(4));
-        spnTuNgay = makeDateSpinner();
-        spnTuNgay.setAlignmentX(Component.LEFT_ALIGNMENT);
-        spnTuNgay.setMaximumSize(new Dimension(200, 44));
-        pairTuNgay.add(spnTuNgay);
+        dtcTuNgay = new JDateChooser();
+        dtcTuNgay.setDateFormatString("dd/MM/yyyy");
+        dtcTuNgay.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
+        dtcTuNgay.setDate(new java.util.Date());
+        dtcTuNgay.setAlignmentX(Component.LEFT_ALIGNMENT);
+        dtcTuNgay.setMaximumSize(new Dimension(250, 44));
+        pairTuNgay.add(dtcTuNgay);
         pnlFields.add(pairTuNgay);
         pnlFields.add(Box.createHorizontalStrut(10));
 
@@ -185,14 +191,17 @@ public class TraCuuHoaDon_GUI extends JPanel {
         pairDenNgay.setLayout(new BoxLayout(pairDenNgay, BoxLayout.Y_AXIS));
         pairDenNgay.setOpaque(false);
         pairDenNgay.setAlignmentY(Component.TOP_ALIGNMENT);
-        JLabel lblDenNgay = fieldLabel("\u0110\u1ebfn ng\u00e0y");
+        JLabel lblDenNgay = fieldLabel("Đến ngày");
         lblDenNgay.setAlignmentX(Component.LEFT_ALIGNMENT);
         pairDenNgay.add(lblDenNgay);
         pairDenNgay.add(Box.createVerticalStrut(4));
-        spnDenNgay = makeDateSpinner();
-        spnDenNgay.setAlignmentX(Component.LEFT_ALIGNMENT);
-        spnDenNgay.setMaximumSize(new Dimension(200, 44));
-        pairDenNgay.add(spnDenNgay);
+        dtcDenNgay = new JDateChooser();
+        dtcDenNgay.setDateFormatString("dd/MM/yyyy");
+        dtcDenNgay.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
+        dtcDenNgay.setDate(new java.util.Date());
+        dtcDenNgay.setAlignmentX(Component.LEFT_ALIGNMENT);
+        dtcDenNgay.setMaximumSize(new Dimension(250, 44));
+        pairDenNgay.add(dtcDenNgay);
         pnlFields.add(pairDenNgay);
         pnlFields.add(Box.createHorizontalStrut(10));
 
@@ -202,10 +211,10 @@ public class TraCuuHoaDon_GUI extends JPanel {
         pairButton = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         pairButton.setOpaque(false);
         pairButton.setBorder(BorderFactory.createEmptyBorder(0, 12, 12, 12));
-        btnXoaLoc = new RoundedButton(130, 44, 10, "\u2715  X\u00f3a l\u1ecdc", Colors.SECONDARY);
+        btnXoaLoc = new RoundedButton(130, 44, 10, "Xóa lọc", Colors.SECONDARY);
         btnXoaLoc.setForeground(Colors.TEXT_PRIMARY);
         pairButton.add(btnXoaLoc);
-        btnTimKiem = new RoundedButton(150, 44, 10, "\uD83D\uDD0D  T\u00ecm ki\u1ebfm", Colors.PRIMARY);
+        btnTimKiem = new RoundedButton(150, 44, 10, "Tìm kiếm", Colors.PRIMARY);
         pairButton.add(btnTimKiem);
         card.add(pairButton, BorderLayout.SOUTH);
 
@@ -217,8 +226,6 @@ public class TraCuuHoaDon_GUI extends JPanel {
         txtKeyword.addActionListener(e -> search());
         btnTimKiem.addActionListener(e -> search());
         btnXoaLoc.addActionListener(e -> resetFilter());
-        spnTuNgay.addChangeListener(e -> tuNgayActive = true);
-        spnDenNgay.addChangeListener(e -> denNgayActive = true);
 
         // Khởi tạo popup gợi ý
         initSuggestionPopups();
@@ -292,13 +299,9 @@ public class TraCuuHoaDon_GUI extends JPanel {
     private JPanel buildCardTitleRow() {
         JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         row.setOpaque(false);
-        JLabel icon = new JLabel("\uD83D\uDD0D");
-        icon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
-        icon.setForeground(Colors.PRIMARY);
         JLabel title = new JLabel("Bộ lọc tìm kiếm");
         title.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
         title.setForeground(Colors.PRIMARY);
-        row.add(icon);
         row.add(title);
         return row;
     }
@@ -318,12 +321,9 @@ public class TraCuuHoaDon_GUI extends JPanel {
 
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         left.setOpaque(false);
-        JLabel iconDoc = new JLabel("\uD83D\uDCC4");
-        iconDoc.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
         JLabel lblResultTitle = new JLabel("Kết quả tìm kiếm");
         lblResultTitle.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
         lblResultTitle.setForeground(Colors.TEXT_PRIMARY);
-        left.add(iconDoc);
         left.add(lblResultTitle);
 
         lblSoLuong = new JLabel("Tìm thấy 0 hóa đơn");
@@ -353,7 +353,7 @@ public class TraCuuHoaDon_GUI extends JPanel {
         //====="Cột 1 – Khách hàng: dòng 1 = tên KH, dòng 2 = số điện thoại"=====
         tblHoaDon.setTwoLineColumn(1, 210,
                 v -> safeKHName((HoaDon) v),
-                v -> safeKHPhone((HoaDon) v));
+                v -> MaskUtil.phone(safeKHPhone((HoaDon) v)));
 
         //====="Cột 2 – Nhân viên tạo: dòng 1 = tên NV, dòng 2 = mã NV"=====
         tblHoaDon.setTwoLineColumn(2, 190,
@@ -381,8 +381,63 @@ public class TraCuuHoaDon_GUI extends JPanel {
         });
         tblHoaDon.setColumnWidth(4, 150);
 
-        //====="Cột 5 – Thao tác: nút Chi tiết mở dialog xem hóa đơn"=====
-        tblHoaDon.setActionColumn(5, 100);
+        //===="Cột 5 – Trạng thái: badge màu sắc tương ứng với từng trạng thái hóa đơn"=====
+        tblHoaDon.setColumnRenderer(5, (tbl, val, sel, foc, row, col) -> {
+            String tt = val instanceof HoaDon ? ((HoaDon) val).getTrangThai() : "";
+            if (tt == null) tt = "";
+            Color bg, fg, dot;
+            switch (tt) {
+                case HoaDon.TRANG_THAI_DA_THANH_TOAN:
+                    bg = Colors.SUCCESS_LIGHT; fg = Colors.SUCCESS_DARK; dot = Colors.SUCCESS;
+                    break;
+                case HoaDon.TRANG_THAI_CHO_THANH_TOAN:
+                    bg = Colors.WARNING_BG; fg = Colors.WARNING_FG; dot = Colors.hex("#F59E0B");
+                    break;
+                case HoaDon.TRANG_THAI_DOI_HANG:
+                    bg = Colors.BLUE_HOVER; fg = Colors.PRIMARY; dot = Colors.PRIMARY;
+                    break;
+                case HoaDon.TRANG_THAI_TRA_HANG:
+                    bg = Colors.DANGER_LIGHT; fg = Colors.DANGER; dot = Colors.DANGER;
+                    break;
+                default:
+                    bg = Colors.SECONDARY; fg = Colors.TEXT_SECONDARY; dot = Colors.TEXT_SECONDARY;
+            }
+            final Color bgF = bg, fgF = fg, dotF = dot;
+            final String ttF = tt.isEmpty() ? "---" : tt;
+            JPanel badge = new JPanel() {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    super.paintComponent(g);
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
+                            java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING,
+                            java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
+                    g2.setFont(FontStyle.font(FontStyle.XS, FontStyle.BOLD));
+                    java.awt.FontMetrics fm = g2.getFontMetrics();
+                    int dotSz = 7, gap = 6, padX = 12, padY = 4;
+                    int bw = padX + dotSz + gap + fm.stringWidth(ttF) + padX;
+                    int bh = fm.getHeight() + padY * 2;
+                    int bx = 10, by = (getHeight() - bh) / 2;
+                    g2.setColor(bgF);
+                    g2.fillRoundRect(bx, by, bw, bh, bh, bh);
+                    g2.setColor(dotF);
+                    g2.fillOval(bx + padX, by + (bh - dotSz) / 2, dotSz, dotSz);
+                    g2.setColor(fgF);
+                    g2.drawString(ttF, bx + padX + dotSz + gap, by + padY + fm.getAscent());
+                    g2.setColor(Colors.BORDER_LIGHT);
+                    g2.drawLine(0, getHeight() - 1, getWidth(), getHeight() - 1);
+                    g2.dispose();
+                }
+            };
+            badge.setOpaque(true);
+            badge.setBackground(sel ? Colors.PRIMARY_LIGHT : Colors.BACKGROUND);
+            return badge;
+        });
+        tblHoaDon.setColumnWidth(5, 160);
+
+        //===="Cột 6 – Thao tác: nút Chi tiết mở dialog xem hóa đơn"=====
+        tblHoaDon.setActionColumn(6, 100);
         tblHoaDon.setActionColumnListener((row, obj) -> moChiTietHoaDon((HoaDon) obj));
 
         card.add(tblHoaDon, BorderLayout.CENTER);
@@ -411,6 +466,7 @@ public class TraCuuHoaDon_GUI extends JPanel {
                 tblHoaDon.refresh();
             }
             updateCountLabel();
+            if (tblHoaDon != null) search();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -420,10 +476,21 @@ public class TraCuuHoaDon_GUI extends JPanel {
     private void search() {
         String loai = (String) cboTimKiemTheo.getSelectedItem();
         String kw = txtKeyword.getText().trim().toLowerCase();
-        LocalDateTime tuNgay = tuNgayActive ? spinnerToDate(spnTuNgay) : null;
-        LocalDateTime denNgay = denNgayActive ? spinnerToDate(spnDenNgay) : null;
+        LocalDateTime tuNgay = dtcTuNgay.getDate() != null
+                ? dtcTuNgay.getDate().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime() : null;
+        LocalDateTime denNgay = dtcDenNgay.getDate() != null
+                ? dtcDenNgay.getDate().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime() : null;
+        if (tuNgay != null && denNgay != null && tuNgay.toLocalDate().isAfter(denNgay.toLocalDate())) {
+            dtcTuNgay.setDate(null);
+            dtcDenNgay.setDate(null);
+            tuNgay = null;
+            denNgay = null;
+        }
+        if (tuNgay != null) {
+            tuNgay = tuNgay.toLocalDate().atStartOfDay();
+        }
         if (denNgay != null) {
-            denNgay = denNgay.withHour(23).withMinute(59).withSecond(59);
+            denNgay = denNgay.toLocalDate().atTime(23, 59, 59);
         }
 
         filteredList.clear();
@@ -474,10 +541,8 @@ public class TraCuuHoaDon_GUI extends JPanel {
     private void resetFilter() {
         txtKeyword.setText("");
         cboTimKiemTheo.setSelectedIndex(0);
-        spnTuNgay.setValue(new java.util.Date());
-        spnDenNgay.setValue(new java.util.Date());
-        tuNgayActive = false;
-        denNgayActive = false;
+        dtcTuNgay.setDate(new java.util.Date());
+        dtcDenNgay.setDate(new java.util.Date());
         filteredList.clear();
         filteredList.addAll(fullList);
         tblHoaDon.refresh();
@@ -498,8 +563,8 @@ public class TraCuuHoaDon_GUI extends JPanel {
         // Card trái – Thông tin khách hàng
         LinkedHashMap<String, String> leftInfo = new LinkedHashMap<>();
         leftInfo.put("Họ tên", kh != null ? kh.getTenKhachHang() : "Khách lẻ");
-        leftInfo.put("SĐT", kh != null && kh.getSoDienThoai() != null ? kh.getSoDienThoai() : "---");
-        leftInfo.put("Email", kh != null && kh.getEmail() != null ? kh.getEmail() : "---");
+        leftInfo.put("ĐT", kh != null && kh.getSoDienThoai() != null ? MaskUtil.phone(kh.getSoDienThoai()) : "---");
+        leftInfo.put("Email", kh != null && kh.getEmail() != null ? MaskUtil.email(kh.getEmail()) : "---");
         leftInfo.put("Điểm tích lũy", kh != null ? String.valueOf(kh.getDiemTichLuy()) : "0");
 
         // Card phải – Thông tin hóa đơn
@@ -511,6 +576,9 @@ public class TraCuuHoaDon_GUI extends JPanel {
         rightInfo.put("Thời gian", hd.getNgayLap() != null ? hd.getNgayLap().format(dtFmt) : "---");
         rightInfo.put("Thanh toán", pttt != null ? pttt.getTenPTTT()
                 : (hd.getMaPTTT() != null ? hd.getMaPTTT() : "---"));
+        if (hd.getGhiChu() != null && !hd.getGhiChu().isBlank()) {
+            rightInfo.put("Ghi chú", hd.getGhiChu());
+        }
 
         // Bảng sản phẩm
         String[] cols = {"STT", "Mã SP", "Tên sản phẩm", "ĐVT", "SL", "Đơn giá", "Thành tiền"};
@@ -562,10 +630,10 @@ public class TraCuuHoaDon_GUI extends JPanel {
 
         new ChiTietDialog(
                 SwingUtilities.getWindowAncestor(this),
-                "\uD83D\uDCC4",
+                "HD",
                 "Chi tiết hóa đơn: " + hd.getMaHoaDon(),
-                "\uD83D\uDC64", "Thông tin khách hàng", leftInfo,
-                "\uD83D\uDCC4", "Thông tin hóa đơn", rightInfo,
+                "KH", "Thông tin khách hàng", leftInfo,
+                "HD", "Thông tin hóa đơn", rightInfo,
                 "Danh sách sản phẩm",
                 cols, rows, new int[]{0, 4, 5, 6},
                 summary
@@ -610,16 +678,6 @@ public class TraCuuHoaDon_GUI extends JPanel {
         return l;
     }
 
-    //====="Tạo JSpinner kiểu ngày định dạng dd/MM/yyyy"=====
-    private JSpinner makeDateSpinner() {
-        JSpinner sp = new JSpinner(new SpinnerDateModel());
-        JSpinner.DateEditor ed = new JSpinner.DateEditor(sp, "dd/MM/yyyy");
-        sp.setEditor(ed);
-        sp.setPreferredSize(new Dimension(160, 42));
-        sp.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
-        return sp;
-    }
-
     //====="Cập nhật placeholder của ô tìm kiếm theo loại được chọn"=====
     private void updatePlaceholder() {
         String s = (String) cboTimKiemTheo.getSelectedItem();
@@ -644,15 +702,6 @@ public class TraCuuHoaDon_GUI extends JPanel {
         lblSoLuong.setText("Tìm thấy " + filteredList.size() + " hóa đơn");
     }
 
-    //====="Chuyển đổi giá trị JSpinner thành LocalDate"=====
-    private LocalDateTime spinnerToDate(JSpinner sp) {
-        try {
-            java.util.Date d = (java.util.Date) sp.getValue();
-            return d.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
-        } catch (Exception e) {
-            return null;
-        }
-    }
 
     //====="Lấy tên khách hàng từ hóa đơn, trả về chuỗi rỗng nếu không có"=====
     private String safeKHName(HoaDon hd) {

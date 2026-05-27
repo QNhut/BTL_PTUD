@@ -10,6 +10,7 @@ import exception.RoundedComboBox;
 import exception.RoundedPanel;
 import exception.RoundedTextField;
 import exception.StyledTable;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -23,8 +24,10 @@ import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import service.KhuyenMai_Service;
 import service.SanPham_Service;
-import service.Validators;
+import util.AsyncLoader;
+import util.Validators;
 
+@SuppressWarnings("serial")
 public class KhuyenMai_GUI extends JPanel implements ActionListener {
 
     private JPanel pnlTitle, pnlContent, pnlCategory;
@@ -45,7 +48,6 @@ public class KhuyenMai_GUI extends JPanel implements ActionListener {
     private KhuyenMai_Service khuyenMaiSV;
     private SanPham_Service sanPhamSV;
     private StyledTable tblKhuyenMai;
-    private JPanel item;
     private java.util.Map<String, Integer> spCountMap = new java.util.HashMap<>();
 
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -196,15 +198,15 @@ public class KhuyenMai_GUI extends JPanel implements ActionListener {
         // Cột Áp dụng (col 5)
         tblKhuyenMai.setColumnRenderer(5, new TableCellRenderer() {
             private final JPanel pnl = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
-            private final RoundedButton btn = new RoundedButton(75, 32, 8, "Áp dụng", Colors.PRIMARY);
+            private final RoundedButton btn = new RoundedButton(90, 45, 20, "Áp dụng", Colors.PRIMARY);
 
             {
                 btn.setFont(FontStyle.font(FontStyle.XS, FontStyle.BOLD));
-                btn.setForeground(Color.WHITE);
+                btn.setForeground(Colors.BACKGROUND);
+                btn.setFocusPainted(false);
                 pnl.add(btn);
                 pnl.setOpaque(true);
-                // Thêm padding phải để tách nhóm "Áp dụng" với "Chi tiết" ở cột kế bên
-                pnl.setBorder(BorderFactory.createEmptyBorder(21, 5, 21, 18));
+                pnl.setBorder(BorderFactory.createEmptyBorder(15, 10, 5, 10));
             }
 
             @Override
@@ -287,12 +289,13 @@ public class KhuyenMai_GUI extends JPanel implements ActionListener {
     }
 
     private void loadDataSafe() {
-        try {
-            loadData(khuyenMaiSV.getDSKhuyenMai());
-        } catch (Exception e) {
-            System.out.println("[KhuyenMai_GUI] Lỗi khi tải dữ liệu:");
-            e.printStackTrace();
-        }
+        AsyncLoader.run(
+            () -> khuyenMaiSV.getDSKhuyenMai(),
+            dsKM -> {
+                if (dsKM != null) loadData(dsKM);
+                updateCategoryAsync();
+            }
+        );
     }
 
     public void loadData(ArrayList<KhuyenMai> dsKM) {
@@ -398,15 +401,29 @@ public class KhuyenMai_GUI extends JPanel implements ActionListener {
     }
 
     private void updateCategory() {
-        pnlCategory.removeAll();
-        pnlCategory.add(statCard("Tổng khuyến mãi", khuyenMaiSV.getSoLuongKhuyenMai(), Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
-        pnlCategory.add(statCard("Đang hoạt động", khuyenMaiSV.getSoLuongDangHoatDong(), Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
-        pnlCategory.add(statCard("Sắp diễn ra", khuyenMaiSV.getSoLuongSapDienRa(), Colors.BROWN_HOVER, Colors.ACCENT, Colors.ACCENT));
-        pnlCategory.add(statCard("Đã kết thúc", khuyenMaiSV.getSoLuongDaKetThuc(), Colors.SECONDARY, Colors.DANGER, Colors.DANGER));
-        pnlCategory.revalidate();
-        pnlCategory.repaint();
-        pnlContent.revalidate();
-        pnlContent.repaint();
+        updateCategoryAsync();
+    }
+
+    private void updateCategoryAsync() {
+        AsyncLoader.run(
+            () -> new int[]{
+                khuyenMaiSV.getSoLuongKhuyenMai(),
+                khuyenMaiSV.getSoLuongDangHoatDong(),
+                khuyenMaiSV.getSoLuongSapDienRa(),
+                khuyenMaiSV.getSoLuongDaKetThuc()
+            },
+            counts -> {
+                pnlCategory.removeAll();
+                pnlCategory.add(statCard("Tổng khuyến mãi", counts[0], Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
+                pnlCategory.add(statCard("Đang hoạt động", counts[1], Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
+                pnlCategory.add(statCard("Sắp diễn ra", counts[2], Colors.BROWN_HOVER, Colors.ACCENT, Colors.ACCENT));
+                pnlCategory.add(statCard("Đã kết thúc", counts[3], Colors.SECONDARY, Colors.DANGER, Colors.DANGER));
+                pnlCategory.revalidate();
+                pnlCategory.repaint();
+                pnlContent.revalidate();
+                pnlContent.repaint();
+            }
+        );
     }
 
     private JPanel statCard(String title, int value, Color bg, Color valColor, Color titleColor) {
@@ -779,7 +796,7 @@ public class KhuyenMai_GUI extends JPanel implements ActionListener {
 
         JPanel pnlFooterBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         pnlFooterBtns.setOpaque(false);
-        RoundedButton btnDungAll = new RoundedButton(150, 38, 10, "Dừng khuyến mãi", Colors.SECONDARY);
+        RoundedButton btnDungAll = new RoundedButton(200, 38, 10, "Dừng khuyến mãi", Colors.SECONDARY);
         btnDungAll.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
         btnDungAll.setForeground(Colors.DANGER);
         RoundedButton btnHuyAD = new RoundedButton(80, 38, 10, "Hủy", Colors.SECONDARY);

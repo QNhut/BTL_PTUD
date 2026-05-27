@@ -1,4 +1,4 @@
-package service;
+package util;
 
 import java.text.Normalizer;
 import java.util.HashMap;

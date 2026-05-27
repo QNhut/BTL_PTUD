@@ -1,12 +1,46 @@
 package service;
 
 import entity.ChiTietHoaDon;
+import entity.HoaDon;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 public class TraHang_Service {
+
+    private final dao.HoaDon_DAO hoaDonDAO = new dao.HoaDon_DAO();
+
+    public HoaDon getHoaDonByMa(String maHD) {
+        return hoaDonDAO.layHDTheoMa(maHD);
+    }
+
+    public String checkDieuKienTraHang(HoaDon hd) {
+        if (hd == null) {
+            return "Hóa đơn không tồn tại.";
+        }
+
+        String tt = hd.getTrangThai();
+        if (HoaDon.TRANG_THAI_CHO_THANH_TOAN.equals(tt)) {
+            return "Hóa đơn đang chờ thanh toán, chưa thể trả hàng.";
+        }
+        if (HoaDon.TRANG_THAI_TRA_HANG.equals(tt) || HoaDon.TRANG_THAI_DOI_HANG.equals(tt)) {
+            return "Hóa đơn đã được xử lý (" + tt + "), không thể trả hàng tiếp.";
+        }
+
+        LocalDateTime ngayLap = hd.getNgayLap();
+        if (ngayLap == null) {
+            return "Hóa đơn không có ngày lập hợp lệ.";
+        }
+        long soNgay = ChronoUnit.DAYS.between(ngayLap.toLocalDate(), LocalDate.now());
+        if (soNgay > 7) {
+            return "Đã quá hạn đổi trả (7 ngày kể từ ngày lập hóa đơn).";
+        }
+        return "OK";
+    }
 
     /**
      * Xử lý trả hàng trong 1 transaction: 1) Cộng lại số lượng vào một lô còn
@@ -29,7 +63,8 @@ public class TraHang_Service {
             String sqlGetLot = "SELECT TOP 1 MaLoSanPham FROM LoSanPham "
                     + "WHERE MaSanPham = ? AND TrangThai = 1 "
                     + "ORDER BY CASE WHEN HanSuDung IS NULL THEN 1 ELSE 0 END, HanSuDung DESC";
-            String sqlUpdLot = "UPDATE LoSanPham SET SoLuong = SoLuong + ? WHERE MaLoSanPham = ?";
+            // TrangThai = 1: đảm bảo lô được active lại sau khi hoàn hàng
+            String sqlUpdLot = "UPDATE LoSanPham SET SoLuong = SoLuong + ?, TrangThai = 1 WHERE MaLoSanPham = ?";
             for (ChiTietHoaDon item : itemsReturn) {
                 if (item.getSoLuong() <= 0) {
                     continue;
@@ -107,6 +142,17 @@ public class TraHang_Service {
                         ps.executeUpdate();
                     }
                 }
+            }
+
+            // 3) Cập nhật trạng thái hóa đơn → "Trả hàng" và lưu lý do vào GhiChu
+            try (PreparedStatement ps = con.prepareStatement(
+                    "UPDATE HoaDon SET TrangThai = ?, GhiChu = ? WHERE MaHoaDon = ?")) {
+                ps.setNString(1, entity.HoaDon.TRANG_THAI_TRA_HANG);
+                String ghiChu = (lyDo != null && !lyDo.isBlank())
+                        ? "[Trả hàng] " + lyDo.trim() : "[Trả hàng]";
+                ps.setNString(2, ghiChu);
+                ps.setString(3, maHD);
+                ps.executeUpdate();
             }
 
             con.commit();

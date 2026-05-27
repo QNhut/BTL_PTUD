@@ -3,7 +3,6 @@ package gui;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
-import javax.swing.border.*;
 
 import constants.Colors;
 import constants.FontStyle;
@@ -17,6 +16,7 @@ import exception.RoundedTextField;
 import service.NhanVien_Service;
 import service.TaiKhoan_Service;
 
+@SuppressWarnings("serial")
 public class TaiKhoan_GUI extends JPanel implements ActionListener {
 
     private static final Color ACCENT = new Color(37, 99, 235);

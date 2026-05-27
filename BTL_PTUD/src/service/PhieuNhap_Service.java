@@ -24,15 +24,12 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 
-import java.text.SimpleDateFormat;
-
 import dao.ChiTietPhieuNhap_DAO;
 import dao.PhieuNhap_DAO;
 import dao.SanPham_DAO;
 import entity.ChiTietPhieuNhap;
 import entity.KeSanPham;
 import entity.LoSanPham;
-import entity.NhanVien;
 import entity.PhieuNhap;
 import entity.SanPham;
 

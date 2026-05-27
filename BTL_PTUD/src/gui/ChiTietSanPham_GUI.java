@@ -16,13 +16,12 @@ import service.LoSanPham_Service;
 import service.LoaiSanPham_Service;
 import service.SanPham_Service;
 import service.SanPham_Service.TonKhoInfo;
-import service.Validators;
+import util.Validators;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.File;
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -30,6 +29,7 @@ import java.util.List;
 // Dialog chi tiết / thêm / chỉnh sửa sản phẩm.
 // Cách dùng: ChiTietSanPham_GUI.moChiTiet(parentFrame, sanPham, tonKhoInfo);
 // ChiTietSanPham_GUI.moThemMoi(parentFrame, () -> refresh.run());
+@SuppressWarnings("serial")
 public class ChiTietSanPham_GUI extends JDialog {
 
 	// ── Services ──────────────────────────────────────────────
@@ -1176,13 +1176,6 @@ public class ChiTietSanPham_GUI extends JDialog {
 	// ══════════════════════════════════════════════════════════
 	// UI HELPERS
 	// ══════════════════════════════════════════════════════════
-	private JPanel col() {
-		JPanel p = new JPanel();
-		p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
-		p.setOpaque(false);
-		return p;
-	}
-
 	private JLabel errLabelSP() {
 		JLabel l = new JLabel();
 		l.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));

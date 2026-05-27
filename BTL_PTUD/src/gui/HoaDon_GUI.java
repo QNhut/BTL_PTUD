@@ -8,6 +8,7 @@ import exception.QuantityEditor;
 import exception.RoundedButton;
 import exception.RoundedPanel;
 import exception.RoundedTextField;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -49,6 +50,7 @@ import javax.swing.table.TableCellRenderer;
 import service.HoaDon_Service;
 import service.SanPham_Service;
 
+@SuppressWarnings("serial")
 public class HoaDon_GUI extends JPanel {
     // === Dùng làm GUI Lập Hóa Đơn ===
 
@@ -82,21 +84,13 @@ public class HoaDon_GUI extends JPanel {
     private JLabel lblsubcontentRight2;
     private JTextField txtTenKH;
     private JTextField txtSDT;
-    private JLabel lblNhanVienLabel;
     private JLabel lblNhanVienValue;
-    private JLabel lblThoiGianLabel;
     private JLabel lblThoiGianValue;
     private JScrollPane scrProduct;
     private JPanel pnlContentBottomRight;
     private JPanel row1;
-    private JLabel lblLeft1;
-    private JLabel lblRight1;
     private JPanel row2;
-    private JLabel lblLeft2;
-    private JLabel lblRight2;
     private JPanel row3;
-    private JLabel lblLeft3;
-    private JLabel lblRight3;
     private JButton btnLapHoaDon;
     private JPanel pnlTitleBottom;
     private JPanel pnlsubTitleBottom;
@@ -162,7 +156,11 @@ public class HoaDon_GUI extends JPanel {
         pnlTitle.setBackground(Colors.BACKGROUND);
 
         pnlTitle.add(lblTitle = new JLabel("Lập hóa đơn"));
-        lblTitle.setFont(FontStyle.font(FontStyle.XL, FontStyle.BOLD));
+        lblTitle.setFont(FontStyle.font(FontStyle.XXL, FontStyle.BOLD));
+        lblTitle.setForeground(Colors.FOREGROUND);
+        pnlTitle.add(lblsubTitle = new JLabel("Tạo hóa đơn bán hàng cho khách"));
+        lblsubTitle.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
+        lblsubTitle.setForeground(Colors.MUTED);
         pnlTitle.setBackground(Colors.BACKGROUND);
 
 //		Phần nội dung chính
@@ -393,7 +391,6 @@ public class HoaDon_GUI extends JPanel {
         pnlForm.add(Box.createVerticalStrut(4));
 
         dsPTTT = hoaDonService.getDSPhuongThucThanhToan();
-        @SuppressWarnings("unchecked")
         JComboBox<entity.PhuongThucThanhToan> cmbPTTTTyped = new JComboBox<>();
         cmbPTTT = cmbPTTTTyped;
         for (entity.PhuongThucThanhToan pt : dsPTTT) {
@@ -523,17 +520,23 @@ public class HoaDon_GUI extends JPanel {
         chkDungDiem.setEnabled(false);
         chkDungDiem.addActionListener(e -> {
             boolean on = chkDungDiem.isSelected();
-            txtDiemSuDung.setEnabled(on);
-            lblDiemLabel.setVisible(on);
-            if (!on) {
+            if (on && khachHangHienTai != null) {
+                int maxDiem = khachHangHienTai.getDiemTichLuy();
+                txtDiemSuDung.setText(String.valueOf(maxDiem));
+                long tienGiam = (long) maxDiem * HoaDon_Service.VND_PER_POINT_USE;
+                lblDiemLabel.setText("Áp dụng " + maxDiem + " điểm → giảm "
+                        + String.format("%,.0fđ", (double) tienGiam));
+            } else {
                 txtDiemSuDung.setText("0");
+                lblDiemLabel.setText("");
             }
+            lblDiemLabel.setVisible(on);
             updateSummary();
         });
         pnlPoints.add(chkDungDiem);
 
         pnlPoints.add(Box.createVerticalStrut(3));
-        lblDiemLabel = new JLabel("Điểm muốn dùng — 1 điểm = 1.000đ");
+        lblDiemLabel = new JLabel("100 điểm = 1.000đ");
         lblDiemLabel.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
         lblDiemLabel.setForeground(Colors.TEXT_SECONDARY);
         lblDiemLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -544,6 +547,7 @@ public class HoaDon_GUI extends JPanel {
         txtDiemSuDung = new RoundedTextField(Integer.MAX_VALUE, 32, 12, "0");
         txtDiemSuDung.setAlignmentX(Component.LEFT_ALIGNMENT);
         txtDiemSuDung.setEnabled(false);
+        txtDiemSuDung.setVisible(false);
         pnlPoints.add(txtDiemSuDung);
 
         lblDiemError = new JLabel();
@@ -573,13 +577,10 @@ public class HoaDon_GUI extends JPanel {
         // ---- Toggle action listeners ----
         rdoKhachLe.addActionListener(e -> {
             pnlKHInfo.setVisible(false);
-            pnlPoints.setVisible(false);
             txtTenKH.setText("");
             txtSDT.setText("");
             lblSDTStatus.setVisible(false);
-            khachHangHienTai = null;
-            lblDiemError.setVisible(false);
-            updateSummary();
+            setMemberMode(null); // reset khachHangHienTai, điểm, checkbox, pnlPoints
             pnlForm.revalidate();
             pnlForm.repaint();
         });
@@ -620,17 +621,17 @@ public class HoaDon_GUI extends JPanel {
         // Row: Thuế
         pnlContentBottomRight.add(row2 = makeSummaryRow("Thuế (+)", "0đ", false));
         pnlContentBottomRight.add(Box.createVerticalStrut(3));
-        // Row: Giảm KM
-        JPanel rowGiamKM = makeSummaryRow("Giảm giá KM (-)", "0đ", false);
+        // Row: Giảm (KM + điểm tích lũy gộp chung)
+        JPanel rowGiamKM = makeSummaryRow("Giảm giá (-)", "0đ", false);
         pnlContentBottomRight.add(rowGiamKM);
-        pnlContentBottomRight.add(Box.createVerticalStrut(3));
-        // Row: Giảm điểm
-        JPanel rowGiamDiem = makeSummaryRow("Điểm sử dụng (-)", "0đ", false);
-        pnlContentBottomRight.add(rowGiamDiem);
         pnlContentBottomRight.add(Box.createVerticalStrut(5));
 
-        lblValTamTinh = (JLabel) ((JPanel) row1).getComponent(1);
-        lblValThue = (JLabel) ((JPanel) row2).getComponent(1);
+        // rowGiamDiem kept for reference but hidden — values merged into rowGiamKM
+        JPanel rowGiamDiem = makeSummaryRow("Điểm sử dụng (-)", "0đ", false);
+        rowGiamDiem.setVisible(false);
+
+        lblValTamTinh = (JLabel) row1.getComponent(1);
+        lblValThue = (JLabel) row2.getComponent(1);
         lblValGiamKM = (JLabel) rowGiamKM.getComponent(1);
         lblValGiamDiem = (JLabel) rowGiamDiem.getComponent(1);
 
@@ -644,15 +645,9 @@ public class HoaDon_GUI extends JPanel {
 
         row3 = makeSummaryRow("THÀNH TIỀN", "0đ", true);
         pnlContentBottomRight.add(row3);
-        lblValThanhTien = (JLabel) ((JPanel) row3).getComponent(1);
+        lblValThanhTien = (JLabel) row3.getComponent(1);
 
-        // Compat refs
-        lblLeft1 = (JLabel) ((JPanel) row1).getComponent(0);
-        lblRight1 = lblValTamTinh;
-        lblLeft2 = (JLabel) ((JPanel) row2).getComponent(0);
-        lblRight2 = lblValThue;
-        lblLeft3 = (JLabel) ((JPanel) row3).getComponent(0);
-        lblRight3 = lblValThanhTien;
+        // Compat refs removed — use lblValTamTinh, lblValThue, lblValThanhTien directly
 
         pnlFixed.add(Box.createVerticalStrut(6));
 
@@ -697,6 +692,14 @@ public class HoaDon_GUI extends JPanel {
         btnXoaTatCa.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
 
         btnXoaTatCa.addActionListener(e -> {
+            if (selectedList.isEmpty()) return;
+            int confirm = javax.swing.JOptionPane.showConfirmDialog(
+                    this,
+                    "Bạn có chắc muốn xóa tất cả sản phẩm khỏi giỏ hàng?",
+                    "Xác nhận xóa",
+                    javax.swing.JOptionPane.YES_NO_OPTION,
+                    javax.swing.JOptionPane.WARNING_MESSAGE);
+            if (confirm != javax.swing.JOptionPane.YES_OPTION) return;
             selectedList.clear();
             refreshSelectedList();
             loadProducts(currentList);
@@ -889,9 +892,9 @@ public class HoaDon_GUI extends JPanel {
         if (lblValTamTinh != null) {
             lblValTamTinh.setText(formatVND(sum.tienHang));
             lblValThue.setText(formatVND(sum.tienThue));
-            lblValGiamKM.setText("- " + formatVND(sum.tienGiamGia));
-            lblValGiamDiem.setText("- " + formatVND(sum.tienGiamTuDiem)
-                    + (sum.diemSuDung > 0 ? " (" + sum.diemSuDung + " đ)" : ""));
+            // Combine KM discount + points discount into one row
+            long combinedGiam = (long)(sum.tienGiamGia + sum.tienGiamTuDiem);
+            lblValGiamKM.setText(combinedGiam > 0 ? "- " + formatVND(combinedGiam) : "0đ");
             lblValThanhTien.setText(formatVND(sum.thanhTien));
         }
         if (lblTotalPrice != null) {
@@ -910,7 +913,7 @@ public class HoaDon_GUI extends JPanel {
 
     // Lấy số điểm sử dụng từ ô nhập (0 nếu trống/khách lẻ).
     private int parseDiemSuDung() {
-        if (txtDiemSuDung == null || !txtDiemSuDung.isEnabled()) {
+        if (txtDiemSuDung == null || chkDungDiem == null || !chkDungDiem.isSelected()) {
             return 0;
         }
         String s = txtDiemSuDung.getText().trim();
@@ -1049,13 +1052,6 @@ public class HoaDon_GUI extends JPanel {
         return card;
     }
 
-    private int getTonKhoHienTai(SanPham sanPham) {
-        if (sanPham == null) {
-            return 0;
-        }
-        return sanPhamService.layTonKho(sanPham.getMaSanPham());
-    }
-
     //===="Tải danh sách sản phẩm đang hoạt động từ DB"=====
     private List<SanPham> loadProductsFromDB() {
         try {
@@ -1130,9 +1126,14 @@ public class HoaDon_GUI extends JPanel {
             lblLoaiKH.setForeground(Colors.SUCCESS_DARK);
             lblLoaiKH.setVisible(true);
             if (kh.getDiemTichLuy() > 0) {
-                chkDungDiem.setText("Sử dụng điểm tích lũy (" + kh.getDiemTichLuy() + " điểm)");
+                int maxDiem = kh.getDiemTichLuy();
+                long tienGiam = (long) maxDiem * HoaDon_Service.VND_PER_POINT_USE;
+                chkDungDiem.setText("Áp dụng " + maxDiem + " điểm tích lũy (→ giảm "
+                        + String.format("%,.0fđ", (double) tienGiam) + ")");
                 chkDungDiem.setEnabled(true);
-                lblDiemLabel.setText("Điểm muốn dùng — 1 điểm = 1.000đ (tối đa " + kh.getDiemTichLuy() + ")");
+                chkDungDiem.setSelected(false);
+                lblDiemLabel.setVisible(false);
+                txtDiemSuDung.setText("0");
                 pnlPoints.setVisible(true);
             } else {
                 pnlPoints.setVisible(false);

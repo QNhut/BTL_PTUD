@@ -2,16 +2,21 @@ package gui;
 
 import constants.Colors;
 import constants.FontStyle;
+import dao.ChiTietHoaDon_DAO;
+import dao.SanPham_DAO;
+import entity.ChiTietHoaDon;
+import entity.HoaDon;
+import entity.SanPham;
 import exception.RoundedButton;
 import exception.RoundedComboBox;
 import exception.RoundedTextField;
 import exception.StyledTable;
+
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.FlowLayout;
-import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -22,20 +27,23 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import com.toedter.calendar.JDateChooser;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JSpinner;
-import javax.swing.SpinnerDateModel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import service.HoaDon_Service;
+import util.AsyncLoader;
+import util.MaskUtil;
 
+@SuppressWarnings("serial")
 public class TraCuuDatThuoc_GUI extends JPanel {
 
     private static final class DatThuocRecord {
@@ -77,7 +85,7 @@ public class TraCuuDatThuoc_GUI extends JPanel {
 
     private static final String[] COLUMN_NAMES = {
         "Mã phiếu đặt", "Khách hàng", "Ngày nhận", "Giờ nhận",
-        "Trạng thái", "Tiền cọc", "Thao tác"
+        "Trạng thái", "Tiền cọc", "Chi tiết", "Xác nhận", "Huỷ đơn"
     };
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -86,13 +94,14 @@ public class TraCuuDatThuoc_GUI extends JPanel {
 
     private final ArrayList<DatThuocRecord> fullList = new ArrayList<>();
     private final ArrayList<DatThuocRecord> filteredList = new ArrayList<>();
+    private final HoaDon_Service hoaDonService = new HoaDon_Service();
+    private final ChiTietHoaDon_DAO chiTietHoaDonDAO = new ChiTietHoaDon_DAO();
+    private final SanPham_DAO sanPhamDAO = new SanPham_DAO();
 
     private RoundedComboBox<String> cboTimKiemTheo;
     private RoundedTextField txtKeyword;
-    private JSpinner spnTuNgay;
-    private JSpinner spnDenNgay;
-    private boolean tuNgayActive = false;
-    private boolean denNgayActive = false;
+    private JDateChooser dtcTuNgay;
+    private JDateChooser dtcDenNgay;
     private RoundedButton btnTimKiem;
     private RoundedButton btnXoaLoc;
 
@@ -123,12 +132,12 @@ public class TraCuuDatThuoc_GUI extends JPanel {
         header.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel lblTitle = new JLabel("Tra cứu đặt thuốc");
-        lblTitle.setFont(FontStyle.font(FontStyle.XL, FontStyle.BOLD));
-        lblTitle.setForeground(Colors.TEXT_PRIMARY);
+        lblTitle.setFont(FontStyle.font(FontStyle.XXL, FontStyle.BOLD));
+        lblTitle.setForeground(Colors.FOREGROUND);
 
         JLabel lblNote = new JLabel("Tìm kiếm và xem chi tiết các phiếu đặt thuốc");
         lblNote.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
-        lblNote.setForeground(Colors.TEXT_SECONDARY);
+        lblNote.setForeground(Colors.MUTED);
 
         header.add(lblTitle);
         header.add(Box.createVerticalStrut(4));
@@ -164,7 +173,7 @@ public class TraCuuDatThuoc_GUI extends JPanel {
         cboTimKiemTheo.addItem("Khách hàng");
         cboTimKiemTheo.addItem("Số điện thoại");
         cboTimKiemTheo.setAlignmentX(Component.LEFT_ALIGNMENT);
-        cboTimKiemTheo.setMaximumSize(new java.awt.Dimension(200, 44));
+        cboTimKiemTheo.setMaximumSize(new java.awt.Dimension(250, 44));
         pairTimKiem.add(cboTimKiemTheo);
         pnlFields.add(pairTimKiem);
         pnlFields.add(Box.createHorizontalStrut(10));
@@ -173,7 +182,7 @@ public class TraCuuDatThuoc_GUI extends JPanel {
         JLabel lblTuKhoa = fieldLabel("Từ khóa");
         pairTuKhoa.add(lblTuKhoa);
         pairTuKhoa.add(Box.createVerticalStrut(4));
-        txtKeyword = new RoundedTextField(800, 44, 10, "Nhập mã phiếu đặt...");
+        txtKeyword = new RoundedTextField(650, 44, 10, "Nhập mã phiếu đặt...");
         txtKeyword.setAlignmentX(Component.LEFT_ALIGNMENT);
         txtKeyword.setMaximumSize(new java.awt.Dimension(Integer.MAX_VALUE, 44));
         pairTuKhoa.add(txtKeyword);
@@ -184,10 +193,13 @@ public class TraCuuDatThuoc_GUI extends JPanel {
         JLabel lblTuNgay = fieldLabel("Từ ngày");
         pairTuNgay.add(lblTuNgay);
         pairTuNgay.add(Box.createVerticalStrut(4));
-        spnTuNgay = makeDateSpinner();
-        spnTuNgay.setAlignmentX(Component.LEFT_ALIGNMENT);
-        spnTuNgay.setMaximumSize(new java.awt.Dimension(200, 44));
-        pairTuNgay.add(spnTuNgay);
+        dtcTuNgay = new JDateChooser();
+        dtcTuNgay.setDateFormatString("dd/MM/yyyy");
+        dtcTuNgay.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
+        dtcTuNgay.setDate(new java.util.Date());
+        dtcTuNgay.setAlignmentX(Component.LEFT_ALIGNMENT);
+        dtcTuNgay.setMaximumSize(new java.awt.Dimension(250, 44));
+        pairTuNgay.add(dtcTuNgay);
         pnlFields.add(pairTuNgay);
         pnlFields.add(Box.createHorizontalStrut(10));
 
@@ -195,10 +207,13 @@ public class TraCuuDatThuoc_GUI extends JPanel {
         JLabel lblDenNgay = fieldLabel("Đến ngày");
         pairDenNgay.add(lblDenNgay);
         pairDenNgay.add(Box.createVerticalStrut(4));
-        spnDenNgay = makeDateSpinner();
-        spnDenNgay.setAlignmentX(Component.LEFT_ALIGNMENT);
-        spnDenNgay.setMaximumSize(new java.awt.Dimension(200, 44));
-        pairDenNgay.add(spnDenNgay);
+        dtcDenNgay = new JDateChooser();
+        dtcDenNgay.setDateFormatString("dd/MM/yyyy");
+        dtcDenNgay.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
+        dtcDenNgay.setDate(new java.util.Date());
+        dtcDenNgay.setAlignmentX(Component.LEFT_ALIGNMENT);
+        dtcDenNgay.setMaximumSize(new java.awt.Dimension(250, 44));
+        pairDenNgay.add(dtcDenNgay);
         pnlFields.add(pairDenNgay);
 
         card.add(pnlFields, BorderLayout.CENTER);
@@ -206,10 +221,10 @@ public class TraCuuDatThuoc_GUI extends JPanel {
         pairButton = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         pairButton.setOpaque(false);
         pairButton.setBorder(BorderFactory.createEmptyBorder(0, 12, 12, 12));
-        btnXoaLoc = new RoundedButton(130, 44, 10, "\u2715  Xóa lọc", Colors.SECONDARY);
+        btnXoaLoc = new RoundedButton(130, 44, 10, "Xóa lọc", Colors.SECONDARY);
         btnXoaLoc.setForeground(Colors.TEXT_PRIMARY);
         pairButton.add(btnXoaLoc);
-        btnTimKiem = new RoundedButton(150, 44, 10, "\uD83D\uDD0D  Tìm kiếm", Colors.PRIMARY);
+        btnTimKiem = new RoundedButton(150, 44, 10, "Tìm kiếm", Colors.PRIMARY);
         pairButton.add(btnTimKiem);
         card.add(pairButton, BorderLayout.SOUTH);
 
@@ -217,8 +232,6 @@ public class TraCuuDatThuoc_GUI extends JPanel {
         txtKeyword.addActionListener(e -> search());
         btnTimKiem.addActionListener(e -> search());
         btnXoaLoc.addActionListener(e -> resetFilter());
-        spnTuNgay.addChangeListener(e -> tuNgayActive = true);
-        spnDenNgay.addChangeListener(e -> denNgayActive = true);
 
         return card;
     }
@@ -234,13 +247,9 @@ public class TraCuuDatThuoc_GUI extends JPanel {
     private JPanel buildCardTitleRow() {
         JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         row.setOpaque(false);
-        JLabel icon = new JLabel("\uD83D\uDD0D");
-        icon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
-        icon.setForeground(Colors.PRIMARY);
         JLabel title = new JLabel("Bộ lọc tìm kiếm");
         title.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
         title.setForeground(Colors.PRIMARY);
-        row.add(icon);
         row.add(title);
         return row;
     }
@@ -255,12 +264,9 @@ public class TraCuuDatThuoc_GUI extends JPanel {
 
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         left.setOpaque(false);
-        JLabel iconDoc = new JLabel("\uD83D\uDCC4");
-        iconDoc.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
         JLabel lblResultTitle = new JLabel("Kết quả tìm kiếm");
         lblResultTitle.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
         lblResultTitle.setForeground(Colors.TEXT_PRIMARY);
-        left.add(iconDoc);
         left.add(lblResultTitle);
 
         lblSoLuong = new JLabel("Tìm thấy 0 phiếu đặt");
@@ -288,7 +294,7 @@ public class TraCuuDatThuoc_GUI extends JPanel {
 
         tblDatThuoc.setTwoLineColumn(1, 220,
                 v -> ((DatThuocRecord) v).tenKhachHang,
-                v -> ((DatThuocRecord) v).soDienThoai);
+                v -> MaskUtil.phone(((DatThuocRecord) v).soDienThoai));
 
         tblDatThuoc.setSingleTextColumn(2, 130,
                 v -> ((DatThuocRecord) v).ngayNhan != null ? ((DatThuocRecord) v).ngayNhan.format(DATE_FMT) : "");
@@ -311,72 +317,168 @@ public class TraCuuDatThuoc_GUI extends JPanel {
             lbl.setBackground(sel ? Colors.PRIMARY_LIGHT : Colors.BACKGROUND);
             return lbl;
         });
-        tblDatThuoc.setColumnWidth(5, 150);
+        tblDatThuoc.setColumnWidth(5, 120);
 
-        tblDatThuoc.setActionColumn(6, 100);
+        tblDatThuoc.setActionColumn(6, 120);
         tblDatThuoc.setActionColumnListener((row, obj) -> moChiTietDatThuoc((DatThuocRecord) obj));
+
+        tblDatThuoc.setConfirmButtonColumn(7, 120);
+        tblDatThuoc.setConfirmColumnListener((row, obj) -> handleXacNhan((DatThuocRecord) obj));
+
+        tblDatThuoc.setDeleteButtonColumn(8, 150, "Huỷ đơn", Colors.DANGER, Colors.BACKGROUND, 110);
+        tblDatThuoc.setDeleteColumnListener((row, obj) -> handleHuyDon((DatThuocRecord) obj));
 
         card.add(tblDatThuoc, BorderLayout.CENTER);
         return card;
     }
 
     public void refresh() {
-        loadData();
+        AsyncLoader.run(
+            () -> {
+                ArrayList<DatThuocRecord> loaded = new ArrayList<>();
+                List<HoaDon> dsChoNhan = hoaDonService.layDSChoThanhToan();
+                for (HoaDon hd : dsChoNhan) {
+                    DatThuocRecord rec = mapHoaDonChoThanhRecord(hd);
+                    if (rec != null) loaded.add(rec);
+                }
+                return loaded;
+            },
+            loaded -> {
+                fullList.clear();
+                fullList.addAll(loaded);
+                filteredList.clear();
+                filteredList.addAll(fullList);
+                if (tblDatThuoc != null) tblDatThuoc.refresh();
+                updateCountLabel();
+                if (tblDatThuoc != null) search();
+            }
+        );
     }
 
     private void loadData() {
-        fullList.clear();
-        // Tạm dùng dữ liệu mẫu cho đến khi module Đặt trước có entity/DAO/service riêng.
-        fullList.addAll(buildTempData());
-
-        filteredList.clear();
-        filteredList.addAll(fullList);
-        if (tblDatThuoc != null) {
-            tblDatThuoc.refresh();
-        }
-        updateCountLabel();
+        refresh();
     }
 
-    private List<DatThuocRecord> buildTempData() {
-        List<DatThuocRecord> records = new ArrayList<>();
-        records.add(new DatThuocRecord(
-                "DT001",
-                "Nguyễn Văn An",
-                "0901234567",
-                LocalDate.now().plusDays(1),
-                LocalTime.of(10, 0),
+    private DatThuocRecord mapHoaDonChoThanhRecord(HoaDon hd) {
+        if (hd == null || hd.getMaHoaDon() == null) {
+            return null;
+        }
+
+        String tenKH = "Khách lẻ";
+        String sdt = "---";
+        if (hd.getKhachHang() != null) {
+            if (hd.getKhachHang().getTenKhachHang() != null && !hd.getKhachHang().getTenKhachHang().isBlank()) {
+                tenKH = hd.getKhachHang().getTenKhachHang();
+            }
+            if (hd.getKhachHang().getSoDienThoai() != null && !hd.getKhachHang().getSoDienThoai().isBlank()) {
+                sdt = hd.getKhachHang().getSoDienThoai();
+            }
+        }
+
+        // Parse expected pickup date/time from GhiChu (format: "Dự kiến nhận: dd/MM/yyyy HH:mm | ...")
+        LocalDate ngayNhan = parseNgayNhanTuGhiChu(hd.getGhiChu());
+        if (ngayNhan == null && hd.getNgayLap() != null) ngayNhan = hd.getNgayLap().toLocalDate();
+        LocalTime gioNhan = parseGioNhanTuGhiChu(hd.getGhiChu());
+        if (gioNhan == null && hd.getNgayLap() != null) gioNhan = hd.getNgayLap().toLocalTime().withSecond(0).withNano(0);
+
+        List<ChiTietHoaDon> dsCT = chiTietHoaDonDAO.getDSTheoHoaDon(hd.getMaHoaDon());
+        List<Object[]> chiTiet = new ArrayList<>();
+        int stt = 1;
+        for (ChiTietHoaDon ct : dsCT) {
+            if (ct.getSanPham() != null && ct.getSanPham().getMaSanPham() != null) {
+                SanPham full = sanPhamDAO.laySanPhamTheoMa(ct.getSanPham().getMaSanPham());
+                if (full != null) {
+                    ct.setSanPham(full);
+                }
+            }
+            String tenThuoc = ct.getSanPham() != null ? ct.getSanPham().getTenSP() : "---";
+            String donVi = (ct.getSanPham() != null && ct.getSanPham().getDonViTinh() != null)
+                    ? ct.getSanPham().getDonViTinh() : "---";
+            chiTiet.add(new Object[]{stt++, tenThuoc, donVi, ct.getSoLuong()});
+        }
+
+        double tienCoc = parseTienCocTuGhiChu(hd.getGhiChu());
+        String ghiChu = hd.getGhiChu() != null ? hd.getGhiChu() : "";
+
+        return new DatThuocRecord(
+                hd.getMaHoaDon(),
+                tenKH,
+                sdt,
+                ngayNhan,
+                gioNhan,
                 false,
-                150000,
-                "Khách cần chuẩn bị sẵn thuốc trước 10h.",
-                Arrays.asList(
-                        new Object[]{1, "Paracetamol 500mg", "Hộp", 2},
-                        new Object[]{2, "Vitamin C", "Tuýp", 1}
-                )
-        ));
-        records.add(new DatThuocRecord(
-                "DT002",
-                "Trần Thị Bình",
-                "0912345678",
-                LocalDate.now().plusDays(2),
-                LocalTime.of(15, 30),
-                true,
-                80000,
-                "Đã gọi xác nhận và khách sẽ đến nhận buổi chiều.",
-                Arrays.asList(
-                        new Object[]{1, "Omega 3", "Hộp", 1},
-                        new Object[]{2, "Siro ho", "Chai", 2}
-                )
-        ));
-        return records;
+                tienCoc,
+                ghiChu,
+                chiTiet
+        );
+    }
+
+    // =========================================================
+    //  GhiChu parsing helpers
+    // =========================================================
+    private static LocalDate parseNgayNhanTuGhiChu(String ghiChu) {
+        if (ghiChu == null) return null;
+        final String PREFIX = "Dự kiến nhận: ";
+        int idx = ghiChu.indexOf(PREFIX);
+        if (idx < 0) return null;
+        String rest = ghiChu.substring(idx + PREFIX.length());
+        if (rest.length() < 10) return null;
+        try {
+            return LocalDate.parse(rest.substring(0, 10),
+                    DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        } catch (Exception e) { return null; }
+    }
+
+    private static LocalTime parseGioNhanTuGhiChu(String ghiChu) {
+        if (ghiChu == null) return null;
+        final String PREFIX = "Dự kiến nhận: ";
+        int idx = ghiChu.indexOf(PREFIX);
+        if (idx < 0) return null;
+        String rest = ghiChu.substring(idx + PREFIX.length());
+        if (rest.length() < 16) return null;
+        try {
+            return LocalTime.parse(rest.substring(11, 16),
+                    DateTimeFormatter.ofPattern("HH:mm"));
+        } catch (Exception e) { return null; }
+    }
+
+    private static double parseTienCocTuGhiChu(String ghiChu) {
+        if (ghiChu == null) return 0;
+        final String PREFIX = "Cọc: ";
+        int idx = ghiChu.indexOf(PREFIX);
+        if (idx < 0) return 0;
+        String segment = ghiChu.substring(idx + PREFIX.length());
+        int pipeIdx = segment.indexOf(" | ");
+        if (pipeIdx >= 0) segment = segment.substring(0, pipeIdx);
+        if (segment.startsWith("Không cọc")) return 0;
+        // Format: "1,500,000đ (30%)" — extract digits before "đ"
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("([\\d,.]+)đ").matcher(segment);
+        if (m.find()) {
+            try {
+                return Double.parseDouble(m.group(1).replaceAll("[,.]", ""));
+            } catch (Exception ignored) {}
+        }
+        return 0;
     }
 
     private void search() {
         String loai = (String) cboTimKiemTheo.getSelectedItem();
         String kw = txtKeyword.getText().trim().toLowerCase();
-        LocalDateTime tuNgay = tuNgayActive ? spinnerToDate(spnTuNgay) : null;
-        LocalDateTime denNgay = denNgayActive ? spinnerToDate(spnDenNgay) : null;
+        LocalDateTime tuNgay = dtcTuNgay.getDate() != null
+                ? dtcTuNgay.getDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime() : null;
+        LocalDateTime denNgay = dtcDenNgay.getDate() != null
+                ? dtcDenNgay.getDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime() : null;
+        if (tuNgay != null && denNgay != null && tuNgay.toLocalDate().isAfter(denNgay.toLocalDate())) {
+            dtcTuNgay.setDate(null);
+            dtcDenNgay.setDate(null);
+            tuNgay = null;
+            denNgay = null;
+        }
+        if (tuNgay != null) {
+            tuNgay = tuNgay.toLocalDate().atStartOfDay();
+        }
         if (denNgay != null) {
-            denNgay = denNgay.withHour(23).withMinute(59).withSecond(59);
+            denNgay = denNgay.toLocalDate().atTime(23, 59, 59);
         }
 
         filteredList.clear();
@@ -420,10 +522,8 @@ public class TraCuuDatThuoc_GUI extends JPanel {
     private void resetFilter() {
         txtKeyword.setText("");
         cboTimKiemTheo.setSelectedIndex(0);
-        spnTuNgay.setValue(new java.util.Date());
-        spnDenNgay.setValue(new java.util.Date());
-        tuNgayActive = false;
-        denNgayActive = false;
+        dtcTuNgay.setDate(new java.util.Date());
+        dtcDenNgay.setDate(new java.util.Date());
         filteredList.clear();
         filteredList.addAll(fullList);
         tblDatThuoc.refresh();
@@ -434,7 +534,7 @@ public class TraCuuDatThuoc_GUI extends JPanel {
     private void moChiTietDatThuoc(DatThuocRecord rec) {
         LinkedHashMap<String, String> leftInfo = new LinkedHashMap<>();
         leftInfo.put("Họ tên", rec.tenKhachHang != null ? rec.tenKhachHang : "---");
-        leftInfo.put("SĐT", rec.soDienThoai != null ? rec.soDienThoai : "---");
+        leftInfo.put("ĐT", rec.soDienThoai != null ? MaskUtil.phone(rec.soDienThoai) : "---");
         leftInfo.put("Ghi chú", rec.ghiChu != null && !rec.ghiChu.isBlank() ? rec.ghiChu : "---");
 
         LinkedHashMap<String, String> rightInfo = new LinkedHashMap<>();
@@ -456,14 +556,55 @@ public class TraCuuDatThuoc_GUI extends JPanel {
 
         new ChiTietDialog(
                 SwingUtilities.getWindowAncestor(this),
-                "\uD83D\uDC8A",
+                "DT",
                 "Chi tiết phiếu đặt: " + rec.maPhieuDat,
-                "\uD83D\uDC64", "Thông tin khách hàng", leftInfo,
-                "\uD83D\uDCC4", "Thông tin phiếu đặt", rightInfo,
+                "KH", "Thông tin khách hàng", leftInfo,
+                "DT", "Thông tin phiếu đặt", rightInfo,
                 "Danh sách thuốc đặt",
                 cols, rows, new int[]{0, 3},
                 summary
         ).setVisible(true);
+    }
+
+    private void handleXacNhan(DatThuocRecord rec) {
+        new XacNhanThanhToanDialog(
+                SwingUtilities.getWindowAncestor(this),
+                rec.maPhieuDat,
+                rec.tenKhachHang,
+                rec.soDienThoai,
+                rec.ngayNhan,
+                rec.gioNhan,
+                hoaDonService,
+                chiTietHoaDonDAO,
+                sanPhamDAO,
+                this::loadData
+        ).setVisible(true);
+    }
+
+    private void handleHuyDon(DatThuocRecord rec) {
+        int choice = JOptionPane.showConfirmDialog(
+                this,
+                "<html>Huỷ phiếu đặt <b>" + rec.maPhieuDat + "</b>?<br>"
+                + "Tồn kho sẽ được hoàn lại và điểm đã dùng sẽ được hoàn trả.<br>"
+                + "Thao tác này <b>không thể hoàn tác</b>.</html>",
+                "Xác nhận huỷ đơn",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+        if (choice != JOptionPane.YES_OPTION) {
+            return;
+        }
+        try {
+            hoaDonService.huyHoaDonCho(rec.maPhieuDat);
+            JOptionPane.showMessageDialog(this,
+                    "<html>Huỷ thành công!<br>Phếu <b>"
+                    + rec.maPhieuDat + "</b> đã được huỷ, tồn kho đã được hoàn lại.</html>",
+                    "Thành công", JOptionPane.INFORMATION_MESSAGE);
+            loadData();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Lỗi huỷ đơn: " + ex.getMessage(),
+                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private JPanel createCard() {
@@ -495,15 +636,6 @@ public class TraCuuDatThuoc_GUI extends JPanel {
         return l;
     }
 
-    private JSpinner makeDateSpinner() {
-        JSpinner sp = new JSpinner(new SpinnerDateModel());
-        JSpinner.DateEditor ed = new JSpinner.DateEditor(sp, "dd/MM/yyyy");
-        sp.setEditor(ed);
-        sp.setPreferredSize(new java.awt.Dimension(160, 42));
-        sp.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
-        return sp;
-    }
-
     private void updatePlaceholder() {
         String s = (String) cboTimKiemTheo.getSelectedItem();
         if (s == null) {
@@ -528,12 +660,4 @@ public class TraCuuDatThuoc_GUI extends JPanel {
         lblSoLuong.setText("Tìm thấy " + filteredList.size() + " phiếu đặt");
     }
 
-    private LocalDateTime spinnerToDate(JSpinner sp) {
-        try {
-            java.util.Date d = (java.util.Date) sp.getValue();
-            return d.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-        } catch (Exception e) {
-            return null;
-        }
-    }
 }

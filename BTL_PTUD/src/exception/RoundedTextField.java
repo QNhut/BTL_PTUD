@@ -9,6 +9,7 @@ import javax.swing.event.DocumentListener;
 //======CÁCH DÙNG=======
 //Gọi JTextField txtA = new RoundedTextField(int width, int height, int radius, String placeholder)
 //Ví dụ: JTextField txtA = new RoundedTextField(200, 30, 20, "Tìm kiếm")
+@SuppressWarnings("serial")
 public class RoundedTextField extends JTextField {
 
     private int radius;
@@ -32,10 +33,11 @@ public class RoundedTextField extends JTextField {
         this.placeholder = placeholder;
 
         setOpaque(false);
+        setBackground(backgroundColor); // sync with JComponent so L&F uses our color
         setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
         setFont(new Font("Segoe UI", Font.PLAIN, 14));
 
-        // Khi user g\u00f5 lai: t\u1ef1 \u0111\u1ed9ng x\u00f3a tr\u1ea1ng th\u00e1i invalid
+        // Khi user gõ lai: tự động xóa trạng thái invalid
         getDocument().addDocumentListener(new DocumentListener() {
             @Override public void insertUpdate(DocumentEvent e) { clearInvalidIfTyping(); }
             @Override public void removeUpdate(DocumentEvent e) { clearInvalidIfTyping(); }
@@ -49,7 +51,7 @@ public class RoundedTextField extends JTextField {
         }
     }
 
-    // \u0110\u00e1nh d\u1ea5u \u00f4 nh\u1eadp \u0111ang sai (vi\u1ec1n \u0111\u1ecf + n\u1ec1n h\u1ed3ng nh\u1ea1t).
+    // Đánh dấu ô nhập đang sai (viền đỏ + nền hồng nhạt).
     public void setInvalid(boolean invalid) {
         if (this.invalid == invalid) return;
         if (invalid) {
@@ -62,6 +64,7 @@ public class RoundedTextField extends JTextField {
             if (savedBgColor != null) this.backgroundColor = savedBgColor;
         }
         this.invalid = invalid;
+        setBackground(this.backgroundColor); // keep JComponent in sync
         repaint();
     }
 
@@ -146,6 +149,7 @@ public class RoundedTextField extends JTextField {
 
     public void setBackgroundColor(Color color) {
         this.backgroundColor = color;
+        setBackground(color); // keep JComponent in sync
         repaint();
     }
 

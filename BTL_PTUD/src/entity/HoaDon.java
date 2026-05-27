@@ -7,11 +7,17 @@ import java.util.Objects;
 public class HoaDon {
     private String maHoaDon;
     private LocalDateTime ngayLap;
+    private String trangThai;
     private double tongTien;
     private int diemTichLuy;
     private String maPTTT;
     private NhanVien nhanVien;
     private KhachHang khachHang;
+
+    public static final String TRANG_THAI_CHO_THANH_TOAN = "Chờ thanh toán";
+    public static final String TRANG_THAI_DA_THANH_TOAN   = "Đã thanh toán";
+    public static final String TRANG_THAI_DOI_HANG        = "Đổi hàng";
+    public static final String TRANG_THAI_TRA_HANG        = "Trả hàng";
 
     // ==== Phân tích chi tiết tiền (breakdown) ====
     // Tiền hàng = tổng (số lượng * đơn giá sau KM) — subtotal trước thuế.
@@ -24,6 +30,8 @@ public class HoaDon {
     private int diemSuDung;
     // Số tiền cuối cùng phải thanh toán = tienHang + tienThue - diemSuDung*1000.
     private double thanhTien;
+    // Ghi chú hóa đơn (VD: trạng thái nhận hàng so với dự kiến khi đặt trước).
+    private String ghiChu;
 
     public HoaDon(String maHoaDon, LocalDateTime ngayLap, double tongTien, int diemTichLuy, String maPTTT,
                   NhanVien nhanVien, KhachHang khachHang) {
@@ -74,6 +82,15 @@ public class HoaDon {
     // Convenience: set từ LocalDate (tự thêm giờ 00:00)
     public void setNgayLap(LocalDate ngayLap) {
         this.ngayLap = ngayLap == null ? LocalDateTime.now() : ngayLap.atStartOfDay();
+    }
+
+    public String getTrangThai() {
+        return trangThai;
+    }
+
+    public void setTrangThai(String trangThai) {
+        this.trangThai = (trangThai == null || trangThai.trim().isEmpty())
+                ? TRANG_THAI_DA_THANH_TOAN : trangThai.trim();
     }
 
     public double getTongTien() {
@@ -161,6 +178,9 @@ public class HoaDon {
         this.thanhTien = thanhTien;
     }
 
+    public String getGhiChu() { return ghiChu; }
+    public void setGhiChu(String ghiChu) { this.ghiChu = ghiChu; }
+
     @Override
     public int hashCode() {
         return Objects.hash(maHoaDon);
@@ -180,6 +200,7 @@ public class HoaDon {
         return "HoaDon{" +
                 "maHoaDon='" + maHoaDon + '\'' +
                 ", ngayLap=" + ngayLap +
+                ", trangThai='" + trangThai + '\'' +
                 ", tongTien=" + tongTien +
                 ", diemTichLuy=" + diemTichLuy +
                 ", maPTTT='" + maPTTT + '\'' +

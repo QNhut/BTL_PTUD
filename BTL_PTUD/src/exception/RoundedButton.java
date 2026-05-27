@@ -8,6 +8,7 @@ import javax.swing.*;
 //======CÁCH DÙNG=======
 // Gọi JButton btnA = new RoundedButton(int width, int height, int radius, String text, Color bgColor)
 //Ví dụ: JButton btnSave = new RoundedButton(200, 30, 20, "Lưu", Colors.BackGround)
+@SuppressWarnings("serial")
 public class RoundedButton extends JButton {
 
     private int radius;

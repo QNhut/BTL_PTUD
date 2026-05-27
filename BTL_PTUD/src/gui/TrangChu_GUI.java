@@ -6,22 +6,27 @@ import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.RenderingHints;
-import java.awt.Insets;
 import java.awt.geom.RoundRectangle2D;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import java.util.function.Consumer;
+import javax.imageio.ImageIO;
+
+import entity.ChiTietHoaDon;
+import entity.HoaDon;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -42,15 +47,19 @@ import exception.RoundedButton;
 import exception.RoundedPanel;
 import service.HoaDon_Service;
 import service.KhachHang_Service;
+import service.ChiTietHoaDon_Service;
 import service.KhuyenMai_Service;
 import service.SanPham_Service;
+import util.AsyncLoader;
 
+@SuppressWarnings("serial")
 public class TrangChu_GUI extends JPanel {
 
     private static final NumberFormat VND = constants.Formats.VND;
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final String HOME_HERO_BG_PATH = "data/img/home/trangchu-hero-bg.png";
     private static final String HOME_PILL_IMAGE_PATH = "data/img/home/trangchu-pill.png";
+    private static final String HOME_PILL_FALLBACK_PATH = "data/img/icons/medical.png";
 
     private static final Color HERO_BG = new Color(2, 31, 31);
     private static final Color HERO_GLOW = new Color(5, 74, 64, 110);
@@ -63,8 +72,15 @@ public class TrangChu_GUI extends JPanel {
     private final SanPham_Service sanPhamService = new SanPham_Service();
     private final KhachHang_Service khachHangService = new KhachHang_Service();
     private final KhuyenMai_Service khuyenMaiService = new KhuyenMai_Service();
+    private final ChiTietHoaDon_Service chiTietHoaDonService = new ChiTietHoaDon_Service();
 
     private Consumer<String> nav;
+
+    // Containers for dynamic (DB-backed) sections — replaced on each refresh
+    private JPanel statRowPlaceholder;
+    private JPanel middleRowPlaceholder;
+    private JPanel recentPreordersPlaceholder;
+    private JPanel wrapper;
 
     private static final class HomeStat {
 
@@ -94,19 +110,19 @@ public class TrangChu_GUI extends JPanel {
 
         private final String maPhieu;
         private final String khachHang;
-        private final String thuocDat;
-        private final int soLuong;
+        private final int soLoai;
+        private final String tongTien;
         private final String ngayDat;
         private final String trangThai;
         private final Color badgeBg;
         private final Color badgeFg;
 
-        private RecentPreorder(String maPhieu, String khachHang, String thuocDat, int soLuong, String ngayDat,
+        private RecentPreorder(String maPhieu, String khachHang, int soLoai, String tongTien, String ngayDat,
                 String trangThai, Color badgeBg, Color badgeFg) {
             this.maPhieu = maPhieu;
             this.khachHang = khachHang;
-            this.thuocDat = thuocDat;
-            this.soLuong = soLuong;
+            this.soLoai = soLoai;
+            this.tongTien = tongTien;
             this.ngayDat = ngayDat;
             this.trangThai = trangThai;
             this.badgeBg = badgeBg;
@@ -124,18 +140,25 @@ public class TrangChu_GUI extends JPanel {
         setLayout(new BorderLayout());
         setBackground(Colors.SECONDARY);
 
-        JPanel wrapper = new JPanel();
+        wrapper = new JPanel();
         wrapper.setLayout(new BoxLayout(wrapper, BoxLayout.Y_AXIS));
         wrapper.setBackground(Colors.SECONDARY);
         wrapper.setBorder(BorderFactory.createEmptyBorder(18, 18, 24, 18));
 
+        // Stat row placeholder (fixed height 130)
+        statRowPlaceholder = createPlaceholder(130);
+        // Middle row placeholder (fixed height 340)
+        middleRowPlaceholder = createPlaceholder(340);
+        // Recent preorders placeholder (fixed height 330)
+        recentPreordersPlaceholder = createPlaceholder(330);
+
         wrapper.add(buildHeroBanner());
         wrapper.add(Box.createVerticalStrut(18));
-        wrapper.add(buildStatRow());
+        wrapper.add(statRowPlaceholder);
         wrapper.add(Box.createVerticalStrut(18));
-        wrapper.add(buildMiddleRow());
+        wrapper.add(middleRowPlaceholder);
         wrapper.add(Box.createVerticalStrut(18));
-        wrapper.add(buildRecentPreordersSection());
+        wrapper.add(recentPreordersPlaceholder);
 
         JScrollPane scroll = new JScrollPane(wrapper);
         scroll.setBorder(null);
@@ -143,7 +166,58 @@ public class TrangChu_GUI extends JPanel {
         scroll.getVerticalScrollBar().setUnitIncrement(16);
         scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         add(scroll, BorderLayout.CENTER);
+
+        // Load dynamic sections async on first show
+        loadDynamicAsync();
     }
+
+    private JPanel createPlaceholder(int height) {
+        JPanel p = new JPanel();
+        p.setOpaque(false);
+        p.setMaximumSize(new Dimension(Integer.MAX_VALUE, height));
+        p.setPreferredSize(new Dimension(100, height));
+        p.setAlignmentX(LEFT_ALIGNMENT);
+        return p;
+    }
+
+    public void refresh() {
+        loadDynamicAsync();
+    }
+
+    private void loadDynamicAsync() {
+        AsyncLoader.run(
+            () -> {
+                JPanel newStat = buildStatRow();
+                JPanel newMiddle = buildMiddleRow();
+                JPanel newRecent = buildRecentPreordersSection();
+                return new Object[]{newStat, newMiddle, newRecent};
+            },
+            data -> {
+                replaceSection(statRowPlaceholder, (JPanel) data[0]);
+                statRowPlaceholder = (JPanel) data[0];
+                replaceSection(middleRowPlaceholder, (JPanel) data[1]);
+                middleRowPlaceholder = (JPanel) data[1];
+                replaceSection(recentPreordersPlaceholder, (JPanel) data[2]);
+                recentPreordersPlaceholder = (JPanel) data[2];
+                wrapper.revalidate();
+                wrapper.repaint();
+            }
+        );
+    }
+
+    private void replaceSection(JPanel old, JPanel newPanel) {
+        java.awt.Container parent = old.getParent();
+        if (parent == null) return;
+        int idx = -1;
+        for (int i = 0; i < parent.getComponentCount(); i++) {
+            if (parent.getComponent(i) == old) { idx = i; break; }
+        }
+        if (idx >= 0) {
+            parent.remove(idx);
+            parent.add(newPanel, idx);
+        }
+    }
+
 
     private JPanel buildHeroBanner() {
         RoundedPanel banner = new RoundedPanel(800, 235, 24) {
@@ -225,9 +299,21 @@ public class TrangChu_GUI extends JPanel {
         iconCircle.setBackground(new Color(3, 66, 58));
         iconCircle.setLayout(new GridBagLayout());
 
-        ImageIcon pillIcon = loadScaledIcon(HOME_PILL_IMAGE_PATH, 92, 92);
-        JLabel lblPill = pillIcon != null ? new JLabel(pillIcon) : new JLabel("💊");
-        lblPill.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 72));
+        BufferedImage pillSource = loadBufferedImage(HOME_PILL_IMAGE_PATH);
+        if (pillSource == null) {
+            pillSource = loadBufferedImage(HOME_PILL_FALLBACK_PATH);
+        }
+
+        ImageIcon pillIcon = null;
+        if (pillSource != null) {
+            BufferedImage cleaned = makeOuterBackgroundTransparent(pillSource);
+            cleaned = removeIsolatedSpeckles(cleaned);
+            pillIcon = new ImageIcon(scaleImageHighQuality(cleaned, 92, 92));
+        }
+        if (pillIcon == null) {
+            pillIcon = createPillFallbackIcon(92, 92);
+        }
+        JLabel lblPill = new JLabel(pillIcon);
         lblPill.setForeground(Color.WHITE);
         iconCircle.add(lblPill);
 
@@ -258,7 +344,7 @@ public class TrangChu_GUI extends JPanel {
         try {
             LocalDate homNay = LocalDate.now();
             doanhThuHomNay = hoaDonService
-                    .layThongKeTongHop(homNay.getYear(), homNay.getMonthValue(), homNay.getDayOfMonth(), null, null).tongDoanhThu;
+                    .layThongKeTongHop(homNay.getYear(), homNay.getMonthValue(), homNay.getDayOfMonth(), null, null).doanhThuKy;
             donHomNay = hoaDonService
                     .layThongKeTongHop(homNay.getYear(), homNay.getMonthValue(), homNay.getDayOfMonth(), null, null).soGiaoDich;
         } catch (Exception ignored) {
@@ -272,22 +358,31 @@ public class TrangChu_GUI extends JPanel {
         } catch (Exception ignored) {
         }
 
+        int sapHet = 0;
+        try {
+            List<SanPham> dsSP = sanPhamService.layDanhSachSanPham();
+            java.util.Map<String, SanPham_Service.TonKhoInfo> mapTon = sanPhamService.tinhTonKhoTatCa(dsSP);
+            SanPham_Service.ThongKe thongKe = sanPhamService.tinhThongKe(dsSP, mapTon);
+            sapHet = thongKe.sapHet;
+        } catch (Exception ignored) {
+        }
+
         List<HomeStat> stats = new ArrayList<HomeStat>();
-        stats.add(new HomeStat("↗", new Color(232, 250, 245), Colors.PRIMARY, "+8.2%", SOFT_GREEN, Colors.SUCCESS,
+        stats.add(new HomeStat("data/img/icons/up.png", new Color(232, 250, 245), Colors.PRIMARY, "+8.2%", SOFT_GREEN, Colors.SUCCESS,
                 VND.format((long) doanhThuHomNay) + "đ", "Doanh thu hôm nay"));
-        stats.add(new HomeStat("▢", new Color(255, 241, 234), Colors.ACCENT, "+12", SOFT_GREEN, Colors.SUCCESS,
+        stats.add(new HomeStat("data/img/icons/invoice.png", new Color(255, 241, 234), Colors.ACCENT, "+12", SOFT_GREEN, Colors.SUCCESS,
                 String.valueOf(donHomNay), "Số đơn hôm nay"));
-        stats.add(new HomeStat("◫", new Color(255, 244, 199), new Color(202, 138, 4), "12 sắp hết", SOFT_YELLOW,
+        stats.add(new HomeStat("data/img/icons/open-box.png", new Color(255, 244, 199), new Color(202, 138, 4), sapHet + " sắp hết", SOFT_YELLOW,
                 new Color(146, 64, 14), String.valueOf(tongSanPham), "Sản phẩm"));
-        stats.add(new HomeStat("◌", new Color(229, 239, 255), new Color(37, 99, 235), "+3 hôm nay", SOFT_GREEN,
+        stats.add(new HomeStat("data/img/icons/people.png", new Color(229, 239, 255), new Color(37, 99, 235), "+3 hôm nay", SOFT_GREEN,
                 Colors.SUCCESS, VND.format((long) tongKhachHang), "Khách hàng"));
         return stats;
     }
 
     private JPanel buildStatCard(HomeStat stat) {
-        JPanel card = createCard(260, 130);
+        JPanel card = createCard(260, 150);
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBorder(BorderFactory.createEmptyBorder(18, 20, 18, 20));
+        card.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         card.setAlignmentX(LEFT_ALIGNMENT);
 
         JPanel top = new JPanel(new BorderLayout());
@@ -315,9 +410,9 @@ public class TrangChu_GUI extends JPanel {
         label.setMaximumSize(new Dimension(Integer.MAX_VALUE, label.getPreferredSize().height));
 
         card.add(top);
-        card.add(Box.createVerticalStrut(20));
+        card.add(Box.createVerticalStrut(12));
         card.add(value);
-        card.add(Box.createVerticalStrut(6));
+        card.add(Box.createVerticalStrut(3));
         card.add(label);
         return card;
     }
@@ -342,10 +437,14 @@ public class TrangChu_GUI extends JPanel {
 
         try {
             List<SanPham> ds = sanPhamService.layDanhSachSanPham();
-            int[] tonMinhHoa = {240, 88, 320, 15};
+            java.util.Map<String, SanPham_Service.TonKhoInfo> mapTon = sanPhamService.tinhTonKhoTatCa(ds);
             int n = Math.min(4, ds.size());
             for (int i = 0; i < n; i++) {
-                card.add(buildFeaturedProductRow(ds.get(i), tonMinhHoa[i % tonMinhHoa.length], i == 3));
+                SanPham sp = ds.get(i);
+                SanPham_Service.TonKhoInfo info = mapTon.get(sp.getMaSanPham());
+                int ton = (info != null) ? info.tonKho : 0;
+                boolean lowStock = info != null && !"CON_HANG".equals(info.trangThai);
+                card.add(buildFeaturedProductRow(sp, ton, lowStock));
                 if (i < n - 1) {
                     card.add(Box.createVerticalStrut(12));
                 }
@@ -367,10 +466,9 @@ public class TrangChu_GUI extends JPanel {
         JPanel left = new JPanel(new BorderLayout(12, 0));
         left.setOpaque(false);
 
-        JLabel icon = createRoundIcon(lowStock ? "💊" : "●", new Color(234, 245, 241),
+        JLabel icon = createRoundIcon(lowStock ? "!" : "*", new Color(234, 245, 241),
                 lowStock ? Colors.ACCENT : new Color(59, 130, 246), 42);
-        icon.setFont(lowStock ? new Font("Segoe UI Emoji", Font.PLAIN, 22)
-                : FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
+        icon.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
 
         JPanel text = new JPanel();
         text.setOpaque(false);
@@ -403,7 +501,7 @@ public class TrangChu_GUI extends JPanel {
         lblPrice.setForeground(Colors.PRIMARY);
         lblPrice.setAlignmentX(Component.RIGHT_ALIGNMENT);
 
-        JLabel lblStock = new JLabel((lowStock ? "⚠ Tồn: " : "Tồn: ") + tonKho);
+        JLabel lblStock = new JLabel((lowStock ? "Cảnh báo tồn: " : "Tồn: ") + tonKho);
         lblStock.setFont(FontStyle.font(FontStyle.BASE, FontStyle.NORMAL));
         lblStock.setForeground(lowStock ? Colors.DANGER : Colors.TEXT_SECONDARY);
         lblStock.setAlignmentX(Component.RIGHT_ALIGNMENT);
@@ -502,7 +600,7 @@ public class TrangChu_GUI extends JPanel {
         card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Colors.BORDER_LIGHT),
                 BorderFactory.createEmptyBorder(18, 22, 14, 22)));
 
-        card.add(sectionHeader("🗓 Đặt trước thuốc gần đây", "Xem tất cả", () -> nav.accept("TraCuuDatThuoc")));
+        card.add(sectionHeader("Đặt trước thuốc gần đây", "Xem tất cả", () -> nav.accept("TraCuuDatThuoc")));
         card.add(Box.createVerticalStrut(18));
         card.add(buildPreorderTableHeader());
         card.add(Box.createVerticalStrut(4));
@@ -522,8 +620,8 @@ public class TrangChu_GUI extends JPanel {
         row.setOpaque(false);
         row.add(tableHeaderLabel("Mã phiếu"));
         row.add(tableHeaderLabel("Khách hàng"));
-        row.add(tableHeaderLabel("Thuốc đặt"));
-        row.add(tableHeaderLabel("SL"));
+        row.add(tableHeaderLabel("Số loại thuốc"));
+        row.add(tableHeaderLabel("Tổng tiền"));
         row.add(tableHeaderLabel("Ngày đặt"));
         row.add(tableHeaderLabel("Trạng thái"));
         return row;
@@ -539,34 +637,74 @@ public class TrangChu_GUI extends JPanel {
         ma.setForeground(Colors.PRIMARY);
 
         JLabel kh = bodyLabel(rowData.khachHang);
-        JLabel thuoc = bodyLabel(rowData.thuocDat);
 
-        JLabel sl = new JLabel(String.valueOf(rowData.soLuong));
-        sl.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
-        sl.setForeground(Colors.TEXT_PRIMARY);
+        JLabel soLoai = new JLabel(rowData.soLoai + " loại");
+        soLoai.setFont(FontStyle.font(FontStyle.BASE, FontStyle.NORMAL));
+        soLoai.setForeground(Colors.TEXT_PRIMARY);
+
+        JLabel tongTien = new JLabel(rowData.tongTien);
+        tongTien.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
+        tongTien.setForeground(Colors.PRIMARY);
 
         JLabel ngay = bodyLabel(rowData.ngayDat);
-        JLabel status = createBadge(rowData.trangThai, rowData.badgeBg, rowData.badgeFg);
+        JLabel status = createStatusBadge(rowData.trangThai, rowData.badgeBg, rowData.badgeFg);
 
         row.add(ma);
         row.add(kh);
-        row.add(thuoc);
-        row.add(sl);
+        row.add(soLoai);
+        row.add(tongTien);
         row.add(ngay);
         row.add(wrapLeft(status));
         return row;
     }
 
+    private JLabel createStatusBadge(String text, Color bg, Color fg) {
+        JLabel badge = createBadge(text, bg, fg);
+        Dimension fixed = new Dimension(170, 36);
+        badge.setPreferredSize(fixed);
+        badge.setMinimumSize(fixed);
+        badge.setMaximumSize(fixed);
+        badge.setHorizontalAlignment(SwingConstants.CENTER);
+        badge.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        badge.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                nav.accept("TraCuuDatThuoc");
+            }
+        });
+        return badge;
+    }
+
     private List<RecentPreorder> buildSampleRecentPreorders() {
         List<RecentPreorder> rows = new ArrayList<RecentPreorder>();
-        rows.add(new RecentPreorder("DT-0045", "Trần Thị B", "Omeprazole 20mg", 2,
-                DATE_FMT.format(LocalDate.now()), "◔ Chờ xác nhận", SOFT_YELLOW, new Color(161, 98, 7)));
-        rows.add(new RecentPreorder("DT-0044", "Lê Văn C", "Vitamin C 1000mg", 5,
-                DATE_FMT.format(LocalDate.now()), "◉ Đã xác nhận", SOFT_BLUE, new Color(37, 99, 235)));
-        rows.add(new RecentPreorder("DT-0043", "Phạm Thị D", "Amoxicillin 500mg", 1,
-                DATE_FMT.format(LocalDate.now().minusDays(1)), "◉ Hoàn thành", SOFT_GREEN, Colors.SUCCESS));
-        rows.add(new RecentPreorder("DT-0042", "Nguyễn Văn E", "Paracetamol 500mg", 3,
-                DATE_FMT.format(LocalDate.now().minusDays(1)), "◉ Đã huỷ", SOFT_RED, Colors.DANGER));
+        try {
+            List<HoaDon> dsDatTruoc = hoaDonService.layDSChoThanhToan();
+            int limit = Math.min(5, dsDatTruoc.size());
+            for (int i = 0; i < limit; i++) {
+                HoaDon hd = dsDatTruoc.get(i);
+                String maPhieu = hd.getMaHoaDon() != null ? hd.getMaHoaDon() : "---";
+                String tenKH = "Khách lẻ";
+                if (hd.getKhachHang() != null && hd.getKhachHang().getTenKhachHang() != null
+                        && !hd.getKhachHang().getTenKhachHang().isBlank()) {
+                    tenKH = hd.getKhachHang().getTenKhachHang();
+                }
+                int soLoai = 0;
+                try {
+                    List<ChiTietHoaDon> dsCT = chiTietHoaDonService.getChiTietTheoHoaDon(hd.getMaHoaDon());
+                    soLoai = dsCT.size();
+                } catch (Exception ignored) {
+                }
+                String tongTienStr = VND.format((long) hd.getTongTien()) + "đ";
+                String ngayDat = hd.getNgayLap() != null
+                        ? DATE_FMT.format(hd.getNgayLap().toLocalDate()) : "---";
+                rows.add(new RecentPreorder(maPhieu, tenKH, soLoai, tongTienStr,
+                        ngayDat, "Chờ thanh toán", SOFT_YELLOW, new Color(161, 98, 7)));
+            }
+        } catch (Exception ignored) {
+        }
+        if (rows.isEmpty()) {
+            rows.add(new RecentPreorder("---", "---", 0, "---", "---", "Không có dữ liệu", SOFT_BLUE, new Color(37, 99, 235)));
+        }
         return rows;
     }
 
@@ -581,7 +719,7 @@ public class TrangChu_GUI extends JPanel {
         row.add(lblTitle, BorderLayout.WEST);
 
         if (actionText != null && !actionText.isEmpty()) {
-            JLabel actionLabel = new JLabel(actionText + "  →");
+            JLabel actionLabel = new JLabel(actionText);
             actionLabel.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
             actionLabel.setForeground(Colors.PRIMARY);
             if (action != null) {
@@ -614,7 +752,35 @@ public class TrangChu_GUI extends JPanel {
     }
 
     private JLabel createRoundIcon(String text, Color bg, Color fg, int size) {
-        JLabel label = new JLabel(text, SwingConstants.CENTER) {
+        // Thử load file ảnh nếu text có dạng đường dẫn
+        ImageIcon loadedIcon = null;
+        if (text != null && (text.contains("/") || text.contains("\\"))) {
+            try {
+                File imgFile = new File(text);
+                if (imgFile.exists()) {
+                    BufferedImage raw = ImageIO.read(imgFile);
+                    if (raw != null) {
+                        int iconSize = (int) (size * 0.58);
+                        // Vẽ lại với màu fg thông qua tint
+                        BufferedImage tinted = new BufferedImage(raw.getWidth(), raw.getHeight(), BufferedImage.TYPE_INT_ARGB);
+                        Graphics2D tg = tinted.createGraphics();
+                        tg.drawImage(raw, 0, 0, null);
+                        tg.setComposite(java.awt.AlphaComposite.SrcIn);
+                        tg.setColor(fg);
+                        tg.fillRect(0, 0, tinted.getWidth(), tinted.getHeight());
+                        tg.dispose();
+                        Image scaled = tinted.getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH);
+                        loadedIcon = new ImageIcon(scaled);
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        final ImageIcon finalIcon = loadedIcon;
+        final String displayText = (loadedIcon == null) ? text : null;
+
+        JLabel label = new JLabel(displayText, finalIcon, SwingConstants.CENTER) {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -628,11 +794,14 @@ public class TrangChu_GUI extends JPanel {
         label.setOpaque(false);
         label.setBackground(bg);
         label.setForeground(fg);
-        label.setFont(FontStyle.font(FontStyle.LG, FontStyle.BOLD));
+        if (displayText != null) {
+            int iconFontSize = displayText.length() >= 2 ? Math.max(12, size / 3) : Math.max(12, size / 2);
+            label.setFont(new java.awt.Font("SansSerif", java.awt.Font.BOLD, iconFontSize));
+        }
         label.setPreferredSize(new Dimension(size, size));
         label.setMinimumSize(new Dimension(size, size));
         label.setMaximumSize(new Dimension(size, size));
-        label.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        label.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
         return label;
     }
 
@@ -702,11 +871,172 @@ public class TrangChu_GUI extends JPanel {
         return new ImageIcon(path).getImage();
     }
 
-    private ImageIcon loadScaledIcon(String path, int width, int height) {
-        Image image = loadImage(path);
-        if (image == null) {
+    private BufferedImage loadBufferedImage(String path) {
+        if (path == null || path.trim().isEmpty()) {
             return null;
         }
-        return new ImageIcon(image.getScaledInstance(width, height, Image.SCALE_SMOOTH));
+        File file = new File(path);
+        if (!file.exists()) {
+            return null;
+        }
+        try {
+            return ImageIO.read(file);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private BufferedImage scaleImageHighQuality(BufferedImage src, int width, int height) {
+        BufferedImage out = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = out.createGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.drawImage(src, 0, 0, width, height, null);
+        g2.dispose();
+        return out;
+    }
+
+    // Xoa nen trung tinh o ria icon (vd checkerboard) de khop mau nen banner.
+    private BufferedImage makeOuterBackgroundTransparent(BufferedImage src) {
+        if (src == null) {
+            return null;
+        }
+
+        BufferedImage img = new BufferedImage(src.getWidth(), src.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = img.createGraphics();
+        g2.drawImage(src, 0, 0, null);
+        g2.dispose();
+
+        int w = img.getWidth();
+        int h = img.getHeight();
+        boolean[] visited = new boolean[w * h];
+        Deque<Integer> queue = new ArrayDeque<>();
+
+        for (int x = 0; x < w; x++) {
+            tryEnqueueBackground(img, x, 0, w, h, visited, queue);
+            tryEnqueueBackground(img, x, h - 1, w, h, visited, queue);
+        }
+        for (int y = 0; y < h; y++) {
+            tryEnqueueBackground(img, 0, y, w, h, visited, queue);
+            tryEnqueueBackground(img, w - 1, y, w, h, visited, queue);
+        }
+
+        while (!queue.isEmpty()) {
+            int idx = queue.removeFirst();
+            int x = idx % w;
+            int y = idx / w;
+            img.setRGB(x, y, 0x00000000);
+
+            tryEnqueueBackground(img, x + 1, y, w, h, visited, queue);
+            tryEnqueueBackground(img, x - 1, y, w, h, visited, queue);
+            tryEnqueueBackground(img, x, y + 1, w, h, visited, queue);
+            tryEnqueueBackground(img, x, y - 1, w, h, visited, queue);
+        }
+
+        return img;
+    }
+
+    // Xoa cac diem trang/xam bi sot lai sau khi tach nen.
+    private BufferedImage removeIsolatedSpeckles(BufferedImage src) {
+        if (src == null) {
+            return null;
+        }
+
+        int w = src.getWidth();
+        int h = src.getHeight();
+        BufferedImage out = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = out.createGraphics();
+        g2.drawImage(src, 0, 0, null);
+        g2.dispose();
+
+        for (int y = 1; y < h - 1; y++) {
+            for (int x = 1; x < w - 1; x++) {
+                int argb = out.getRGB(x, y);
+                if (!isLikelyCheckerBackground(argb)) {
+                    continue;
+                }
+
+                int transparentNeighbors = 0;
+                for (int ny = y - 1; ny <= y + 1; ny++) {
+                    for (int nx = x - 1; nx <= x + 1; nx++) {
+                        if (nx == x && ny == y) {
+                            continue;
+                        }
+                        int a = (out.getRGB(nx, ny) >>> 24) & 0xFF;
+                        if (a < 16) {
+                            transparentNeighbors++;
+                        }
+                    }
+                }
+
+                if (transparentNeighbors >= 5) {
+                    out.setRGB(x, y, 0x00000000);
+                }
+            }
+        }
+
+        return out;
+    }
+
+    private void tryEnqueueBackground(BufferedImage img, int x, int y, int w, int h,
+            boolean[] visited, Deque<Integer> queue) {
+        if (x < 0 || x >= w || y < 0 || y >= h) {
+            return;
+        }
+        int idx = y * w + x;
+        if (visited[idx]) {
+            return;
+        }
+        int argb = img.getRGB(x, y);
+        if (!isLikelyCheckerBackground(argb)) {
+            return;
+        }
+        visited[idx] = true;
+        queue.addLast(idx);
+    }
+
+    private boolean isLikelyCheckerBackground(int argb) {
+        int a = (argb >>> 24) & 0xFF;
+        if (a < 16) {
+            return true;
+        }
+
+        int r = (argb >>> 16) & 0xFF;
+        int g = (argb >>> 8) & 0xFF;
+        int b = argb & 0xFF;
+
+        int max = Math.max(r, Math.max(g, b));
+        int min = Math.min(r, Math.min(g, b));
+        double saturation = max == 0 ? 0 : (double) (max - min) / max;
+        double brightness = max / 255.0;
+
+        return brightness >= 0.62 && saturation <= 0.13;
+    }
+
+    private ImageIcon createPillFallbackIcon(int width, int height) {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = image.createGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        int x = 2;
+        int y = height / 2 - 16;
+        int w = width - 4;
+        int h = 32;
+
+        g2.setColor(new Color(245, 251, 248));
+        g2.fillRoundRect(x, y, w, h, h, h);
+
+        g2.setColor(new Color(16, 122, 103));
+        g2.fillRoundRect(x + w / 2, y, w / 2, h, h, h);
+
+        g2.setColor(new Color(255, 255, 255, 210));
+        g2.fillRoundRect(x + 4, y + 4, w - 8, 6, 6, 6);
+
+        g2.setColor(new Color(210, 225, 219));
+        g2.drawLine(x + w / 2, y + 2, x + w / 2, y + h - 2);
+
+        g2.dispose();
+        return new ImageIcon(image);
     }
 }

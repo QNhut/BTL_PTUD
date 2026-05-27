@@ -3,7 +3,6 @@ package gui;
 import constants.Colors;
 import constants.FontStyle;
 import dao.ChiTietHoaDon_DAO;
-import dao.HoaDon_DAO;
 import dao.KhachHang_DAO;
 import dao.PhuongThucThanhToan_DAO;
 import dao.SanPham_DAO;
@@ -14,7 +13,10 @@ import entity.PhuongThucThanhToan;
 import entity.SanPham;
 import exception.RoundedButton;
 import exception.RoundedPanel;
+import exception.RoundedTextField;
 import exception.RoundedToggleButton;
+import util.MaskUtil;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.text.DecimalFormat;
@@ -24,9 +26,9 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 
+@SuppressWarnings("serial")
 public class TraHang_GUI extends JPanel {
 
-    private final HoaDon_DAO hoaDonDAO = new HoaDon_DAO();
     private final ChiTietHoaDon_DAO chiTietHoaDonDAO = new ChiTietHoaDon_DAO();
     private final SanPham_DAO sanPhamDAO = new SanPham_DAO();
     private final KhachHang_DAO khachHangDAO = new KhachHang_DAO();
@@ -56,17 +58,18 @@ public class TraHang_GUI extends JPanel {
 
     private void initComponents() {
         // Header
-        JPanel pnlHeader = new JPanel(new BorderLayout());
-        pnlHeader.setBackground(Colors.PRIMARY);
-        pnlHeader.setBorder(new EmptyBorder(30, 25, 25, 25));
-        JLabel lblTitle = new JLabel("Quản Lý Trả Hàng");
-        lblTitle.setFont(FontStyle.font(FontStyle.LG, FontStyle.BOLD));
-        lblTitle.setForeground(Color.WHITE);
-        pnlHeader.add(lblTitle, BorderLayout.NORTH);
+        JPanel pnlHeader = new JPanel();
+        pnlHeader.setLayout(new BoxLayout(pnlHeader, BoxLayout.Y_AXIS));
+        pnlHeader.setBackground(Colors.BACKGROUND);
+        pnlHeader.setBorder(new EmptyBorder(20, 25, 0, 25));
+        JLabel lblTitle = new JLabel("Trả hàng");
+        lblTitle.setFont(FontStyle.font(FontStyle.XXL, FontStyle.BOLD));
+        lblTitle.setForeground(Colors.FOREGROUND);
         JLabel lblSub = new JLabel("Tìm kiếm hóa đơn và xử lý hoàn tiền cho khách hàng");
         lblSub.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
-        lblSub.setForeground(new Color(220, 220, 220));
-        pnlHeader.add(lblSub, BorderLayout.SOUTH);
+        lblSub.setForeground(Colors.MUTED);
+        pnlHeader.add(lblTitle);
+        pnlHeader.add(lblSub);
         add(pnlHeader, BorderLayout.NORTH);
 
         JPanel pnlCenter = new JPanel(new GridBagLayout());
@@ -76,10 +79,10 @@ public class TraHang_GUI extends JPanel {
         gbc.fill = GridBagConstraints.BOTH;
         gbc.weighty = 1.0;
         gbc.gridx = 0;
-        gbc.weightx = 0.3;
+        gbc.weightx = 0.4;
         pnlCenter.add(createLeftPanel(), gbc);
         gbc.gridx = 1;
-        gbc.weightx = 0.7;
+        gbc.weightx = 0.6;
         gbc.insets = new Insets(0, 25, 0, 0);
         pnlCenter.add(createRightPanel(), gbc);
         add(pnlCenter, BorderLayout.CENTER);
@@ -94,17 +97,17 @@ public class TraHang_GUI extends JPanel {
         // Search Section
         JPanel pnlSearch = new JPanel(new BorderLayout(0, 10));
         pnlSearch.setOpaque(false);
-        JLabel lblSearch = new JLabel("🔍 Tìm Kiếm Hóa Đơn");
+        JLabel lblSearch = new JLabel("Tìm Kiếm Hóa Đơn");
         lblSearch.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
         lblSearch.setForeground(Colors.TEXT_PRIMARY);
         pnlSearch.add(lblSearch, BorderLayout.NORTH);
         JLabel lblSearchHint = new JLabel("Nhập mã hóa đơn để tìm kiếm");
         lblSearchHint.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
         lblSearchHint.setForeground(new Color(120, 120, 120));
-        txtSearchMaHD = new JTextField();
+        txtSearchMaHD = new RoundedTextField(200, 50, 15, "Nhập mã hóa đơn...");
         txtSearchMaHD.setPreferredSize(new Dimension(0, 38));
         txtSearchMaHD.setFont(FontStyle.font(FontStyle.BASE, FontStyle.NORMAL));
-        RoundedButton btnSearch = new RoundedButton(0, 38, 8, "🔎 Tìm hóa đơn", Colors.PRIMARY);
+        RoundedButton btnSearch = new RoundedButton(0, 38, 8, "Tìm hóa đơn", Colors.PRIMARY);
         btnSearch.setForeground(Color.WHITE);
         btnSearch.addActionListener(e -> searchInvoice());
         JPanel pnlInputField = new JPanel(new BorderLayout(0, 5));
@@ -124,25 +127,26 @@ public class TraHang_GUI extends JPanel {
         JPanel pnlInfo = new JPanel(new BorderLayout(0, 6));
         pnlInfo.setOpaque(false);
         pnlInfo.setBorder(new EmptyBorder(10, 0, 8, 0));
-        JLabel lblInfoTitle = new JLabel("📋 Thông Tin Hóa Đơn");
+        JLabel lblInfoTitle = new JLabel("Thông Tin Hóa Đơn");
+//        setLabelIcon(lblInfoTitle, "invoice.png", 16, 16);
         lblInfoTitle.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
         lblInfoTitle.setForeground(Colors.TEXT_PRIMARY);
         pnlInfo.add(lblInfoTitle, BorderLayout.NORTH);
         JPanel pnlInfoDetails = new JPanel();
         pnlInfoDetails.setLayout(new BoxLayout(pnlInfoDetails, BoxLayout.Y_AXIS));
         pnlInfoDetails.setOpaque(false);
-        lblMaHoaDon = new JLabel("🧾 Mã hóa đơn: --");
+        lblMaHoaDon = new JLabel("Mã hóa đơn: --");
         lblMaHoaDon.setFont(FontStyle.font(FontStyle.XS, FontStyle.BOLD));
         lblMaHoaDon.setForeground(Colors.PRIMARY);
-        lblCustomerName = new JLabel("👤 Khách hàng: --");
+        lblCustomerName = new JLabel("Khách hàng: --");
         lblCustomerName.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
-        lblPhone = new JLabel("📞 SĐT: --");
+        lblPhone = new JLabel("SĐT: --");
         lblPhone.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
-        lblInvoiceDate = new JLabel("📅 Ngày lập: --");
+        lblInvoiceDate = new JLabel("Ngày lập: --");
         lblInvoiceDate.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
-        lblPaymentMethod = new JLabel("💳 Phương thức TT: --");
+        lblPaymentMethod = new JLabel("Phương thức TT: --");
         lblPaymentMethod.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
-        lblInvoiceTotal = new JLabel("💰 Tổng tiền HĐ: --");
+        lblInvoiceTotal = new JLabel("Tổng tiền HĐ: --");
         lblInvoiceTotal.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
         lblInvoiceTotal.setForeground(new Color(229, 57, 53));
         pnlInfoDetails.add(lblMaHoaDon);
@@ -170,7 +174,7 @@ public class TraHang_GUI extends JPanel {
         pnlReason.setOpaque(false);
         pnlReason.setBorder(new EmptyBorder(30, 0, 0, 0));
 
-        JLabel lblReasonTitle = new JLabel("⚠ Lý Do Trả Hàng");
+        JLabel lblReasonTitle = new JLabel("Lý Do Trả Hàng");
         lblReasonTitle.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
         lblReasonTitle.setForeground(Colors.TEXT_PRIMARY);
         lblReasonTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -180,12 +184,9 @@ public class TraHang_GUI extends JPanel {
         JPanel pnlToggleRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         pnlToggleRow.setOpaque(false);
         pnlToggleRow.setAlignmentX(Component.LEFT_ALIGNMENT);
-//        JLabel lblMode = new JLabel("Chế độ nhập:  ");
-//        lblMode.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
-//        lblMode.setForeground(Colors.TEXT_SECONDARY);
         ButtonGroup modeGroup = new ButtonGroup();
         btnModeList = new RoundedToggleButton(100, 32, 12, "≡ Chọn", Colors.PRIMARY);
-        btnModeManual = new RoundedToggleButton(90, 32, 12, "✏ Nhập", Colors.TEXT_SECONDARY);
+        btnModeManual = new RoundedToggleButton(90, 32, 12, "Nhập", Colors.TEXT_SECONDARY);
         btnModeList.setForeground(Color.WHITE);
         btnModeManual.setForeground(Color.WHITE);
         modeGroup.add(btnModeList);
@@ -193,7 +194,6 @@ public class TraHang_GUI extends JPanel {
         btnModeList.setSelected(true);
         btnModeList.addActionListener(e -> switchMode(false));
         btnModeManual.addActionListener(e -> switchMode(true));
-//        pnlToggleRow.add(lblMode);
         pnlToggleRow.add(btnModeList);
         pnlToggleRow.add(Box.createHorizontalStrut(6));
         pnlToggleRow.add(btnModeManual);
@@ -249,7 +249,7 @@ public class TraHang_GUI extends JPanel {
 
         // Note Section
         pnlReason.add(Box.createVerticalStrut(10));
-        JLabel lblNote = new JLabel("📝 Ghi chú (không bắt buộc)");
+        JLabel lblNote = new JLabel("Ghi chú (không bắt buộc)");
         lblNote.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
         lblNote.setForeground(Colors.TEXT_SECONDARY);
         lblNote.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -301,7 +301,8 @@ public class TraHang_GUI extends JPanel {
         pnl.setLayout(new BorderLayout(0, 15));
         pnl.setBorder(new EmptyBorder(25, 20, 25, 20));
 
-        JLabel lblTableTitle = new JLabel("← Danh Sách Sản Phẩm Trả");
+        JLabel lblTableTitle = new JLabel("Danh Sách Sản Phẩm Trả");
+        
         lblTableTitle.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
         lblTableTitle.setForeground(Colors.PRIMARY);
         pnl.add(lblTableTitle, BorderLayout.NORTH);
@@ -376,7 +377,7 @@ public class TraHang_GUI extends JPanel {
         lblRefundTotal = new JLabel("TỔNG TIỀN HOÀN: 0 đ");
         lblRefundTotal.setFont(FontStyle.font(FontStyle.LG, FontStyle.BOLD));
         lblRefundTotal.setForeground(Colors.PRIMARY);
-        RoundedButton btnConfirm = new RoundedButton(220, 45, 10, "✅ Xác Nhận Hoàn Tiền", Colors.PRIMARY);
+        RoundedButton btnConfirm = new RoundedButton(220, 45, 10, "Xác Nhận Hoàn Tiền", Colors.PRIMARY);
         btnConfirm.setForeground(Color.WHITE);
         btnConfirm.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
         btnConfirm.addActionListener(e -> processReturn());
@@ -407,9 +408,15 @@ public class TraHang_GUI extends JPanel {
         if (ma.isEmpty()) {
             return;
         }
-        HoaDon hd = hoaDonDAO.layHDTheoMa(ma);
+        HoaDon hd = traHangService.getHoaDonByMa(ma);
         if (hd == null) {
             JOptionPane.showMessageDialog(this, "Không tìm thấy hóa đơn!");
+            return;
+        }
+        String check = traHangService.checkDieuKienTraHang(hd);
+        if (!"OK".equals(check)) {
+            JOptionPane.showMessageDialog(this, check, "Không thể trả hàng", JOptionPane.WARNING_MESSAGE);
+            resetForm();
             return;
         }
         String tenKH = "Khách lẻ";
@@ -436,13 +443,13 @@ public class TraHang_GUI extends JPanel {
             }
         }
         double tongTienHD = hd.getThanhTien() > 0 ? hd.getThanhTien() : hd.getTongTien();
-        lblMaHoaDon.setText("🧾 Mã hóa đơn: " + hd.getMaHoaDon());
-        lblCustomerName.setText("👤 Khách hàng: " + tenKH);
-        lblPhone.setText("📞 SĐT: " + sdtKH);
-        lblInvoiceDate.setText("📅 Ngày lập: "
+        lblMaHoaDon.setText("Mã hóa đơn: " + hd.getMaHoaDon());
+        lblCustomerName.setText("Khách hàng: " + tenKH);
+        lblPhone.setText("SĐT: " + MaskUtil.phone(sdtKH));
+        lblInvoiceDate.setText("Ngày lập: "
                 + (hd.getNgayLap() != null ? hd.getNgayLap().toString() : "--"));
-        lblPaymentMethod.setText("💳 Phương thức TT: " + tenPTTT);
-        lblInvoiceTotal.setText("💰 Tổng tiền HĐ: " + df.format(tongTienHD) + " đ");
+        lblPaymentMethod.setText("Phương thức TT: " + tenPTTT);
+        lblInvoiceTotal.setText("Tổng tiền HĐ: " + df.format(tongTienHD) + " đ");
         List<ChiTietHoaDon> details = chiTietHoaDonDAO.getDSTheoHoaDon(ma);
         currentInvoiceItems.clear();
         modelItems.setRowCount(0);
@@ -515,14 +522,14 @@ public class TraHang_GUI extends JPanel {
         String reason;
         if (btnModeList.isSelected()) {
             if (cbReasonPreset.getSelectedIndex() == 0) {
-                JOptionPane.showMessageDialog(this, "⚠️ Vui lòng chọn lý do trả hàng!");
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn lý do trả hàng!");
                 return;
             }
             reason = cbReasonPreset.getSelectedItem().toString();
         } else {
             String custom = txtReasonCustom.getText().trim();
             if (custom.isEmpty() || custom.equals("Nhập lý do trả hàng...")) {
-                JOptionPane.showMessageDialog(this, "⚠️ Vui lòng nhập lý do trả hàng!");
+                JOptionPane.showMessageDialog(this, "Vui lòng nhập lý do trả hàng!");
                 return;
             }
             reason = custom;
@@ -534,6 +541,12 @@ public class TraHang_GUI extends JPanel {
             return;
         }
         String maHD = txtSearchMaHD.getText().trim();
+        HoaDon hd = traHangService.getHoaDonByMa(maHD);
+        String check = traHangService.checkDieuKienTraHang(hd);
+        if (!"OK".equals(check)) {
+            JOptionPane.showMessageDialog(this, check, "Không thể trả hàng", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         List<ChiTietHoaDon> returns = new ArrayList<>();
         for (ReturnItem i : currentInvoiceItems) {
             if (i.returnQty > 0) {
@@ -543,11 +556,15 @@ public class TraHang_GUI extends JPanel {
         boolean success = traHangService.thucHienTraHang(maHD, returns, reason);
         if (success) {
             HoaDon_GUI.stockDirty = true;
-            JOptionPane.showMessageDialog(this, "✅ Xử lý trả hàng thành công! Kho và hóa đơn đã được cập nhật.");
+            JOptionPane.showMessageDialog(this, "Xử lý trả hàng thành công! Kho và hóa đơn đã được cập nhật.");
             resetForm();
         } else {
-            JOptionPane.showMessageDialog(this, "❌ Có lỗi xảy ra khi cập nhật hệ thống!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Có lỗi xảy ra khi cập nhật hệ thống!", "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    public void refresh() {
+        resetForm();
     }
 
     private void resetForm() {
@@ -562,12 +579,12 @@ public class TraHang_GUI extends JPanel {
         txtReasonCustom.setForeground(Colors.TEXT_SECONDARY);
         txtNote.setText("Nhập ghi chú...");
         txtNote.setForeground(Colors.TEXT_SECONDARY);
-        lblMaHoaDon.setText("🧾 Mã hóa đơn: --");
-        lblCustomerName.setText("👤 Khách hàng: --");
-        lblPhone.setText("📞 SĐT: --");
-        lblInvoiceDate.setText("📅 Ngày lập: --");
-        lblPaymentMethod.setText("💳 Phương thức TT: --");
-        lblInvoiceTotal.setText("💰 Tổng tiền HĐ: --");
+        lblMaHoaDon.setText("Mã hóa đơn: --");
+        lblCustomerName.setText("Khách hàng: --");
+        lblPhone.setText("SĐT: --");
+        lblInvoiceDate.setText("Ngày lập: --");
+        lblPaymentMethod.setText("Phương thức TT: --");
+        lblInvoiceTotal.setText("Tổng tiền HĐ: --");
     }
 
     // === Inner classes ===

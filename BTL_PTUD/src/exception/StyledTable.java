@@ -29,6 +29,7 @@ import javax.swing.table.*;
 // <li>Tiện ích nội bộ (AVATAR_COLORS, getInitials, getAvatarColor)</li>
 // <li>Renderer nội bộ (các inner class)</li>
 // </ol>
+@SuppressWarnings("serial")
 public class StyledTable extends JScrollPane {
 
     // =========================================================================
@@ -39,13 +40,15 @@ public class StyledTable extends JScrollPane {
     private JTable table;
     private AbstractTableModel model;
 
-    // Chỉ số cột thao tác – được gán khi gọi setActionColumn / setDeleteButtonColumn
+    // Chỉ số cột thao tác – được gán khi gọi setActionColumn / setDeleteButtonColumn / setConfirmButtonColumn
     private int actionColumnIndex = -1;
     private int deleteColumnIndex = -1;
+    private int confirmColumnIndex = -1;
 
     // Callback xử lý click từng loại cột thao tác
     private java.util.function.BiConsumer<Integer, Object> actionListener;
     private java.util.function.BiConsumer<Integer, Object> deleteListener;
+    private java.util.function.BiConsumer<Integer, Object> confirmListener;
 
     // Cờ đảm bảo chỉ đăng ký 1 MouseListener duy nhất
     private boolean clickListenerInstalled = false;
@@ -165,6 +168,8 @@ public class StyledTable extends JScrollPane {
                     actionListener.accept(row, rowData);
                 } else if (col == deleteColumnIndex && deleteListener != null) {
                     deleteListener.accept(row, rowData);
+                } else if (col == confirmColumnIndex && confirmListener != null) {
+                    confirmListener.accept(row, rowData);
                 }
             }
         });
@@ -276,7 +281,29 @@ public class StyledTable extends JScrollPane {
     public void setDeleteButtonColumn(int colIndex, int width) {
         deleteColumnIndex = colIndex;
         setColumnWidth(colIndex, width);
-        setColumnRenderer(colIndex, new DeleteButtonRenderer());
+        setColumnRenderer(colIndex, new DeleteButtonRenderer("Xóa", Colors.DANGER, Colors.BACKGROUND, 80));
+    }
+
+    // Overload cho phép tùy chỉnh nhãn và màu nút xóa (ví dụ: "Huỷ đơn").
+    public void setDeleteButtonColumn(int colIndex, int width, String label, java.awt.Color bgColor, java.awt.Color fgColor) {
+        deleteColumnIndex = colIndex;
+        setColumnWidth(colIndex, width);
+        setColumnRenderer(colIndex, new DeleteButtonRenderer(label, bgColor, fgColor, 80));
+    }
+
+    // Overload tùy chỉnh nhãn, màu và chiều rộng nút.
+    public void setDeleteButtonColumn(int colIndex, int width, String label, java.awt.Color bgColor, java.awt.Color fgColor, int btnWidth) {
+        deleteColumnIndex = colIndex;
+        setColumnWidth(colIndex, width);
+        setColumnRenderer(colIndex, new DeleteButtonRenderer(label, bgColor, fgColor, btnWidth));
+    }
+
+    // Cột nút "Xác nhận" màu xanh lá — khi click sẽ kích hoạt callback đã đăng ký qua
+    // {@link #setConfirmColumnListener}.
+    public void setConfirmButtonColumn(int colIndex, int width) {
+        confirmColumnIndex = colIndex;
+        setColumnWidth(colIndex, width);
+        setColumnRenderer(colIndex, new ConfirmButtonRenderer());
     }
 
     // =========================================================================
@@ -292,6 +319,12 @@ public class StyledTable extends JScrollPane {
     // @param listener BiConsumer nhận (chỉ số dòng, object dữ liệu dòng đó).
     public void setDeleteColumnListener(java.util.function.BiConsumer<Integer, Object> listener) {
         this.deleteListener = listener;
+    }
+
+    // Đăng ký callback được gọi khi người dùng click vào cột "Xác nhận".
+    // @param listener BiConsumer nhận (chỉ số dòng, object dữ liệu dòng đó).
+    public void setConfirmColumnListener(java.util.function.BiConsumer<Integer, Object> listener) {
+        this.confirmListener = listener;
     }
 
     // =========================================================================
@@ -329,7 +362,7 @@ public class StyledTable extends JScrollPane {
     // 8. RENDERER NỘI BỘ
     // =========================================================================
     // Vẽ avatar tròn (initials) + tên in đậm + dòng phụ nhỏ hơn.
-    private static class AvatarTwoLineRenderer extends JPanel implements TableCellRenderer {
+    @SuppressWarnings("serial")    private static class AvatarTwoLineRenderer extends JPanel implements TableCellRenderer {
 
         private final Function<Object, String> nameFunc;
         private final Function<Object, String> subFunc;
@@ -432,7 +465,7 @@ public class StyledTable extends JScrollPane {
     }
 
     // Vẽ 2 dòng chữ: dòng 1 in đậm (tên), dòng 2 nhỏ màu phụ (mô tả).
-    private static class TwoLineRenderer extends JPanel implements TableCellRenderer {
+    @SuppressWarnings("serial")    private static class TwoLineRenderer extends JPanel implements TableCellRenderer {
 
         private final Function<Object, String> line1Func;
         private final Function<Object, String> line2Func;
@@ -472,7 +505,7 @@ public class StyledTable extends JScrollPane {
     }
 
     // Vẽ 2 dòng, mỗi dòng bắt đầu bằng ký tự icon (unicode/emoji).
-    private static class IconTwoLineRenderer extends JPanel implements TableCellRenderer {
+    @SuppressWarnings("serial")    private static class IconTwoLineRenderer extends JPanel implements TableCellRenderer {
 
         private final String icon1, icon2;
         private final Function<Object, String> text1Func, text2Func;
@@ -507,13 +540,13 @@ public class StyledTable extends JScrollPane {
             g2.drawString(icon1, x, getHeight() / 2 - 4);
             g2.setColor(Colors.TEXT_PRIMARY);
             g2.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
-            g2.drawString(text1 != null ? text1 : "\u2014", x + 20, getHeight() / 2 - 4);
+            g2.drawString(text1 != null ? text1 : "—", x + 20, getHeight() / 2 - 4);
             g2.setColor(Colors.TEXT_SECONDARY);
             g2.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
             g2.drawString(icon2, x, getHeight() / 2 + 14);
             g2.setColor(Colors.TEXT_PRIMARY);
             g2.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
-            g2.drawString(text2 != null ? text2 : "\u2014", x + 20, getHeight() / 2 + 14);
+            g2.drawString(text2 != null ? text2 : "—", x + 20, getHeight() / 2 + 14);
             g2.setColor(Colors.BORDER_LIGHT);
             g2.drawLine(0, getHeight() - 1, getWidth(), getHeight() - 1);
             g2.dispose();
@@ -521,7 +554,7 @@ public class StyledTable extends JScrollPane {
     }
 
     // Vẽ 1 dòng chữ căn giữa theo chiều dọc.
-    private static class SingleTextRenderer extends JPanel implements TableCellRenderer {
+    @SuppressWarnings("serial")    private static class SingleTextRenderer extends JPanel implements TableCellRenderer {
 
         private final Function<Object, String> textFunc;
         private String text;
@@ -556,7 +589,7 @@ public class StyledTable extends JScrollPane {
     }
 
     // Vẽ badge bo góc: chấm màu + nhãn, màu khác nhau tùy trạng thái.
-    private static class BadgeRenderer extends JPanel implements TableCellRenderer {
+    @SuppressWarnings("serial")    private static class BadgeRenderer extends JPanel implements TableCellRenderer {
 
         private final Function<Object, Boolean> activeFunc;
         private final String activeText, inactiveText;
@@ -610,7 +643,7 @@ public class StyledTable extends JScrollPane {
 
     // Hiển thị nút "Chi tiết". Click được xử lý bởi MouseListener qua
     // actionListener.
-    private static class ActionDotsRenderer extends JPanel implements TableCellRenderer {
+    @SuppressWarnings("serial")    private static class ActionDotsRenderer extends JPanel implements TableCellRenderer {
 
         private final RoundedButton btnDetail;
 
@@ -635,20 +668,19 @@ public class StyledTable extends JScrollPane {
         }
     }
 
-    // Hiển thị nút "Xóa" màu đỏ. Click được xử lý bởi MouseListener qua
+    // Hiển thị nút "Xóa" (hoặc nhãn tuỳ chỉnh). Click được xử lý bởi MouseListener qua
     // deleteListener.
-    private static class DeleteButtonRenderer extends JPanel implements TableCellRenderer {
+    @SuppressWarnings("serial")    private static class DeleteButtonRenderer extends JPanel implements TableCellRenderer {
 
         private final RoundedButton btnDelete;
 
-        DeleteButtonRenderer() {
+        DeleteButtonRenderer(String label, Color bgColor, Color fgColor, int btnWidth) {
             setOpaque(true);
             setLayout(new FlowLayout(FlowLayout.CENTER, 0, 0));
-            btnDelete = new RoundedButton(80, 45, 20, "Xóa", Colors.DANGER);
+            btnDelete = new RoundedButton(btnWidth, 45, 20, label, bgColor);
             btnDelete.setFont(FontStyle.font(FontStyle.XS, FontStyle.BOLD));
-            btnDelete.setForeground(Colors.BACKGROUND);
+            btnDelete.setForeground(fgColor);
             btnDelete.setFocusPainted(false);
-            btnDelete.setPreferredSize(new Dimension(30, 20));
             add(btnDelete);
             setBorder(BorderFactory.createEmptyBorder(15, 10, 5, 10));
         }
@@ -658,6 +690,33 @@ public class StyledTable extends JScrollPane {
                 boolean isSelected, boolean hasFocus, int row, int column) {
             setBackground(isSelected ? Colors.PRIMARY_LIGHT : Colors.BACKGROUND);
             btnDelete.setEnabled(true);
+            return this;
+        }
+    }
+
+    // Hiển thị nút "Xác nhận" màu xanh. Click được xử lý bởi MouseListener qua
+    // confirmListener.
+    @SuppressWarnings("serial")    private static class ConfirmButtonRenderer extends JPanel implements TableCellRenderer {
+
+        private final RoundedButton btnConfirm;
+
+        ConfirmButtonRenderer() {
+            setOpaque(true);
+            setLayout(new FlowLayout(FlowLayout.CENTER, 0, 0));
+            btnConfirm = new RoundedButton(90, 45, 20, "Xác nhận", Colors.SUCCESS_LIGHT);
+            btnConfirm.setFont(FontStyle.font(FontStyle.XS, FontStyle.BOLD));
+            btnConfirm.setForeground(Colors.SUCCESS_DARK);
+            btnConfirm.setFocusPainted(false);
+            btnConfirm.setPreferredSize(new Dimension(30, 20));
+            add(btnConfirm);
+            setBorder(BorderFactory.createEmptyBorder(15, 10, 5, 10));
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                boolean isSelected, boolean hasFocus, int row, int column) {
+            setBackground(isSelected ? Colors.PRIMARY_LIGHT : Colors.BACKGROUND);
+            btnConfirm.setEnabled(true);
             return this;
         }
     }

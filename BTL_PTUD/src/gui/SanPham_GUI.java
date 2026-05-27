@@ -29,7 +29,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import util.AsyncLoader;
 
+@SuppressWarnings("serial")
 public class SanPham_GUI extends JPanel {
 
 	private static final DecimalFormat PRICE_FMT = new DecimalFormat("#,###");
@@ -51,7 +53,6 @@ public class SanPham_GUI extends JPanel {
 	// Chế độ hiển thị: true = Card Grid, false = Table List
 	private boolean cheDoCard = true;
 	private JButton btnToggleView;
-	private RoundedToggleButton btnFilterSapHet, btnFilterHetHang;
 
 	// Card Grid
 	private JPanel pnlCards;
@@ -169,7 +170,7 @@ public class SanPham_GUI extends JPanel {
 
 		RoundedButton btn = roundedBtn("+ Thêm sản phẩm", 170, 40, Colors.PRIMARY, Colors.BACKGROUND);
 		btn.addActionListener(e -> ChiTietSanPham_GUI.moThemMoi(
-				(java.awt.Window) SwingUtilities.getWindowAncestor(SanPham_GUI.this),
+				SwingUtilities.getWindowAncestor(SanPham_GUI.this),
 				() -> taiDuLieu()));
 		JPanel rw = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 8));
 		rw.setOpaque(false);
@@ -276,8 +277,6 @@ public class SanPham_GUI extends JPanel {
 				locVaHienThi();
 			});
 			right.add(btn);
-			if (i == 2) btnFilterSapHet = btn;
-			if (i == 3) btnFilterHetHang = btn;
 		}
 
 		// NÚT TOGGLE VIEW (cuối cùng thanh tìm kiếm)
@@ -464,12 +463,12 @@ public class SanPham_GUI extends JPanel {
 		btns.setMaximumSize(dim(Integer.MAX_VALUE, 34));
 		RoundedButton btnXemCT = roundedBtn("Chi tiết", 100, 30, Colors.PRIMARY, Colors.BACKGROUND);
 		btnXemCT.addActionListener(e -> ChiTietSanPham_GUI.moChiTiet(
-				(java.awt.Window) SwingUtilities.getWindowAncestor(SanPham_GUI.this),
+				SwingUtilities.getWindowAncestor(SanPham_GUI.this),
 				sp, mapTonKho.get(sp.getMaSanPham())));
 		btns.add(btnXemCT);
 		RoundedButton btnSua = roundedBtn("Sửa", 60, 30, Colors.SECONDARY, Colors.TEXT_SECONDARY);
 		btnSua.addActionListener(e -> ChiTietSanPham_GUI.moChinhSua(
-				(java.awt.Window) SwingUtilities.getWindowAncestor(SanPham_GUI.this),
+				SwingUtilities.getWindowAncestor(SanPham_GUI.this),
 				sp, mapTonKho.get(sp.getMaSanPham()), () -> taiDuLieu()));
 		btns.add(btnSua);
 		RoundedButton btnXoa = roundedBtn("Xoá", 60, 30, Colors.SECONDARY, Colors.DANGER);
@@ -543,12 +542,12 @@ public class SanPham_GUI extends JPanel {
 			case "XEM":
 			case "CHI_TIET":
 				ChiTietSanPham_GUI.moChiTiet(
-					(java.awt.Window) SwingUtilities.getWindowAncestor(SanPham_GUI.this),
+					SwingUtilities.getWindowAncestor(SanPham_GUI.this),
 					sp, mapTonKho.get(sp.getMaSanPham()));
 				break;
 			case "SUA":
 				ChiTietSanPham_GUI.moChinhSua(
-					(java.awt.Window) SwingUtilities.getWindowAncestor(SanPham_GUI.this),
+					SwingUtilities.getWindowAncestor(SanPham_GUI.this),
 					sp, mapTonKho.get(sp.getMaSanPham()), () -> taiDuLieu());
 				break;
 			case "XOA":
@@ -634,21 +633,38 @@ public class SanPham_GUI extends JPanel {
 	}
 
 	private void taiDuLieu() {
-		dsGoc = safeCall(() -> spService.layDanhSachSanPham(), new ArrayList<>());
-		mapTonKho = spService.tinhTonKhoTatCa(dsGoc);
-		dsLoSanPhamCache = null; // reset cache lot
-		tinhNgayGanNhatTatCa(); // 1 query cho tất cả
+		AsyncLoader.run(
+			() -> {
+				// Tất cả DB calls trong background thread
+				List<SanPham> ds = safeCall(() -> spService.layDanhSachSanPham(), new ArrayList<>());
+				Map<String, SanPham_Service.TonKhoInfo> tonKho = spService.tinhTonKhoTatCa(ds);
+				List<LoSanPham> dsLo = safeCall(() -> loSPService.getDSLoSanPham(), new ArrayList<>());
+				// Preload ảnh (async bên trong ImageCache — chỉ submit tasks)
+				List<String> imgFiles = new ArrayList<>();
+				for (SanPham sp : ds) {
+					if (sp.getHinhAnh() != null && !sp.getHinhAnh().trim().isEmpty())
+						imgFiles.add(sp.getHinhAnh());
+				}
+				imgCache.preload(imgFiles, 180, 110);
+				imgCache.preload(imgFiles, 46, 46);
+				return new Object[]{ds, tonKho, dsLo};
+			},
+			data -> {
+				// Tất cả Swing updates trên EDT
+				@SuppressWarnings("unchecked")
+				List<SanPham> ds = (List<SanPham>) data[0];
+				@SuppressWarnings("unchecked")
+				Map<String, TonKhoInfo> tonKho = (Map<String, TonKhoInfo>) data[1];
+				@SuppressWarnings("unchecked")
+				List<LoSanPham> dsLo = (List<LoSanPham>) data[2];
 
-		// Preload ảnh background
-		List<String> imgFiles = new ArrayList<>();
-		for (SanPham sp : dsGoc) {
-			if (sp.getHinhAnh() != null && !sp.getHinhAnh().trim().isEmpty())
-				imgFiles.add(sp.getHinhAnh());
-		}
-		imgCache.preload(imgFiles, 180, 110);
-		imgCache.preload(imgFiles, 46, 46); // cho chế độ bảng
-
-		locVaHienThi();
+				dsGoc = new ArrayList<>(ds);
+				mapTonKho = tonKho;
+				dsLoSanPhamCache = new ArrayList<>(dsLo);
+				tinhNgayGanNhatTatCa();
+				locVaHienThi();
+			}
+		);
 	}
 
 	private void locVaHienThi() {

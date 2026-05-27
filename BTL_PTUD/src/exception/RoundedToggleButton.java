@@ -11,6 +11,7 @@ import constants.Colors;
 //Ví dụ: JToggleButton btnSave = new RoundedToggleButton(200, 30, 20, "Lưu", Colors.BackGround)
 
 
+@SuppressWarnings("serial")
 public class RoundedToggleButton extends JToggleButton {
 
     private int radius;

@@ -46,7 +46,7 @@ public class ExcelExporter {
         try (PrintWriter pw = new PrintWriter(
                 new OutputStreamWriter(new FileOutputStream(f), StandardCharsets.UTF_8))) {
             // BOM để Excel nhận đúng UTF-8
-            pw.print('\uFEFF');
+            pw.print('﻿');
 
             int colCount = model.getColumnCount();
 

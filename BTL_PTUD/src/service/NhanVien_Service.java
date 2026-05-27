@@ -82,7 +82,6 @@ public class NhanVien_Service {
         }
         String kw = keyword.trim();
         String kwUpper = kw.toUpperCase();
-        String kwLower = kw.toLowerCase();
         // Exact code match → single-result shortcut via DAO
         if (kwUpper.startsWith("NV")) {
             NhanVien found = nhanVienDao.layNVTheoMa(kwUpper);

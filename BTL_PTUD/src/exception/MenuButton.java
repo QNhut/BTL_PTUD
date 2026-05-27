@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import constants.Colors;
 import constants.FontStyle;
 
+@SuppressWarnings("serial")
 public class MenuButton extends JPanel {
 
     private RoundedButton mainButton;

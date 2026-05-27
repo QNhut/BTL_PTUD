@@ -50,12 +50,14 @@ import entity.KeSanPham;
 import entity.NhaCungCap;
 import entity.NhanVien;
 import entity.PhieuNhap;
-import entity.SanPham;
 import exception.QuantityEditor;
+import exception.RoundedButton;
+import exception.RoundedPanel;
 import service.LoSanPham_Service;
 import service.NhaCungCap_Service;
 import service.PhieuNhap_Service;
 
+@SuppressWarnings("serial")
 public class NhapHang_GUI extends JPanel {
 
     private final PhieuNhap_Service phieuNhapService = new PhieuNhap_Service();
@@ -127,43 +129,42 @@ public class NhapHang_GUI extends JPanel {
         this.nhanVienDangNhap = nhanVien;
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-
+        setBackground(Colors.BACKGROUND);
 //		Phần tiêu đề
         add(pnlTitle = new JPanel(), BorderLayout.NORTH);
         pnlTitle.setLayout(new BoxLayout(pnlTitle, BoxLayout.Y_AXIS));
 
         pnlTitle.add(lblTitle = new JLabel("Nhập hàng"));
-        lblTitle.setFont(FontStyle.font(FontStyle.XL, FontStyle.BOLD));
-        pnlTitle.add(Box.createVerticalStrut(10));
-
+        lblTitle.setFont(FontStyle.font(FontStyle.XXL, FontStyle.BOLD));
+        lblTitle.setForeground(Colors.FOREGROUND);
+        pnlTitle.add(Box.createVerticalStrut(2));
+        pnlTitle.setBackground(Colors.BACKGROUND);
         pnlTitle.add(lblsubTitle = new JLabel("Tạo phiếu nhập hàng vào kho"));
-        lblsubTitle.setFont(FontStyle.font(FontStyle.BASE, FontStyle.NORMAL));
+        lblsubTitle.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
+        lblsubTitle.setForeground(Colors.MUTED);
 
 //		Phần nội dung chính
         add(pnlContent = new JPanel(), BorderLayout.CENTER);
-        pnlContent.setLayout(new BorderLayout());
-//		pnlContent.setBackground(Colors.MUTED);
+        pnlContent.setLayout(new BorderLayout(12, 12));
+        pnlContent.setBackground(Colors.BACKGROUND);
 
 //		Phần nội dung bên trái phần center
-        pnlContent.add(pnlContentLeft = new JPanel(), BorderLayout.CENTER);
-        pnlContentLeft.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Colors.MUTED, 1),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        ));
+        pnlContent.add(pnlContentLeft = new RoundedPanel(0, 0, 12), BorderLayout.CENTER);
+        pnlContentLeft.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         pnlContentLeft.setLayout(new BorderLayout());
+        pnlContentLeft.setBackground(Colors.BACKGROUND);
 
 //		Phần yêu cầu nhập file dữ liệu phiếu nhập hàng
-        pnlContentLeft.add(pnlContentTopLeft = new JPanel(), BorderLayout.CENTER);
+        pnlContentLeft.add(pnlContentTopLeft = new RoundedPanel(0, 0, 12), BorderLayout.CENTER);
 
-        pnlContentTopLeft.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Colors.MUTED, 1),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        ));
+        pnlContentTopLeft.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         pnlContentTopLeft.setAlignmentX(LEFT_ALIGNMENT);
+        pnlContentTopLeft.setBackground(Colors.BACKGROUND);
+
         pnlContentTopLeft.setLayout(new BoxLayout(pnlContentTopLeft, BoxLayout.Y_AXIS));
         pnlContentTopLeft.add(lblSubTitle = new JLabel("File dữ liệu phiếu nhập hàng"));
-        lblSubTitle.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
+        lblSubTitle.setFont(FontStyle.font(FontStyle.LG, FontStyle.BOLD));
         lblSubTitle.setAlignmentX(LEFT_ALIGNMENT);
         pnlContentTopLeft.add(Box.createVerticalStrut(10));
         pnlContentTopLeft.add(lblSubTitle2 = new JLabel("Tải lên file Excel hoặc CSV chứa danh sách sản phẩm cần nhập hàng"));
@@ -177,25 +178,18 @@ public class NhapHang_GUI extends JPanel {
         pnlContentTopLeft.add(Box.createVerticalGlue());
 
 //		Phần nội dung bên phải chứ thông tin phiếu nhập hàng
-        pnlContent.add(pnlContentRight = new JPanel(), BorderLayout.EAST);
-        pnlContentRight.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Colors.MUTED, 1),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        ));
-
-        pnlContentRight.setPreferredSize(new Dimension(350, 0));
+        pnlContent.add(pnlContentRight = new RoundedPanel(350, 0, 12), BorderLayout.EAST);
+        pnlContentRight.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         pnlContentRight.setMinimumSize(new Dimension(350, 0));
         pnlContentRight.setMaximumSize(new Dimension(450, Integer.MAX_VALUE));
+        pnlContentRight.setBackground(Colors.BACKGROUND);
 
 //		Bên phải: thông tin phiếu nhập + tóm tắt + nút tạo phiếu
         pnlContentRight.setLayout(new BoxLayout(pnlContentRight, BoxLayout.Y_AXIS));
         pnlContentRight.add(pnlContentTopRight = new JPanel());
-//		pnlContentTopRight.setBackground(Colors.SUCCESS);
+        pnlContentTopRight.setBackground(Colors.BACKGROUND);
         pnlContentTopRight.setLayout(new BoxLayout(pnlContentTopRight, BoxLayout.Y_AXIS));
-        pnlContentTopRight.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Colors.MUTED, 1),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        ));
+        pnlContentTopRight.setBorder(null);
         pnlContentTopRight.setPreferredSize(new Dimension(350, 0));
         pnlContentTopRight.setAlignmentX(Component.LEFT_ALIGNMENT);
 
@@ -223,8 +217,9 @@ public class NhapHang_GUI extends JPanel {
         cboNCC.addActionListener(e -> {
             if (errNCC != null) {
                 errNCC.setVisible(false);
-        
-            }});
+
+            }
+        });
 
         pnlContentTopRight.add(Box.createVerticalStrut(10));
         pnlContentTopRight.add(lblsubcontentRight2 = new JLabel("Ngày nhập hàng"));
@@ -252,14 +247,9 @@ public class NhapHang_GUI extends JPanel {
         scrGhiChu.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         pnlContentTopRight.add(Box.createVerticalStrut(8));
-        pnlContentTopRight.add(btnChinhSuaThongTin = new JButton("Chỉnh sửa thông tin file"));
+        pnlContentTopRight.add(btnChinhSuaThongTin = new RoundedButton(0, 34, 8, "Chỉnh sửa thông tin file", Colors.BORDER));
         btnChinhSuaThongTin.setAlignmentX(Component.LEFT_ALIGNMENT);
         btnChinhSuaThongTin.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
-        btnChinhSuaThongTin.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
-        btnChinhSuaThongTin.setFocusPainted(false);
-        btnChinhSuaThongTin.setOpaque(true);
-        btnChinhSuaThongTin.setContentAreaFilled(true);
-        btnChinhSuaThongTin.setBorderPainted(false);
         btnChinhSuaThongTin.addActionListener(e -> setCheDoChinhSuaThongTin(!dangChinhSuaThongTin));
         btnChinhSuaThongTin.setEnabled(false);
         setCheDoChinhSuaThongTin(false);
@@ -271,7 +261,7 @@ public class NhapHang_GUI extends JPanel {
         pnlContentBottomRight.setLayout(new BoxLayout(pnlContentBottomRight, BoxLayout.Y_AXIS));
         pnlContentBottomRight.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
         pnlContentBottomRight.setMaximumSize(new Dimension(Integer.MAX_VALUE, 160));
-        pnlContentBottomRight.setBackground(Colors.SUCCESS_LIGHT);
+        pnlContentBottomRight.setBackground(Colors.BACKGROUND);
         pnlContentBottomRight.setAlignmentX(Component.LEFT_ALIGNMENT);
 
 //		Row 1: Số mặt hàng
@@ -313,48 +303,26 @@ public class NhapHang_GUI extends JPanel {
         row3.add(lblLeft3 = new JLabel("Tổng tiền nhập"), BorderLayout.WEST);
         row3.add(lblRight3 = new JLabel("0đ"), BorderLayout.EAST);
         lblLeft3.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
-        lblRight3.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
+        lblRight3.setFont(FontStyle.font(FontStyle.LG, FontStyle.BOLD));
         lblRight3.setForeground(Colors.PRIMARY);
 
         pnlContentBottomRight.add(Box.createVerticalStrut(14));
 
 //		Nút "Tạo phiếu nhập"
-        btnNhapHang = new JButton("Nhập sản phẩm");
+        btnNhapHang = new RoundedButton(0, 40, 8, "Nhập sản phẩm", Colors.BORDER);
         btnNhapHang.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnNhapHang.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         btnNhapHang.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
-        btnNhapHang.setOpaque(true);
-        btnNhapHang.setContentAreaFilled(true);
-        btnNhapHang.setBorderPainted(false);
-        btnNhapHang.setFocusPainted(false);
 
 //		Trạng thái ban đầu: disabled
         setButtonState(false);
         pnlContentBottomRight.add(btnNhapHang);
         btnNhapHang.addActionListener(e -> xuLyTaoPhieuNhap());
 
-        btnNhapHang.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent evt) {
-                if (btnNhapHang.isEnabled()) {
-                    btnNhapHang.setBackground(Colors.PRIMARY_BUTTON);
-                }
-            }
-
-            @Override
-            public void mouseExited(MouseEvent evt) {
-                if (btnNhapHang.isEnabled()) {
-                    btnNhapHang.setBackground(Colors.PRIMARY);
-                }
-            }
-        });
-
-        pnlContent.add(pnlContentBottom = new JPanel(new BorderLayout()), BorderLayout.SOUTH);
-        pnlContentBottom.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Colors.MUTED, 1),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        ));
-        pnlContentBottom.setPreferredSize(new Dimension(0, 320));
+        pnlContent.add(pnlContentBottom = new RoundedPanel(0, 320, 12), BorderLayout.SOUTH);
+        pnlContentBottom.setLayout(new BorderLayout());
+        pnlContentBottom.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        pnlContentBottom.setBackground(Colors.BACKGROUND);
 
         pnlContentBottom.add(pnlTitleBottom = new JPanel(new BorderLayout()), BorderLayout.NORTH);
         pnlTitleBottom.setOpaque(false);
@@ -364,20 +332,15 @@ public class NhapHang_GUI extends JPanel {
         pnlsubTitleBottom.setOpaque(false);
         pnlsubTitleBottom.setLayout(new BoxLayout(pnlsubTitleBottom, BoxLayout.Y_AXIS));
         pnlsubTitleBottom.add(lblTitleBottom1 = new JLabel("Danh sách nhập hàng"));
-        lblTitleBottom1.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
+        lblTitleBottom1.setFont(FontStyle.font(FontStyle.LG, FontStyle.BOLD));
         pnlsubTitleBottom.add(Box.createVerticalStrut(5));
         pnlsubTitleBottom.add(lblsubTitleBottom = new JLabel("0 sản phẩm đã chọn"));
 
-        pnlTitleBottom.add(btnXoaTatCa = new JButton("Xóa tất cả"), BorderLayout.EAST);
-        btnXoaTatCa.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
-        btnXoaTatCa.setFocusPainted(false);
-        btnXoaTatCa.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
-        btnXoaTatCa.setOpaque(true);
-        btnXoaTatCa.setBackground(Colors.DANGER);
-        btnXoaTatCa.setForeground(Colors.BACKGROUND);
+        pnlTitleBottom.add(btnXoaTatCa = new RoundedButton(110, 32, 8, "Xóa tất cả", Colors.DANGER), BorderLayout.EAST);
         btnXoaTatCa.addActionListener(e -> loaiBoToanBoPhieuNhap());
 
         pnlContentBottom.add(createSelectedListPanel(), BorderLayout.CENTER);
+        pnlContentBottom.setBackground(Colors.BACKGROUND);
 
         pnlContentBottom.add(pnlTotelPrice = new JPanel(), BorderLayout.SOUTH);
         pnlTotelPrice.setOpaque(false);
@@ -387,7 +350,7 @@ public class NhapHang_GUI extends JPanel {
         pnlTotelPrice.add(Box.createHorizontalStrut(5));
         pnlTotelPrice.add(lblTotalPrice = new JLabel("0đ"));
         lblTotal.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
-        lblTotalPrice.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
+        lblTotalPrice.setFont(FontStyle.font(FontStyle.LG, FontStyle.BOLD));
         lblTotalPrice.setForeground(Colors.PRIMARY);
 
     }
@@ -402,6 +365,7 @@ public class NhapHang_GUI extends JPanel {
 
         tblSelected = new JTable(tableModel);
         tblSelected.setRowHeight(32);
+
         tblSelected.getTableHeader().setReorderingAllowed(false);
         tblSelected.setBackground(Colors.BACKGROUND);
         tblSelected.setGridColor(Colors.BORDER_LIGHT);
@@ -749,6 +713,11 @@ public class NhapHang_GUI extends JPanel {
                 .replace("\n", "<br>");
     }
 
+    public void refresh() {
+        napDanhSachNhaCungCap();
+        loaiBoToanBoPhieuNhap();
+    }
+
     private void loaiBoToanBoPhieuNhap() {
         if (tblSelected != null && tblSelected.isEditing()) {
             TableCellEditor cellEditor = tblSelected.getCellEditor();
@@ -817,6 +786,8 @@ public class NhapHang_GUI extends JPanel {
     private JPanel createUploadPanel(Boolean status) {
         pnlUpload = new JPanel();
         pnlUpload.setLayout(new BoxLayout(pnlUpload, BoxLayout.Y_AXIS));
+        pnlUpload.setBackground(Colors.BACKGROUND);
+
         pnlUpload.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(Colors.MUTED, 1),
                 BorderFactory.createEmptyBorder(10, 10, 10, 10)
@@ -1022,7 +993,7 @@ public class NhapHang_GUI extends JPanel {
             }
 
             // 2. Sinh mã phiếu nhập tự động
-            String maPN = phieuNhapService.sinhMaPhieuNhap(phieuNhapService.sinhPrefixHomNay());
+            String maPN = phieuNhapService.sinhMaPhieuNhap();
 
             // 3. Tạo PhieuNhap
             if (nhanVienDangNhap == null) {

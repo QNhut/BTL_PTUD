@@ -14,6 +14,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 
 // ===Dialog chi tiết dùng chung: header + 2 card info + bảng SP + tổng kết===
+@SuppressWarnings("serial")
 public class ChiTietDialog extends JDialog {
 
     public static final NumberFormat MONEY = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
@@ -49,17 +50,27 @@ public class ChiTietDialog extends JDialog {
 
         add(buildHeader(iconEmoji, title), BorderLayout.NORTH);
 
-        JPanel body = new JPanel();
+        // getScrollableTracksViewportWidth=true buộc body không rộng hơn viewport,
+        // giải quyết triệt để việc text dài đẩy layout theo chiều ngang.
+        ScrollableBody body = new ScrollableBody();
         body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
         body.setBackground(Color.WHITE);
         body.setBorder(new EmptyBorder(0, 20, 20, 20));
 
-        // ===2 card thông tin trái/phải===
+        // ===2 card thông tin trái/phải: wrap trong BorderLayout để card chỉ cao bằng nội dung===
+        JPanel leftWrap = new JPanel(new BorderLayout());
+        leftWrap.setOpaque(false);
+        leftWrap.add(buildInfoCard(leftCardIcon, leftCardTitle, leftInfo), BorderLayout.NORTH);
+
+        JPanel rightWrap = new JPanel(new BorderLayout());
+        rightWrap.setOpaque(false);
+        rightWrap.add(buildInfoCard(rightCardIcon, rightCardTitle, rightInfo), BorderLayout.NORTH);
+
         JPanel infoRow = new JPanel(new GridLayout(1, 2, 16, 0));
         infoRow.setOpaque(false);
         infoRow.setAlignmentX(Component.LEFT_ALIGNMENT);
-        infoRow.add(buildInfoCard(leftCardIcon, leftCardTitle, leftInfo));
-        infoRow.add(buildInfoCard(rightCardIcon, rightCardTitle, rightInfo));
+        infoRow.add(leftWrap);
+        infoRow.add(rightWrap);
         body.add(infoRow);
         body.add(Box.createVerticalStrut(16));
 
@@ -97,7 +108,7 @@ public class ChiTietDialog extends JDialog {
         add(scroll, BorderLayout.CENTER);
 
         setSize(900, 720);
-        setMinimumSize(new Dimension(820, 560));
+        setMinimumSize(new Dimension(900, 560));
         setLocationRelativeTo(parent);
     }
 
@@ -119,7 +130,7 @@ public class ChiTietDialog extends JDialog {
         left.add(lblTitle);
         header.add(left, BorderLayout.WEST);
 
-        JButton btnClose = new JButton("\u2715");
+        JButton btnClose = new JButton("✕");
         btnClose.setFont(new Font("SansSerif", Font.PLAIN, 16));
         btnClose.setForeground(Colors.TEXT_SECONDARY);
         btnClose.setBorderPainted(false);
@@ -302,5 +313,14 @@ public class ChiTietDialog extends JDialog {
             return "";
         }
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    // Buộc body panel không rộng hơn viewport của JScrollPane → text dài tự xuống dòng.
+    private static class ScrollableBody extends JPanel implements Scrollable {
+        @Override public Dimension getPreferredScrollableViewportSize() { return getPreferredSize(); }
+        @Override public int getScrollableUnitIncrement(Rectangle r, int o, int d) { return 16; }
+        @Override public int getScrollableBlockIncrement(Rectangle r, int o, int d) { return 64; }
+        @Override public boolean getScrollableTracksViewportWidth() { return true; }
+        @Override public boolean getScrollableTracksViewportHeight() { return false; }
     }
 }

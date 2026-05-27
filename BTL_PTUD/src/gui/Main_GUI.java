@@ -4,6 +4,7 @@ import constants.Colors;
 import constants.FontStyle;
 import entity.TaiKhoan;
 import exception.MenuBarPanel;
+
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -13,6 +14,7 @@ import java.io.File;
 import javax.swing.*;
 import service.TaiKhoan_Service;
 
+@SuppressWarnings("serial")
 public class Main_GUI extends JFrame {
 
     private JPanel pHeader;
@@ -46,6 +48,14 @@ public class Main_GUI extends JFrame {
     private HoaDon_GUI hoaDonGUI;
     private TraCuuHoaDon_GUI traCuuHoaDonGUI;
     private TraCuuPhieuNhap_GUI traCuuPhieuNhapGUI;
+    private TraCuuDatThuoc_GUI traCuuDatThuocGUI;
+    private TraCuuDoiHang_GUI traCuuDoiHangGUI;
+    private TraCuuTraHang_GUI traCuuTraHangGUI;
+    private DatTruoc_GUI datTruocGUI;
+    private TrangChu_GUI trangChuGUI;
+    private NhapHang_GUI nhapHangGUI;
+    private DoiHang_GUI doiHangGUI;
+    private TraHang_GUI traHangGUI;
 
     public Main_GUI() {
         this(new TaiKhoan_Service(), null);
@@ -97,6 +107,14 @@ public class Main_GUI extends JFrame {
         lblSubLogo.setForeground(Colors.MUTED);
         lblSubLogo.setFont(FontStyle.font(FontStyle.BASE, FontStyle.NORMAL));
 
+        pLogo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        pLogo.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                showPage("TrangChu");
+            }
+        });
+
         // ===== MENU BÊN TRÁI =====
         menuBarPanel = new MenuBarPanel(this);
         pHeader.add(menuBarPanel, BorderLayout.CENTER);
@@ -117,6 +135,7 @@ public class Main_GUI extends JFrame {
 
         String vaiTroHienThi = "Nhân viên";
         if (taiKhoanDangNhap != null && taiKhoanDangNhap.getNhanVien() != null
+                && taiKhoanDangNhap.getNhanVien().getChucVu() != null
                 && taiKhoanDangNhap.getNhanVien().getChucVu().getTenChucVu() != null
                 && !taiKhoanDangNhap.getNhanVien().getChucVu().getTenChucVu().trim().isEmpty()) {
             vaiTroHienThi = taiKhoanDangNhap.getNhanVien().getChucVu().getTenChucVu();
@@ -174,48 +193,11 @@ public class Main_GUI extends JFrame {
         contentPanel.setBackground(Color.WHITE);
         add(contentPanel, BorderLayout.CENTER);
 
-//		Danh mục
-        sanPhamGUI = new SanPham_GUI();
-        contentPanel.add(sanPhamGUI, "SanPham");
-        nhanVienGUI = new NhanVien_GUI();
-        contentPanel.add(nhanVienGUI, "NhanVien");
-        khachHangGUI = new KhachHang_GUI();
-        contentPanel.add(khachHangGUI, "KhachHang");
-        nhaCungCapGUI = new NhaCungCap_GUI();
-        contentPanel.add(nhaCungCapGUI, "NhaCungCap");
-        khuyenMaiGUI = new KhuyenMai_GUI();
-        contentPanel.add(khuyenMaiGUI, "KhuyenMai");
-        thueGUI = new Thue_GUI();
-        contentPanel.add(thueGUI, "Thue");
-
-//		Xử lý
-        hoaDonGUI = new HoaDon_GUI(taiKhoanDangNhap != null ? taiKhoanDangNhap.getNhanVien() : null);
-        contentPanel.add(hoaDonGUI, "BanHang");
-        contentPanel.add(new NhapHang_GUI(taiKhoanDangNhap != null ? taiKhoanDangNhap.getNhanVien() : null), "NhapHang");
-        contentPanel.add(new DoiHang_GUI(), "DoiHang");
-        contentPanel.add(new TraHang_GUI(), "TraHang");
-        contentPanel.add(new DatTruoc_GUI(), "DatTruoc");
-
-//		Tra cứu
-        traCuuHoaDonGUI = new TraCuuHoaDon_GUI();
-        contentPanel.add(traCuuHoaDonGUI, "TraCuuHoaDon");
-        traCuuPhieuNhapGUI = new TraCuuPhieuNhap_GUI();
-        contentPanel.add(traCuuPhieuNhapGUI, "TraCuuPhieuNhap");
-        contentPanel.add(new TraCuuDoiHang(), "TraCuuDoiHang");
-        contentPanel.add(new TraCuuTraHang(), "TraCuuTraHang");
-        contentPanel.add(new TraCuuDatThuoc_GUI(), "TraCuuDatThuoc");
-
-//		Thống kê
-        thongKeDoanhThuGUI = new ThongKeDoanhThu_GUI();
-        contentPanel.add(thongKeDoanhThuGUI, "ThongKeDoanhThu");
-        thongKeKhachHangGUI = new ThongKeKhachHang_GUI();
-        contentPanel.add(thongKeKhachHangGUI, "ThongKeKhachHang");
-        thongKeSanPhamGUI = new ThongKeSanPham_GUI();
-        contentPanel.add(thongKeSanPhamGUI, "ThongKeSanPham");
-
-//		Hê thống
+//		Các panel được khởi tạo lười (lazy) trong showPage() để tránh đóng băng UI khi khởi động.
+//		Hệ thống và trang chủ khởi tạo ngay vì nhẹ / cần sẵn sàng tức thì.
         contentPanel.add(new TaiKhoan_GUI(taiKhoanService, token), "TaiKhoan");
-        contentPanel.add(new TrangChu_GUI(this::showPage), "TrangChu");
+        trangChuGUI = new TrangChu_GUI(this::showPage);
+        contentPanel.add(trangChuGUI, "TrangChu");
         contentPanel.add(new TroGiup_GUI(), "TroGiup");
 
         cardLayout.show(contentPanel, "TrangChu");
@@ -230,58 +212,109 @@ public class Main_GUI extends JFrame {
         batDauTheoDoiToken();
     }
 
-    private JPanel createEmptyPage(String name) {
-        JPanel p = new JPanel(new GridBagLayout());
-        JLabel lbl = new JLabel("PAGE: " + name);
-        lbl.setFont(new Font("Segoe UI", Font.BOLD, 30));
-        p.add(lbl);
-        return p;
-    }
-
     public void showPage(String pageName) {
         if ("Thoat".equals(pageName)) {
             xacNhanDangXuat();
             return;
         }
-        cardLayout.show(contentPanel, pageName);
+        // Đổi mật khẩu — mở dialog riêng, không dùng CardLayout
+        if ("DoiMatKhau".equals(pageName)) {
+            new DoiMatKhau_GUI(taiKhoanService, currentToken).setVisible(true);
+            return;
+        }
 
-        // Auto-refresh khi chuyển tab
-        if ("BanHang".equals(pageName) && hoaDonGUI != null) {
-            hoaDonGUI.refresh();
+        // Lazy-init: tạo panel lần đầu, các lần sau chỉ refresh
+        switch (pageName) {
+            case "TrangChu":
+                if (trangChuGUI != null) { trangChuGUI.refresh(); }
+                break;
+            case "SanPham":
+                if (sanPhamGUI == null) { sanPhamGUI = new SanPham_GUI(); contentPanel.add(sanPhamGUI, "SanPham"); }
+                else { sanPhamGUI.refresh(); }
+                break;
+            case "NhanVien":
+                if (nhanVienGUI == null) { nhanVienGUI = new NhanVien_GUI(); contentPanel.add(nhanVienGUI, "NhanVien"); }
+                else { nhanVienGUI.refresh(); }
+                break;
+            case "KhachHang":
+                if (khachHangGUI == null) { khachHangGUI = new KhachHang_GUI(); contentPanel.add(khachHangGUI, "KhachHang"); }
+                else { khachHangGUI.refresh(); }
+                break;
+            case "NhaCungCap":
+                if (nhaCungCapGUI == null) { nhaCungCapGUI = new NhaCungCap_GUI(); contentPanel.add(nhaCungCapGUI, "NhaCungCap"); }
+                else { nhaCungCapGUI.refresh(); }
+                break;
+            case "KhuyenMai":
+                if (khuyenMaiGUI == null) { khuyenMaiGUI = new KhuyenMai_GUI(); contentPanel.add(khuyenMaiGUI, "KhuyenMai"); }
+                else { khuyenMaiGUI.refresh(); }
+                break;
+            case "Thue":
+                if (thueGUI == null) { thueGUI = new Thue_GUI(); contentPanel.add(thueGUI, "Thue"); }
+                else { thueGUI.refresh(); }
+                break;
+            case "BanHang":
+                if (hoaDonGUI == null) {
+                    hoaDonGUI = new HoaDon_GUI(taiKhoanDangNhap != null ? taiKhoanDangNhap.getNhanVien() : null);
+                    contentPanel.add(hoaDonGUI, "BanHang");
+                } else { hoaDonGUI.refresh(); }
+                break;
+            case "NhapHang":
+                if (nhapHangGUI == null) { nhapHangGUI = new NhapHang_GUI(taiKhoanDangNhap != null ? taiKhoanDangNhap.getNhanVien() : null); contentPanel.add(nhapHangGUI, "NhapHang"); }
+                else { nhapHangGUI.refresh(); }
+                break;
+            case "DoiHang":
+                if (doiHangGUI == null) { doiHangGUI = new DoiHang_GUI(); contentPanel.add(doiHangGUI, "DoiHang"); }
+                else { doiHangGUI.refresh(); }
+                break;
+            case "TraHang":
+                if (traHangGUI == null) { traHangGUI = new TraHang_GUI(); contentPanel.add(traHangGUI, "TraHang"); }
+                else { traHangGUI.refresh(); }
+                break;
+            case "DatTruoc":
+                if (datTruocGUI == null) {
+                    datTruocGUI = new DatTruoc_GUI(taiKhoanDangNhap != null ? taiKhoanDangNhap.getNhanVien() : null);
+                    contentPanel.add(datTruocGUI, "DatTruoc");
+                } else { datTruocGUI.refresh(); }
+                break;
+            case "TraCuuHoaDon":
+                if (traCuuHoaDonGUI == null) { traCuuHoaDonGUI = new TraCuuHoaDon_GUI(); contentPanel.add(traCuuHoaDonGUI, "TraCuuHoaDon"); }
+                else { traCuuHoaDonGUI.refresh(); }
+                break;
+            case "TraCuuPhieuNhap":
+                if (traCuuPhieuNhapGUI == null) { traCuuPhieuNhapGUI = new TraCuuPhieuNhap_GUI(); contentPanel.add(traCuuPhieuNhapGUI, "TraCuuPhieuNhap"); }
+                else { traCuuPhieuNhapGUI.refresh(); }
+                break;
+            case "TraCuuDoiHang":
+                if (traCuuDoiHangGUI == null) { traCuuDoiHangGUI = new TraCuuDoiHang_GUI(); contentPanel.add(traCuuDoiHangGUI, "TraCuuDoiHang"); }
+                else { traCuuDoiHangGUI.refresh(); }
+                break;
+            case "TraCuuTraHang":
+                if (traCuuTraHangGUI == null) { traCuuTraHangGUI = new TraCuuTraHang_GUI(); contentPanel.add(traCuuTraHangGUI, "TraCuuTraHang"); }
+                else { traCuuTraHangGUI.refresh(); }
+                break;
+            case "TraCuuDatThuoc":
+                if (traCuuDatThuocGUI == null) { traCuuDatThuocGUI = new TraCuuDatThuoc_GUI(); contentPanel.add(traCuuDatThuocGUI, "TraCuuDatThuoc"); }
+                else { traCuuDatThuocGUI.refresh(); }
+                break;
+            case "ThongKeDoanhThu":
+                if (thongKeDoanhThuGUI == null) { thongKeDoanhThuGUI = new ThongKeDoanhThu_GUI(); contentPanel.add(thongKeDoanhThuGUI, "ThongKeDoanhThu"); }
+                else { thongKeDoanhThuGUI.refresh(); }
+                break;
+            case "ThongKeKhachHang":
+                if (thongKeKhachHangGUI == null) { thongKeKhachHangGUI = new ThongKeKhachHang_GUI(); contentPanel.add(thongKeKhachHangGUI, "ThongKeKhachHang"); }
+                else { thongKeKhachHangGUI.refresh(); }
+                break;
+            case "ThongKeSanPham":
+                if (thongKeSanPhamGUI == null) { thongKeSanPhamGUI = new ThongKeSanPham_GUI(); contentPanel.add(thongKeSanPhamGUI, "ThongKeSanPham"); }
+                else { thongKeSanPhamGUI.refresh(); }
+                break;
+            default:
+                break;
         }
-        if ("SanPham".equals(pageName) && sanPhamGUI != null) {
-            sanPhamGUI.refresh();
-        }
-        if ("NhanVien".equals(pageName) && nhanVienGUI != null) {
-            nhanVienGUI.refresh();
-        }
-        if ("KhachHang".equals(pageName) && khachHangGUI != null) {
-            khachHangGUI.refresh();
-        }
-        if ("NhaCungCap".equals(pageName) && nhaCungCapGUI != null) {
-            nhaCungCapGUI.refresh();
-        }
-        if ("KhuyenMai".equals(pageName) && khuyenMaiGUI != null) {
-            khuyenMaiGUI.refresh();
-        }
-        if ("Thue".equals(pageName) && thueGUI != null) {
-            thueGUI.refresh();
-        }
-        if ("ThongKeDoanhThu".equals(pageName) && thongKeDoanhThuGUI != null) {
-            thongKeDoanhThuGUI.refresh();
-        }
-        if ("ThongKeKhachHang".equals(pageName) && thongKeKhachHangGUI != null) {
-            thongKeKhachHangGUI.refresh();
-        }
-        if ("ThongKeSanPham".equals(pageName) && thongKeSanPhamGUI != null) {
-            thongKeSanPhamGUI.refresh();
-        }
-        if ("TraCuuHoaDon".equals(pageName) && traCuuHoaDonGUI != null) {
-            traCuuHoaDonGUI.refresh();
-        }
-        if ("TraCuuPhieuNhap".equals(pageName) && traCuuPhieuNhapGUI != null) {
-            traCuuPhieuNhapGUI.refresh();
-        }
+
+        cardLayout.show(contentPanel, pageName);
+        contentPanel.revalidate();
+        contentPanel.repaint();
     }
 
     private void xacNhanDangXuat() {
@@ -391,15 +424,7 @@ public class Main_GUI extends JFrame {
         return new ImageIcon(output);
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            TaiKhoan_Service tkService = new TaiKhoan_Service();
-            String savedToken = tkService.layTokenDaLuu();
-            if (savedToken != null && tkService.tokenHopLe(savedToken)) {
-                new Main_GUI(tkService, savedToken).setVisible(true);
-            } else {
-                new DangNhap_GUI().setVisible(true);
-            }
-        });
-    }
+    // Entry point duy nhất là DangNhap_GUI.main()
+    // Không cần main() ở đây vì DangNhap_GUI đã xử lý
+    // ConnectDB, LookAndFeel và auto-login.
 }

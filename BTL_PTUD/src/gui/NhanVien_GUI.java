@@ -9,20 +9,22 @@ import exception.RoundedPanel;
 import exception.RoundedTextField;
 import exception.StyledTable;
 import service.NhanVien_Service;
-import service.Validators;
+import util.AsyncLoader;
+import util.MaskUtil;
+import util.Validators;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import javax.imageio.ImageIO;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import javax.swing.*;
 
+@SuppressWarnings("serial")
 public class NhanVien_GUI extends JPanel implements ActionListener {
 
     private JPanel pnlTitle, pnlContent, pnlCategory;
@@ -45,7 +47,6 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
     private ArrayList<NhanVien> fullList = new ArrayList<>();
     private NhanVien_Service nhanVienSV;
     private StyledTable tblNhanVien;
-    private JPanel item;
 
     private static final String[] COLUMN_NAMES = {"Nhân viên", "Chức vụ", "Liên hệ", "Giới tính", "Trạng thái", "", ""};
 
@@ -148,11 +149,11 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
 
         tblNhanVien.setTwoLineColumn(1, 180,
                 v -> ((NhanVien) v).getChucVu() != null ? ((NhanVien) v).getChucVu().getTenChucVu() : "",
-                v -> ((NhanVien) v).getEmail());
+                v -> MaskUtil.email(((NhanVien) v).getEmail()));
 
         tblNhanVien.setIconTwoLineColumn(2, 220,
-                "\u2709", v -> ((NhanVien) v).getEmail(),
-                "\u260E", v -> ((NhanVien) v).getSoDienThoai());
+                "✉", v -> MaskUtil.email(((NhanVien) v).getEmail()),
+                "☎", v -> MaskUtil.phone(((NhanVien) v).getSoDienThoai()));
 
         tblNhanVien.setSingleTextColumn(3, 100,
                 v -> ((NhanVien) v).isGioiTinh() ? "Nam" : "Nữ");
@@ -221,16 +222,31 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
     }
 
     private void loadDataSafe() {
-        try {
-            ArrayList<NhanVien> dsNV = nhanVienSV.getDSNhanVien();
-            if (dsNV == null || dsNV.isEmpty()) {
-                System.out.println("[NhanVien_GUI] Cảnh báo: Danh sách nhân viên rỗng");
+        AsyncLoader.run(
+            () -> nhanVienSV.getDSNhanVien(),
+            dsNV -> {
+                if (dsNV != null) loadData(dsNV);
+                updateCategoryAsync();
             }
-            loadData(dsNV);
-        } catch (Exception e) {
-            System.out.println("[NhanVien_GUI] Lỗi khi tải dữ liệu nhân viên:");
-            e.printStackTrace();
-        }
+        );
+    }
+
+    private void updateCategoryAsync() {
+        AsyncLoader.run(
+            () -> new int[]{
+                nhanVienSV.getSoLuongNhanVien(),
+                nhanVienSV.getSoLuongNhanVienOnline(),
+                nhanVienSV.getSoLuongNhanVienOffline()
+            },
+            counts -> {
+                pnlCategory.removeAll();
+                pnlCategory.add(statCard("Tổng nhân viên", counts[0], Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
+                pnlCategory.add(statCard("Đang hoạt động", counts[1], Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
+                pnlCategory.add(statCard("Nghỉ việc", counts[2], Colors.SECONDARY, Colors.DANGER, Colors.DANGER));
+                pnlCategory.revalidate();
+                pnlCategory.repaint();
+            }
+        );
     }
 
     public void loadData(ArrayList<NhanVien> dsNV) {
@@ -768,210 +784,6 @@ public class NhanVien_GUI extends JPanel implements ActionListener {
         } catch (Exception ignored) {
         }
         return null;
-    }
-
-    private Icon createAvatarIcon(String imagePath, String name, int size) {
-        BufferedImage bi = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = bi.createGraphics();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-        java.awt.geom.Ellipse2D.Float circle = new java.awt.geom.Ellipse2D.Float(0, 0, size, size);
-        boolean imageLoaded = false;
-        if (imagePath != null && !imagePath.isEmpty()) {
-            try {
-                File f = resolveImageFile(imagePath);
-                if (f != null && f.exists()) {
-                    BufferedImage raw = ImageIO.read(f);
-                    if (raw != null) {
-                        g2.setClip(circle);
-                        g2.drawImage(raw, 0, 0, size, size, null);
-                        imageLoaded = true;
-                    }
-                }
-            } catch (Exception ignored) {
-            }
-        }
-        if (!imageLoaded) {
-            g2.setClip(null);
-            g2.setColor(Colors.PRIMARY);
-            g2.fill(circle);
-            g2.setClip(circle);
-            g2.setColor(Color.WHITE);
-            String initials = getInitials(name);
-            g2.setFont(FontStyle.font(FontStyle.XL, FontStyle.BOLD));
-            FontMetrics fm = g2.getFontMetrics();
-            int tx = (size - fm.stringWidth(initials)) / 2;
-            int ty = (size - fm.getHeight()) / 2 + fm.getAscent();
-            g2.drawString(initials, tx, ty);
-        }
-        g2.dispose();
-        return new ImageIcon(bi);
-    }
-
-    // Row chỉ đọc: label nhỏ trên + value in đậm dưới
-    private JPanel buildReadonlyRow(String label, String value) {
-        JPanel row = new JPanel();
-        row.setLayout(new BoxLayout(row, BoxLayout.Y_AXIS));
-        row.setOpaque(false);
-        row.setAlignmentX(Component.LEFT_ALIGNMENT);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
-        JLabel lbl = new JLabel(label);
-        lbl.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
-        lbl.setForeground(new Color(110, 120, 130));
-        lbl.setAlignmentX(Component.LEFT_ALIGNMENT);
-        JLabel val = new JLabel(value != null ? value : "");
-        val.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
-        val.setForeground(Colors.TEXT_PRIMARY);
-        val.setAlignmentX(Component.LEFT_ALIGNMENT);
-        row.add(lbl);
-        row.add(Box.createVerticalStrut(2));
-        row.add(val);
-        return row;
-    }
-
-    // Row có input field: label nhỏ trên + component dưới
-    private JPanel buildFieldRow(String label, JComponent field) {
-        JPanel row = new JPanel();
-        row.setLayout(new BoxLayout(row, BoxLayout.Y_AXIS));
-        row.setOpaque(false);
-        row.setAlignmentX(Component.LEFT_ALIGNMENT);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 52));
-        JLabel lbl = new JLabel(label);
-        lbl.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
-        lbl.setForeground(new Color(110, 120, 130));
-        lbl.setAlignmentX(Component.LEFT_ALIGNMENT);
-        field.setAlignmentX(Component.LEFT_ALIGNMENT);
-        row.add(lbl);
-        row.add(Box.createVerticalStrut(2));
-        row.add(field);
-        return row;
-    }
-
-    // Row có icon bên trái + label + field
-    private JPanel buildIconFieldRow(String icon, String label, JTextField field) {
-        JPanel row = new JPanel();
-        row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
-        row.setOpaque(false);
-        row.setAlignmentX(Component.LEFT_ALIGNMENT);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
-        JLabel lblIcon = new JLabel(icon);
-        lblIcon.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        lblIcon.setForeground(Colors.PRIMARY);
-        lblIcon.setPreferredSize(new Dimension(28, 40));
-        lblIcon.setVerticalAlignment(SwingConstants.CENTER);
-        row.add(lblIcon);
-        row.add(Box.createHorizontalStrut(4));
-        JPanel col = new JPanel();
-        col.setLayout(new BoxLayout(col, BoxLayout.Y_AXIS));
-        col.setOpaque(false);
-        JLabel lbl = new JLabel(label);
-        lbl.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
-        lbl.setForeground(new Color(110, 120, 130));
-        lbl.setAlignmentX(Component.LEFT_ALIGNMENT);
-        field.setAlignmentX(Component.LEFT_ALIGNMENT);
-        col.add(lbl);
-        col.add(Box.createVerticalStrut(2));
-        col.add(field);
-        row.add(col);
-        row.add(Box.createHorizontalGlue());
-        return row;
-    }
-
-    // Áp style cho JTextField ở chế độ xem (ẩn border, nền trong suốt)
-    private void styleDetailField(JTextField field) {
-        field.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
-        field.setForeground(Colors.TEXT_PRIMARY);
-        field.setOpaque(false);
-        field.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
-        field.setEnabled(false);
-        field.setDisabledTextColor(Colors.TEXT_PRIMARY);
-        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
-    }
-
-    // Khi chuyển sang chế độ sửa: hiện border cho field
-    private void enableDetailField(JTextField field) {
-        field.setOpaque(true);
-        field.setBackground(Color.WHITE);
-        field.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Colors.PRIMARY, 1, true),
-                BorderFactory.createEmptyBorder(2, 6, 2, 6)));
-    }
-
-    private JPanel createInfoBox(String title, int width, String[] labels, String[] values, String[] icons) {
-        JPanel box = new RoundedPanel(width, 230, 15);
-        box.setLayout(new BoxLayout(box, BoxLayout.Y_AXIS));
-        box.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-        box.setBackground(Colors.SECONDARY); // Dark bg
-
-        // Title
-        JLabel lblBoxTitle = new JLabel(title);
-        lblBoxTitle.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
-        lblBoxTitle.setForeground(new Color(100, 110, 120));
-        lblBoxTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
-        box.add(lblBoxTitle);
-        box.add(Box.createVerticalStrut(15));
-
-        // Items
-        for (int i = 0; i < labels.length; i++) {
-            JPanel row = new JPanel();
-            row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
-            row.setOpaque(false);
-            row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
-            row.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-            // Icon (if exists)
-            if (!icons[i].isEmpty()) {
-                JLabel lblIcon = new JLabel(icons[i]);
-                lblIcon.setFont(new Font("Segoe UI", Font.BOLD, 18));
-                lblIcon.setForeground(Colors.PRIMARY);
-                lblIcon.setPreferredSize(new Dimension(30, 35));
-                lblIcon.setVerticalAlignment(SwingConstants.TOP);
-                row.add(lblIcon);
-                row.add(Box.createHorizontalStrut(5));
-            }
-
-            // Label + Value
-            JPanel colInfo = new JPanel();
-            colInfo.setLayout(new BoxLayout(colInfo, BoxLayout.Y_AXIS));
-            colInfo.setOpaque(false);
-
-            JLabel lblLabel = new JLabel(labels[i]);
-            lblLabel.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
-            lblLabel.setForeground(new Color(110, 120, 130));
-            lblLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-            colInfo.add(lblLabel);
-            colInfo.add(Box.createVerticalStrut(2));
-
-            JLabel lblValue;
-            if (labels[i].equals("Địa chỉ") && values[i] != null && values[i].length() > 20) {
-                // Format địa chỉ với text wrap
-                lblValue = new JLabel("<html>" + values[i].replace(", ", ",<br>") + "</html>");
-            } else {
-                lblValue = new JLabel(values[i] != null ? values[i] : "");
-            }
-            lblValue.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
-            lblValue.setForeground(Colors.TEXT_PRIMARY);
-            lblValue.setAlignmentX(Component.LEFT_ALIGNMENT);
-            colInfo.add(lblValue);
-
-            row.add(colInfo);
-            row.add(Box.createHorizontalGlue());
-            box.add(row);
-
-            // Divider - chỉ show khi có icon (Thông tin Liên hệ)
-            if (i < labels.length - 1 && !icons[i].isEmpty()) {
-                box.add(Box.createVerticalStrut(8));
-                JSeparator sep = new JSeparator();
-                sep.setForeground(new Color(50, 55, 60));
-                sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
-                box.add(sep);
-                box.add(Box.createVerticalStrut(8));
-            } else if (i < labels.length - 1) {
-                box.add(Box.createVerticalStrut(6));
-            }
-        }
-
-        return box;
     }
 
     private String getInitials(String fullName) {

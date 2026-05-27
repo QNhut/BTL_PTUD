@@ -1,17 +1,19 @@
 package gui;
 
+import constants.Colors;
+import constants.FontStyle;
+import constants.Spacings;
+import entity.TaiKhoan;
+import exception.RoundedButton;
+
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import constants.Colors;
-import constants.FontStyle;
-import constants.Spacings;
-import entity.TaiKhoan;
 import service.TaiKhoan_Service;
-import exception.RoundedButton;
 
+@SuppressWarnings("serial")
 public class DoiMatKhau_GUI extends JFrame implements ActionListener {
 
     private JPasswordField txtMatKhauHienTai, txtMatKhauMoi, txtXacNhanMatKhau;
@@ -24,7 +26,7 @@ public class DoiMatKhau_GUI extends JFrame implements ActionListener {
     public DoiMatKhau_GUI(TaiKhoan_Service taiKhoanService, String token) {
         this.taiKhoanService = taiKhoanService;
         this.currentToken = token;
-        
+
         setTitle("Đổi mật khẩu");
         setSize(500, 500);
         setLocationRelativeTo(null);
@@ -38,7 +40,7 @@ public class DoiMatKhau_GUI extends JFrame implements ActionListener {
 
         // Header
         JLabel lblTitle = new JLabel("Đổi mật khẩu");
-        lblTitle.setFont(FontStyle.font(FontStyle.LG, FontStyle.BOLD));
+        lblTitle.setFont(FontStyle.font(FontStyle.XXL, FontStyle.BOLD));
         lblTitle.setForeground(Colors.FOREGROUND);
         lblTitle.setAlignmentX(LEFT_ALIGNMENT);
 
@@ -102,7 +104,7 @@ public class DoiMatKhau_GUI extends JFrame implements ActionListener {
         chkHienMK.setOpaque(false);
         chkHienMK.setAlignmentX(LEFT_ALIGNMENT);
         chkHienMK.addActionListener(ev -> {
-            char echo = chkHienMK.isSelected() ? (char) 0 : '\u2022';
+            char echo = chkHienMK.isSelected() ? (char) 0 : '•';
             txtMatKhauHienTai.setEchoChar(echo);
             txtMatKhauMoi.setEchoChar(echo);
             txtXacNhanMatKhau.setEchoChar(echo);
@@ -166,9 +168,17 @@ public class DoiMatKhau_GUI extends JFrame implements ActionListener {
 
     private void addClearOnType(JPasswordField field, JLabel errLbl) {
         field.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) { errLbl.setVisible(false); }
-            public void removeUpdate(DocumentEvent e) { errLbl.setVisible(false); }
-            public void changedUpdate(DocumentEvent e) { errLbl.setVisible(false); }
+            public void insertUpdate(DocumentEvent e) {
+                errLbl.setVisible(false);
+            }
+
+            public void removeUpdate(DocumentEvent e) {
+                errLbl.setVisible(false);
+            }
+
+            public void changedUpdate(DocumentEvent e) {
+                errLbl.setVisible(false);
+            }
         });
     }
 
@@ -194,10 +204,21 @@ public class DoiMatKhau_GUI extends JFrame implements ActionListener {
             String xacNhan = new String(txtXacNhanMatKhau.getPassword()).trim();
 
             boolean valid = true;
-            if (mkHienTai.isEmpty()) { showErr(errHienTai, "Vui lòng nhập mật khẩu hiện tại"); valid = false; }
-            if (mkMoi.isEmpty()) { showErr(errMoi, "Vui lòng nhập mật khẩu mới"); valid = false; }
-            if (xacNhan.isEmpty()) { showErr(errXacNhan, "Vui lòng xác nhận mật khẩu mới"); valid = false; }
-            if (!valid) return;
+            if (mkHienTai.isEmpty()) {
+                showErr(errHienTai, "Vui lòng nhập mật khẩu hiện tại");
+                valid = false;
+            }
+            if (mkMoi.isEmpty()) {
+                showErr(errMoi, "Vui lòng nhập mật khẩu mới");
+                valid = false;
+            }
+            if (xacNhan.isEmpty()) {
+                showErr(errXacNhan, "Vui lòng xác nhận mật khẩu mới");
+                valid = false;
+            }
+            if (!valid) {
+                return;
+            }
 
             if (!mkMoi.equals(xacNhan)) {
                 showErr(errXacNhan, "Xác nhận không khớp với mật khẩu mới");

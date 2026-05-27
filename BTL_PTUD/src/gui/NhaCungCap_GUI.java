@@ -8,14 +8,17 @@ import exception.RoundedButton;
 import exception.RoundedPanel;
 import exception.RoundedTextField;
 import exception.StyledTable;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import javax.swing.*;
 import service.NhaCungCap_Service;
-import service.Validators;
+import util.AsyncLoader;
+import util.Validators;
 
+@SuppressWarnings("serial")
 public class NhaCungCap_GUI extends JPanel implements ActionListener {
 
     private JPanel pnlTitle, pnlContent, pnlCategory;
@@ -35,8 +38,6 @@ public class NhaCungCap_GUI extends JPanel implements ActionListener {
     private ArrayList<NhaCungCap> fullList = new ArrayList<>();
     private NhaCungCap_Service nhaCungCapSV;
     private StyledTable tblNhaCungCap;
-    private JPanel item;
-
     private static final String[] COLUMN_NAMES = {"Nhà cung cấp", "Liên hệ", "Địa chỉ", "Trạng thái", "", ""};
 
     public NhaCungCap_GUI() {
@@ -204,12 +205,13 @@ public class NhaCungCap_GUI extends JPanel implements ActionListener {
     }
 
     private void loadDataSafe() {
-        try {
-            loadData(nhaCungCapSV.getDSNhaCungCap());
-        } catch (Exception e) {
-            System.out.println("[NhaCungCap_GUI] Lỗi khi tải dữ liệu:");
-            e.printStackTrace();
-        }
+        AsyncLoader.run(
+            () -> nhaCungCapSV.getDSNhaCungCap(),
+            dsNCC -> {
+                if (dsNCC != null) loadData(dsNCC);
+                updateCategoryAsync();
+            }
+        );
     }
 
     public void loadData(ArrayList<NhaCungCap> dsNCC) {
@@ -310,14 +312,27 @@ public class NhaCungCap_GUI extends JPanel implements ActionListener {
     }
 
     private void updateCategory() {
-        pnlCategory.removeAll();
-        pnlCategory.add(statCard("Tổng NCC", nhaCungCapSV.getSoLuongNCC(), Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
-        pnlCategory.add(statCard("Đang hợp tác", nhaCungCapSV.getSoLuongDangHopTac(), Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
-        pnlCategory.add(statCard("Ngừng hợp tác", nhaCungCapSV.getSoLuongNgungHopTac(), Colors.SECONDARY, Colors.DANGER, Colors.DANGER));
-        pnlCategory.revalidate();
-        pnlCategory.repaint();
-        pnlContent.revalidate();
-        pnlContent.repaint();
+        updateCategoryAsync();
+    }
+
+    private void updateCategoryAsync() {
+        AsyncLoader.run(
+            () -> new int[]{
+                nhaCungCapSV.getSoLuongNCC(),
+                nhaCungCapSV.getSoLuongDangHopTac(),
+                nhaCungCapSV.getSoLuongNgungHopTac()
+            },
+            counts -> {
+                pnlCategory.removeAll();
+                pnlCategory.add(statCard("Tổng NCC", counts[0], Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
+                pnlCategory.add(statCard("Đang hợp tác", counts[1], Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
+                pnlCategory.add(statCard("Ngừng hợp tác", counts[2], Colors.SECONDARY, Colors.DANGER, Colors.DANGER));
+                pnlCategory.revalidate();
+                pnlCategory.repaint();
+                pnlContent.revalidate();
+                pnlContent.repaint();
+            }
+        );
     }
 
     private JPanel statCard(String title, int value, Color bg, Color valColor, Color titleColor) {
@@ -702,15 +717,6 @@ public class NhaCungCap_GUI extends JPanel implements ActionListener {
     }
 
     // ===== HELPERS =====
-    private JLabel errLabel() {
-        JLabel l = new JLabel();
-        l.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
-        l.setForeground(Colors.DANGER);
-        l.setAlignmentX(Component.LEFT_ALIGNMENT);
-        l.setVisible(false);
-        return l;
-    }
-
     private JPanel createFormField(String labelText, JComponent field) {
         JPanel row = new JPanel();
         row.setLayout(new BoxLayout(row, BoxLayout.Y_AXIS));

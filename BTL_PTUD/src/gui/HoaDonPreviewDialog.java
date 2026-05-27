@@ -4,6 +4,7 @@ import constants.Colors;
 import constants.FontStyle;
 import entity.NhanVien;
 import exception.RoundedButton;
+
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.print.*;
@@ -18,6 +19,7 @@ import service.HoaDon_Service;
 
 // Dialog xem trước và in / xuất PDF hóa đơn. Không phụ thuộc thư viện ngoài –
 // PDF được tạo bằng cách nhúng ảnh JPEG.
+@SuppressWarnings("serial")
 public class HoaDonPreviewDialog extends JDialog {
 
     // --- Kích thước trang hóa đơn (px, dùng cho Graphics2D) ---
@@ -47,6 +49,8 @@ public class HoaDonPreviewDialog extends JDialog {
     private String tenPTTTHienThi;
     // Breakdown tính trước để hiển thị và in.
     private HoaDon_Service.HoaDonSummary summary;
+    // Tổng tiền cho chế độ view-only khi summary == null (dùng để tạo QR).
+    private long totalViewOnly = 0;
 
     private InvoicePanel invoicePanel;
     private JPanel pnlSouth; // thanh dưới – thay thế sau khi thanh toán
@@ -81,6 +85,33 @@ public class HoaDonPreviewDialog extends JDialog {
         this.diemSuDung = 0;
         this.maPTTTChon = null;
         this.summary = null;
+        initUI();
+    }
+
+    // Constructor view-only với hỗ trợ QR (dùng khi biết PTTT + tổng tiền nhưng không có service).
+    public HoaDonPreviewDialog(Frame parent,
+            String tenKH, String sdt,
+            String nhanVien, String thoiGian,
+            DefaultTableModel model,
+            String tenPTTT, long totalAmount) {
+        super(parent, "Hóa đơn bán hàng", true);
+        this.tenKhachHang = (tenKH == null || tenKH.isBlank()) ? "Khách lẻ" : tenKH;
+        this.soDienThoai = (sdt == null || sdt.isBlank()) ? "---" : sdt;
+        this.tenNhanVien = (nhanVien == null || nhanVien.isBlank()) ? "---" : nhanVien;
+        this.thoiGian = thoiGian;
+        this.tableModel = model;
+        this.maHoaDon = "HD" + System.currentTimeMillis();
+        this.hoaDonService = null;
+        this.nhanVienEntity = null;
+        this.tenKHRaw = tenKH;
+        this.sdtRaw = sdt;
+        this.cartItems = null;
+        this.onThanhToanThanhCong = null;
+        this.diemSuDung = 0;
+        this.maPTTTChon = null;
+        this.summary = null;
+        this.tenPTTTHienThi = tenPTTT;
+        this.totalViewOnly = Math.max(0, totalAmount);
         initUI();
     }
 
@@ -191,7 +222,7 @@ public class HoaDonPreviewDialog extends JDialog {
         java.awt.Rectangle screen = java.awt.GraphicsEnvironment
                 .getLocalGraphicsEnvironment().getMaximumWindowBounds();
         int dlgW = Math.min(400, screen.width - 40);
-        int dlgH = Math.min(800, screen.height - 40);
+        int dlgH = Math.min(960, screen.height - 40);
         setSize(dlgW, dlgH);
 
         // Căn giữa và đảm bảo hoàn toàn nằm trong màn hình
@@ -600,10 +631,15 @@ public class HoaDonPreviewDialog extends JDialog {
 
     // Tải QR ngầm rồi repaint hóa đơn. Gọi khi PTTT là QR/CK.
     private void naqrIfNeeded() {
-        if (!canHienThiQR(tenPTTTHienThi) || summary == null) {
+        if (!canHienThiQR(tenPTTTHienThi)) return;
+        long soTien;
+        if (summary != null) {
+            soTien = Math.round(summary.thanhTien);
+        } else if (totalViewOnly > 0) {
+            soTien = totalViewOnly;
+        } else {
             return;
         }
-        long soTien = Math.round(summary.thanhTien);
         String noiDung = "Thanh toan " + maHoaDon;
         new SwingWorker<BufferedImage, Void>() {
             @Override
@@ -628,7 +664,6 @@ public class HoaDonPreviewDialog extends JDialog {
     // =========================================================
     //===="Thanh chọn phương thức thanh toán + nút xác nhận (trước khi thanh toán)"=====
     // =========================================================
-    @SuppressWarnings("unchecked")
     private JPanel buildPaymentBar() {
         JButton btnThanhToan = new RoundedButton(155, 34, 17, "✓ Xác nhận thanh toán", Colors.SUCCESS);
         btnThanhToan.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
@@ -937,7 +972,7 @@ public class HoaDonPreviewDialog extends JDialog {
         byte[] o5e = "\nendstream\nendobj\n".getBytes("ISO-8859-1");
 
         // PDF binary header (4 bytes >127 → đánh dấu file nhị phân)
-        byte[] pdfHdr = "%PDF-1.4\n%\u00e2\u00e3\u00cf\u00d3\n".getBytes("ISO-8859-1");
+        byte[] pdfHdr = "%PDF-1.4\n%âãÏÓ\n".getBytes("ISO-8859-1");
 
         // --- Tính byte offset từng object để xref đúng ---
         int[] off = new int[5];

@@ -9,6 +9,7 @@ import exception.RoundedButton;
 import exception.RoundedPanel;
 import exception.RoundedTextField;
 import exception.StyledTable;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -20,9 +21,11 @@ import java.util.Set;
 import javax.swing.*;
 import service.LoaiSanPham_Service;
 import service.Thue_Service;
-import service.Validators;
+import util.AsyncLoader;
+import util.Validators;
 
 // Quản lý thuế. Áp dụng thuế theo Loại sản phẩm (batch update SanPham).
+@SuppressWarnings("serial")
 public class Thue_GUI extends JPanel implements ActionListener {
 
     private JPanel pnlTitle, pnlContent, pnlCategory;
@@ -162,19 +165,26 @@ public class Thue_GUI extends JPanel implements ActionListener {
         });
         tblThue.setColumnWidth(3, 140);
 
-        tblThue.setColumnRenderer(4, (table, value, isSelected, hasFocus, row, col) -> {
-            JPanel p = new JPanel(new java.awt.GridBagLayout());
-            p.setOpaque(true);
-            p.setBackground(isSelected ? Colors.PRIMARY_LIGHT : Colors.BACKGROUND);
-            JLabel lbl = new JLabel("Áp dụng");
-            lbl.setOpaque(true);
-            lbl.setBackground(Colors.PRIMARY_LIGHT);
-            lbl.setForeground(Colors.PRIMARY);
-            lbl.setFont(FontStyle.font(FontStyle.XS, FontStyle.BOLD));
-            lbl.setBorder(BorderFactory.createEmptyBorder(6, 14, 6, 14));
-            lbl.setHorizontalAlignment(SwingConstants.CENTER);
-            p.add(lbl, new java.awt.GridBagConstraints());
-            return p;
+        tblThue.setColumnRenderer(4, new javax.swing.table.TableCellRenderer() {
+            private final JPanel p;
+            private final RoundedButton btn;
+            {
+                p = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+                p.setOpaque(true);
+                p.setBorder(BorderFactory.createEmptyBorder(15, 10, 5, 10));
+                btn = new RoundedButton(90, 45, 20, "Áp dụng", Colors.PRIMARY);
+                btn.setFont(FontStyle.font(FontStyle.XS, FontStyle.BOLD));
+                btn.setForeground(Colors.BACKGROUND);
+                btn.setFocusPainted(false);
+                p.add(btn);
+            }
+
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int col) {
+                p.setBackground(isSelected ? Colors.PRIMARY_LIGHT : Colors.BACKGROUND);
+                return p;
+            }
         });
         tblThue.setColumnWidth(4, 110);
 
@@ -231,12 +241,13 @@ public class Thue_GUI extends JPanel implements ActionListener {
     }
 
     private void loadDataSafe() {
-        try {
-            loadData(thueSV.getDSThue());
-        } catch (Exception e) {
-            System.err.println("[Thue_GUI] Lỗi khi tải dữ liệu:");
-            e.printStackTrace();
-        }
+        AsyncLoader.run(
+            () -> thueSV.getDSThue(),
+            ds -> {
+                if (ds != null) loadData(ds);
+                capNhatStatAsync();
+            }
+        );
     }
 
     public void loadData(ArrayList<Thue> ds) {
@@ -260,15 +271,25 @@ public class Thue_GUI extends JPanel implements ActionListener {
     }
 
     private void capNhatStat() {
-        pnlCategory.removeAll();
-        int tong = thueSV.getSoLuongThue();
-        int dangApDung = (int) spCountMap.values().stream().filter(v -> v > 0).count();
-        int tongSP = spCountMap.values().stream().mapToInt(Integer::intValue).sum();
-        pnlCategory.add(statCard("Tổng mức thuế", tong, Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
-        pnlCategory.add(statCard("Đang áp dụng", dangApDung, Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
-        pnlCategory.add(statCard("SP gắn thuế", tongSP, Colors.BROWN_HOVER, Colors.ACCENT, Colors.ACCENT));
-        pnlCategory.revalidate();
-        pnlCategory.repaint();
+        capNhatStatAsync();
+    }
+
+    private void capNhatStatAsync() {
+        AsyncLoader.run(
+            () -> new int[]{
+                thueSV.getSoLuongThue(),
+                (int) spCountMap.values().stream().filter(v -> v > 0).count(),
+                spCountMap.values().stream().mapToInt(Integer::intValue).sum()
+            },
+            counts -> {
+                pnlCategory.removeAll();
+                pnlCategory.add(statCard("Tổng mức thuế", counts[0], Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
+                pnlCategory.add(statCard("Đang áp dụng", counts[1], Colors.SUCCESS_LIGHT, Colors.SUCCESS_DARK, Colors.SUCCESS));
+                pnlCategory.add(statCard("SP gắn thuế", counts[2], Colors.BROWN_HOVER, Colors.ACCENT, Colors.ACCENT));
+                pnlCategory.revalidate();
+                pnlCategory.repaint();
+            }
+        );
     }
 
     private JPanel statCard(String title, int value, Color bg, Color valColor, Color titleColor) {

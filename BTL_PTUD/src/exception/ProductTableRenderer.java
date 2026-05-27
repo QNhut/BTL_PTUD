@@ -19,6 +19,7 @@ import service.ImageCache;
 // DANH MỤC 25000.0, // col 2: GIÁ BÁN 450, // col 3: TỒN KHO new Object[]{3, 1,
 // 1, "15/1/2026"}, // col 4: LÔ HÀNG {soLo, hetHan, sapHet, ngayGanNhat}
 // "CON_HANG", // col 5: TRẠNG THÁI null // col 6: THAO TÁC });
+@SuppressWarnings("serial")
 public class ProductTableRenderer extends JPanel implements TableCellRenderer {
 
 	private static final DecimalFormat PRICE_FMT = new DecimalFormat("#,###");
@@ -331,19 +332,6 @@ public class ProductTableRenderer extends JPanel implements TableCellRenderer {
 		p.setLayout(new FlowLayout(FlowLayout.LEFT, 10, (ROW_HEIGHT - 20) / 2));
 		p.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Colors.BORDER_LIGHT));
 		return p;
-	}
-
-	private JLabel iconBtn(String icon, Color color) {
-		JLabel lbl = new JLabel(icon);
-		lbl.setFont(FontStyle.font(FontStyle.XS, FontStyle.BOLD));
-		lbl.setForeground(color);
-		lbl.setPreferredSize(new Dimension(40, 28));
-		lbl.setHorizontalAlignment(SwingConstants.CENTER);
-		lbl.setCursor(new Cursor(Cursor.HAND_CURSOR));
-		lbl.setOpaque(true);
-		lbl.setBackground(Colors.SECONDARY);
-		lbl.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
-		return lbl;
 	}
 
 	private JLabel textBtn(String text, Color bg, Color fg) {

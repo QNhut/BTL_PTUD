@@ -17,8 +17,12 @@ import org.jfree.data.general.DefaultPieDataset;
 import constants.Colors;
 import constants.FontStyle;
 import exception.RoundedButton;
+import exception.RoundedPanel;
 import service.KhachHang_Service;
+import util.AsyncLoader;
+import util.MaskUtil;
 
+@SuppressWarnings("serial")
 public class ThongKeKhachHang_GUI extends JPanel {
 
     // ===== SERVICE =====
@@ -38,7 +42,7 @@ public class ThongKeKhachHang_GUI extends JPanel {
     private JLabel lblTongKH, lblKHMoi, lblTiLeGiuChan, lblDoanhThuKH;
 
     // ===== CHART DATASETS =====
-    private DefaultPieDataset      pieDataset;
+    private DefaultPieDataset<String> pieDataset;
     private DefaultCategoryDataset doanhThuDataset;
     private DefaultCategoryDataset xuHuongDataset;
 
@@ -59,12 +63,22 @@ public class ThongKeKhachHang_GUI extends JPanel {
         chartsPanel = createChartsPanel();
         tablePanel = createTablePanel();
 
-        add(createFilterPanel());
-        add(summaryPanel);
-        add(chartsPanel);
-        add(tablePanel);
+        add(createHeaderPanel());
 
-        // Khởi tạo mặc định là ngày hiện tại
+        JPanel body = new JPanel();
+        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+        body.setOpaque(false);
+        body.setAlignmentX(LEFT_ALIGNMENT);
+        body.setBorder(BorderFactory.createEmptyBorder(0, 14, 14, 14));
+        body.add(createFilterPanel());
+        body.add(Box.createVerticalStrut(10));
+        body.add(summaryPanel);
+        body.add(Box.createVerticalStrut(10));
+        body.add(chartsPanel);
+        body.add(Box.createVerticalStrut(10));
+        body.add(tablePanel);
+        add(body);
+
         initializeDefaultFilter();
         updateViewMode();
     }
@@ -76,9 +90,9 @@ public class ThongKeKhachHang_GUI extends JPanel {
         cbThang.setSelectedItem(String.valueOf(now.getMonthValue()));
         updateNgayComboBox();
         cbNgay.setSelectedItem(String.valueOf(now.getDayOfMonth()));
-        
-        // Đảm bảo UI đã render xong rồi mới lọc (giống nhấn "Xem" 1 lần)
-        SwingUtilities.invokeLater(() -> performFilter());
+
+        // Panel khởi tạo xong; dữ liệu sẽ được tải khi tab được mở lần đầu qua refresh()
+        // SwingUtilities.invokeLater(() -> performFilter()); // Đã xóa: vẫn chạy trên EDT
     }
 
     // Được gọi từ Main_GUI khi chuyển sang tab này để reload data mới nhất
@@ -89,70 +103,107 @@ public class ThongKeKhachHang_GUI extends JPanel {
         cbThang.setSelectedItem(String.valueOf(now.getMonthValue()));
         updateNgayComboBox();
         cbNgay.setSelectedItem(String.valueOf(now.getDayOfMonth()));
-        
+
         performFilter();
     }
 
     // ============================================================
-    // FILTER PANEL — BorderLayout: bộ lọc bên trái, nút cố định bên phải
+    private JPanel createHeaderPanel() {
+        JPanel header = new JPanel();
+        header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
+        header.setOpaque(false);
+        header.setAlignmentX(LEFT_ALIGNMENT);
+        header.setBorder(BorderFactory.createEmptyBorder(14, 14, 8, 14));
+
+        JLabel lblTitle = new JLabel("Thống kê khách hàng");
+        lblTitle.setFont(FontStyle.font(FontStyle.XXL, FontStyle.BOLD));
+        lblTitle.setForeground(Colors.FOREGROUND);
+        lblTitle.setAlignmentX(LEFT_ALIGNMENT);
+
+        JLabel lblSub = new JLabel("Phân tích và theo dõi hành vi khách hàng");
+        lblSub.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
+        lblSub.setForeground(Colors.MUTED);
+        lblSub.setAlignmentX(LEFT_ALIGNMENT);
+
+        header.add(lblTitle);
+        header.add(Box.createVerticalStrut(2));
+        header.add(lblSub);
+        return header;
+    }
+
+    // ============================================================
+    // FILTER PANEL
     // ============================================================
     private JPanel createFilterPanel() {
-        JPanel panel = new JPanel(new BorderLayout(0, 0));
-        panel.setBackground(Colors.SECONDARY);
-        panel.setBorder(BorderFactory.createTitledBorder("Thống kê khách hàng"));
-        panel.setMaximumSize(new Dimension(9999, 80));
-        panel.setPreferredSize(new Dimension(9999, 80));
-        panel.setMinimumSize(new Dimension(0, 80));
+        JPanel panel = new JPanel();
+        panel.setOpaque(false);
+        panel.setAlignmentX(LEFT_ALIGNMENT);
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 175));
+        panel.setLayout(new BorderLayout());
+
+        RoundedPanel filterCard = new RoundedPanel(1200, 170, 18);
+        filterCard.setBackground(Colors.BACKGROUND);
+        filterCard.setLayout(new BoxLayout(filterCard, BoxLayout.Y_AXIS));
+        filterCard.setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 16));
+
+        JPanel headerRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        headerRow.setOpaque(false);
+        headerRow.setAlignmentX(LEFT_ALIGNMENT);
+        JLabel lblHeader = new JLabel("Thống kê");
+        lblHeader.setFont(FontStyle.font(FontStyle.LG, FontStyle.BOLD));
+        lblHeader.setForeground(Colors.TEXT_PRIMARY);
+        headerRow.add(lblHeader);
 
         cbKieu = new JComboBox<>(new String[]{"Theo thời gian cụ thể", "Theo quý", "Theo loại khách hàng", "Theo tổng chi tiêu"});
-        cbKieu.setPreferredSize(new Dimension(190, 30));
+        styleControl(cbKieu, 220, 42);
         cbKieu.addActionListener(e -> updateVisibility());
 
-        // Năm đầy đủ
         int currentYear = LocalDate.now().getYear();
         cbNam = new JComboBox<>();
         cbNam.addItem("Chọn năm");
-        for (int y = currentYear; y >= 2020; y--) cbNam.addItem(String.valueOf(y));
-        cbNam.setPreferredSize(new Dimension(100, 30));
+        for (int y = currentYear; y >= 2020; y--) {
+            cbNam.addItem(String.valueOf(y));
+        }
+        styleControl(cbNam, 120, 42);
         cbNam.addActionListener(e -> updateNgayComboBox());
 
-        // Tháng đầy đủ
-        cbThang = new JComboBox<>(new String[]{"Chọn tháng", "1","2","3","4","5","6","7","8","9","10","11","12"});
-        cbThang.setPreferredSize(new Dimension(100, 30));
+        cbThang = new JComboBox<>(new String[]{"Chọn tháng", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"});
+        styleControl(cbThang, 130, 42);
         cbThang.addActionListener(e -> updateNgayComboBox());
 
-        // Ngày
         cbNgay = new JComboBox<>(new String[]{"Chọn ngày"});
-        cbNgay.setPreferredSize(new Dimension(100, 30));
+        styleControl(cbNgay, 120, 42);
 
-        // Quý
         cbQuy = new JComboBox<>(new String[]{"Chọn quý", "Quý 1", "Quý 2", "Quý 3", "Quý 4"});
-        cbQuy.setPreferredSize(new Dimension(100, 30));
+        styleControl(cbQuy, 120, 42);
 
-        // Loại KH
         cbLoaiKH = new JComboBox<>(new String[]{"Tất cả", "Khách hàng mới", "Thường xuyên", "Tiềm năng"});
-        cbLoaiKH.setPreferredSize(new Dimension(150, 30));
+        styleControl(cbLoaiKH, 170, 42);
 
-        // Chi tiêu
         cbChiTieu = new JComboBox<>(new String[]{"Tất cả", "< 1 triệu", "1 - 5 triệu", "> 5 triệu"});
-        cbChiTieu.setPreferredSize(new Dimension(140, 30));
+        styleControl(cbChiTieu, 160, 42);
 
-        // --- Panel bên trái: bộ lọc ---
-        leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6));
+        leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         leftPanel.setOpaque(false);
+        leftPanel.setAlignmentX(LEFT_ALIGNMENT);
 
-        // --- Panel bên phải: nút cố định, KHÔNG bao giờ wrap ---
-        btnXem = new RoundedButton(80,  30, 8, "Xem", Colors.PRIMARY);
+        btnXem = new RoundedButton(100, 38, 12, "Lọc", Colors.PRIMARY);
+        btnXem.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
         btnXem.addActionListener(e -> performFilter());
-        RoundedButton btnExport = new RoundedButton(140, 30, 8, "Xuất CSV", Colors.PRIMARY);
-        btnExport.addActionListener(e -> service.ExcelExporter.xuatTable(this,
-                "BÁO CÁO KHÁCH HÀNG", "KhachHang", "BaoCao_KhachHang", tableKhachHang));
 
-        btnViewChart = new RoundedButton(100, 30, 15, "Biểu đồ", Colors.BACKGROUND);
+        btnViewTable = new RoundedButton(100, 38, 12, "Bảng", Colors.TEXT_PRIMARY);
+        btnViewTable.setForeground(Colors.BACKGROUND);
+        btnViewTable.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
+
+        btnViewChart = new RoundedButton(120, 38, 12, "Biểu đồ", Colors.SECONDARY);
         btnViewChart.setForeground(Colors.TEXT_PRIMARY);
         btnViewChart.setBorder(BorderFactory.createLineBorder(Colors.BORDER_LIGHT));
-        btnViewTable = new RoundedButton(100, 30, 15, "Bảng", Colors.TEXT_PRIMARY);
-        btnViewTable.setForeground(Colors.BACKGROUND);
+        btnViewChart.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
+
+        RoundedButton btnExport = new RoundedButton(140, 38, 12, "Xuất CSV", Colors.PRIMARY);
+        btnExport.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
+        btnExport.addActionListener(e -> service.ExcelExporter.xuatTable(this,
+                "BÁO CÁO KHÁCH HÀNG", "KhachHang", "BaoCao_KhachHang", tableKhachHang));
 
         btnViewChart.addActionListener(e -> {
             isChartView = true;
@@ -163,14 +214,20 @@ public class ThongKeKhachHang_GUI extends JPanel {
             updateViewMode();
         });
 
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 6));
-        rightPanel.setOpaque(false);
-        rightPanel.add(btnViewTable);
-        rightPanel.add(btnViewChart);
-        rightPanel.add(btnExport);
+        JPanel actionRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        actionRow.setOpaque(false);
+        actionRow.setAlignmentX(LEFT_ALIGNMENT);
+        actionRow.add(btnViewTable);
+        actionRow.add(btnViewChart);
+        actionRow.add(btnExport);
 
-        panel.add(leftPanel,  BorderLayout.CENTER);
-        panel.add(rightPanel, BorderLayout.EAST);
+        filterCard.add(headerRow);
+        filterCard.add(Box.createVerticalStrut(8));
+        filterCard.add(leftPanel);
+        filterCard.add(Box.createVerticalStrut(8));
+        filterCard.add(actionRow);
+
+        panel.add(filterCard, BorderLayout.CENTER);
 
         updateVisibility();
         return panel;
@@ -181,79 +238,88 @@ public class ThongKeKhachHang_GUI extends JPanel {
     // ============================================================
     private void loadAll(String tuNgay, String denNgay, Integer nam, String loaiKH, String chiTieu) {
 
-        // 1. Lấy dữ liệu từ Service
-        ArrayList<Object[]> allRows = khachHangService.layDanhSachKHThongKe(tuNgay, denNgay);
+        btnXem.setEnabled(false);
+        AsyncLoader.run(
+            () -> {
+                // 1. Lấy và lọc dữ liệu — chạy trong background thread
+                ArrayList<Object[]> allRows = khachHangService.layDanhSachKHThongKe(tuNgay, denNgay);
+                ArrayList<Object[]> filteredRows = new ArrayList<>();
+                for (Object[] row : allRows) {
+                    String phanLoai = (String) row[6];
+                    double tongChi = (row[5] instanceof Number) ? ((Number) row[5]).doubleValue() : 0;
+                    if (loaiKH != null && !"Tất cả".equals(loaiKH) && !loaiKH.equals(phanLoai)) continue;
+                    if (chiTieu != null && !"Tất cả".equals(chiTieu)) {
+                        if ("< 1 triệu".equals(chiTieu) && tongChi >= 1_000_000) continue;
+                        if ("1 - 5 triệu".equals(chiTieu) && (tongChi < 1_000_000 || tongChi > 5_000_000)) continue;
+                        if ("> 5 triệu".equals(chiTieu) && tongChi <= 5_000_000) continue;
+                    }
+                    filteredRows.add(row);
+                }
+                LinkedHashMap<String, Double> dtThang = khachHangService.layDoanhThuTheoThang(nam);
+                LinkedHashMap<String, int[]> xuHuong = khachHangService.layXuHuongKH(nam);
+                return new Object[]{filteredRows, dtThang, xuHuong};
+            },
+            data -> {
+                btnXem.setEnabled(true);
+                @SuppressWarnings("unchecked")
+                ArrayList<Object[]> filteredRows = (ArrayList<Object[]>) data[0];
+                @SuppressWarnings("unchecked")
+                LinkedHashMap<String, Double> dtThang = (LinkedHashMap<String, Double>) data[1];
+                @SuppressWarnings("unchecked")
+                LinkedHashMap<String, int[]> xuHuong = (LinkedHashMap<String, int[]>) data[2];
 
-        // 2. Lọc theo loại KH / chi tiêu (nếu có)
-        ArrayList<Object[]> filteredRows = new ArrayList<>();
-        for (Object[] row : allRows) {
-            String phanLoai = (String) row[6]; // cột PhanLoai
-            double tongChi = (row[5] instanceof Number) ? ((Number) row[5]).doubleValue() : 0;
+                // 3. Đổ dữ liệu vào bảng
+                tableModel.setRowCount(0);
+                for (Object[] row : filteredRows) {
+                    Object[] displayRow = row.clone();
+                    if (displayRow[5] instanceof Number) {
+                        displayRow[5] = VND.format(((Number) displayRow[5]).longValue()) + "đ";
+                    }
+                    if (displayRow[2] instanceof String) {
+                        displayRow[2] = MaskUtil.phone((String) displayRow[2]);
+                    }
+                    tableModel.addRow(displayRow);
+                }
 
-            if (loaiKH != null && !"Tất cả".equals(loaiKH) && !loaiKH.equals(phanLoai))
-                continue;
-            if (chiTieu != null && !"Tất cả".equals(chiTieu)) {
-                if ("< 1 triệu".equals(chiTieu) && tongChi >= 1_000_000) continue;
-                if ("1 - 5 triệu".equals(chiTieu) && (tongChi < 1_000_000 || tongChi > 5_000_000)) continue;
-                if ("> 5 triệu".equals(chiTieu) && tongChi <= 5_000_000) continue;
+                // 4. Summary cards
+                int tongKH = filteredRows.size(), khMoi = 0, khQuayLai = 0;
+                double doanhThu = 0;
+                for (Object[] row : filteredRows) {
+                    String pl = (String) row[6];
+                    if ("Khách hàng mới".equals(pl)) khMoi++;
+                    doanhThu += ((Number) row[5]).doubleValue();
+                    if (((Number) row[4]).intValue() >= 2) khQuayLai++;
+                }
+                double tiLeGiuChan = (tongKH > 0) ? (khQuayLai * 100.0 / tongKH) : 0;
+                lblTongKH.setText(String.valueOf(tongKH));
+                lblKHMoi.setText(String.valueOf(khMoi));
+                lblTiLeGiuChan.setText(String.format("%.0f%%", tiLeGiuChan));
+                lblDoanhThuKH.setText(VND.format((long) doanhThu) + "đ");
+
+                // 5. Pie chart
+                pieDataset.clear();
+                LinkedHashMap<String, Integer> phanLoaiMap = new LinkedHashMap<>();
+                for (Object[] row : filteredRows) {
+                    phanLoaiMap.merge((String) row[6], 1, Integer::sum);
+                }
+                for (Map.Entry<String, Integer> entry : phanLoaiMap.entrySet()) {
+                    pieDataset.setValue(entry.getKey(), entry.getValue());
+                }
+
+                // 6. Bar + line charts
+                doanhThuDataset.clear();
+                for (Map.Entry<String, Double> entry : dtThang.entrySet()) {
+                    doanhThuDataset.addValue(entry.getValue() / 1_000_000.0, "Doanh thu (triệu đ)", entry.getKey());
+                }
+                xuHuongDataset.clear();
+                for (Map.Entry<String, int[]> entry : xuHuong.entrySet()) {
+                    int[] vals = entry.getValue();
+                    xuHuongDataset.addValue(vals[0], "Thường xuyên", entry.getKey());
+                    xuHuongDataset.addValue(vals[1], "Khách hàng mới", entry.getKey());
+                    xuHuongDataset.addValue(vals[2], "Tiềm năng", entry.getKey());
+                }
             }
-            filteredRows.add(row);
-        }
-
-        // 3. Đổ dữ liệu vào bảng
-        tableModel.setRowCount(0);
-        for (Object[] row : filteredRows) {
-            Object[] displayRow = row.clone();
-            if (displayRow[5] instanceof Number) {
-                displayRow[5] = VND.format(((Number) displayRow[5]).longValue()) + "đ";
-            }
-            tableModel.addRow(displayRow);
-        }
-
-        // 4. Tính summary cards TỪ dữ liệu đã lọc
-        int tongKH = filteredRows.size();
-        int khMoi = 0;
-        double doanhThu = 0;
-        int khQuayLai = 0;
-        for (Object[] row : filteredRows) {
-            String pl = (String) row[6];
-            if ("Khách hàng mới".equals(pl)) khMoi++;
-            doanhThu += ((Number) row[5]).doubleValue();
-            if (((Number) row[4]).intValue() >= 2) khQuayLai++;
-        }
-        double tiLeGiuChan = (tongKH > 0) ? (khQuayLai * 100.0 / tongKH) : 0;
-
-        lblTongKH.setText(String.valueOf(tongKH));
-        lblKHMoi.setText(String.valueOf(khMoi));
-        lblTiLeGiuChan.setText(String.format("%.0f%%", tiLeGiuChan));
-        lblDoanhThuKH.setText(VND.format((long) doanhThu) + "đ");
-
-        // 5. Pie chart — tính từ dữ liệu bảng
-        pieDataset.clear();
-        LinkedHashMap<String, Integer> phanLoaiMap = new LinkedHashMap<>();
-        for (Object[] row : filteredRows) {
-            String pl = (String) row[6];
-            phanLoaiMap.merge(pl, 1, Integer::sum);
-        }
-        for (Map.Entry<String, Integer> entry : phanLoaiMap.entrySet()) {
-            pieDataset.setValue(entry.getKey(), entry.getValue());
-        }
-
-        // 6. Bar chart (doanh thu theo tháng) + Line chart (xu hướng KH)
-        doanhThuDataset.clear();
-        LinkedHashMap<String, Double> dtThang = khachHangService.layDoanhThuTheoThang(nam);
-        for (Map.Entry<String, Double> entry : dtThang.entrySet()) {
-            doanhThuDataset.addValue(entry.getValue() / 1_000_000.0, "Doanh thu (triệu đ)", entry.getKey());
-        }
-
-        xuHuongDataset.clear();
-        LinkedHashMap<String, int[]> xuHuong = khachHangService.layXuHuongKH(nam);
-        for (Map.Entry<String, int[]> entry : xuHuong.entrySet()) {
-            int[] vals = entry.getValue();
-            xuHuongDataset.addValue(vals[0], "Thường xuyên", entry.getKey());
-            xuHuongDataset.addValue(vals[1], "Khách hàng mới", entry.getKey());
-            xuHuongDataset.addValue(vals[2], "Tiềm năng", entry.getKey());
-        }
+        );
     }
 
     // Tính khoảng ngày từ các tham số lọc
@@ -266,7 +332,9 @@ public class ThongKeKhachHang_GUI extends JPanel {
     // ============================================================
     private void performFilter() {
         String kieu = (String) cbKieu.getSelectedItem();
-        if (kieu == null) return;
+        if (kieu == null) {
+            return;
+        }
 
         Integer nam = null;
         String loaiKH = null;
@@ -279,10 +347,16 @@ public class ThongKeKhachHang_GUI extends JPanel {
                 String thangStr = (String) cbThang.getSelectedItem();
                 String ngayStr = (String) cbNgay.getSelectedItem();
                 Integer n = null, t = null, d = null;
-                if (namStr != null && !namStr.startsWith("Chọn")) n = Integer.parseInt(namStr);
-                if (thangStr != null && !thangStr.startsWith("Chọn")) t = Integer.parseInt(thangStr);
-                if (ngayStr != null && !ngayStr.startsWith("Chọn")) d = Integer.parseInt(ngayStr);
-                
+                if (namStr != null && !namStr.startsWith("Chọn")) {
+                    n = Integer.parseInt(namStr);
+                }
+                if (thangStr != null && !thangStr.startsWith("Chọn")) {
+                    t = Integer.parseInt(thangStr);
+                }
+                if (ngayStr != null && !ngayStr.startsWith("Chọn")) {
+                    d = Integer.parseInt(ngayStr);
+                }
+
                 if (n == null) {
                     JOptionPane.showMessageDialog(this, "Vui lòng chọn năm!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
                     return;
@@ -298,7 +372,9 @@ public class ThongKeKhachHang_GUI extends JPanel {
                 String namQuyStr = (String) cbNam.getSelectedItem();
                 String quyStr = (String) cbQuy.getSelectedItem();
                 Integer n = null;
-                if (namQuyStr != null && !namQuyStr.startsWith("Chọn")) n = Integer.parseInt(namQuyStr);
+                if (namQuyStr != null && !namQuyStr.startsWith("Chọn")) {
+                    n = Integer.parseInt(namQuyStr);
+                }
                 if (n == null || quyStr == null || quyStr.startsWith("Chọn")) {
                     JOptionPane.showMessageDialog(this, "Vui lòng chọn năm và quý!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
                     return;
@@ -329,33 +405,41 @@ public class ThongKeKhachHang_GUI extends JPanel {
     }
 
     private void updateNgayComboBox() {
-        if (cbNam == null || cbThang == null || cbNgay == null) return;
-        
+        if (cbNam == null || cbThang == null || cbNgay == null) {
+            return;
+        }
+
         String selNam = (String) cbNam.getSelectedItem();
         String selThang = (String) cbThang.getSelectedItem();
-        
+
         Object oldNgay = cbNgay.getSelectedItem();
         cbNgay.removeAllItems();
         cbNgay.addItem("Chọn ngày");
-        
+
         if (selNam != null && !selNam.startsWith("Chọn") && selThang != null && !selThang.startsWith("Chọn")) {
             int y = Integer.parseInt(selNam);
             int m = Integer.parseInt(selThang);
             int days = LocalDate.of(y, m, 1).lengthOfMonth();
-            for (int d = 1; d <= days; d++) cbNgay.addItem(String.valueOf(d));
+            for (int d = 1; d <= days; d++) {
+                cbNgay.addItem(String.valueOf(d));
+            }
         }
-        
-        if (oldNgay != null) cbNgay.setSelectedItem(oldNgay);
+
+        if (oldNgay != null) {
+            cbNgay.setSelectedItem(oldNgay);
+        }
     }
 
     private void updateVisibility() {
-        if (leftPanel == null) return;
-        
+        if (leftPanel == null) {
+            return;
+        }
+
         String kieu = (String) cbKieu.getSelectedItem();
-        
+
         leftPanel.removeAll();
         leftPanel.add(cbKieu);
-        
+
         if (kieu != null) {
             switch (kieu) {
                 case "Theo thời gian cụ thể":
@@ -375,9 +459,9 @@ public class ThongKeKhachHang_GUI extends JPanel {
                     break;
             }
         }
-        
+
         leftPanel.add(btnXem);
-        
+
         leftPanel.revalidate();
         leftPanel.repaint();
     }
@@ -387,21 +471,22 @@ public class ThongKeKhachHang_GUI extends JPanel {
     // ============================================================
     private JPanel createSummaryPanel() {
         JPanel panel = new JPanel(new GridLayout(1, 4, 12, 0));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 6, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
         panel.setBackground(Colors.BACKGROUND);
-        panel.setPreferredSize(new Dimension(9999, 140));
-        panel.setMaximumSize(new Dimension(9999, 140));
-        panel.setMinimumSize(new Dimension(0, 140));
+        panel.setAlignmentX(LEFT_ALIGNMENT);
+        panel.setPreferredSize(new Dimension(9999, 120));
+        panel.setMaximumSize(new Dimension(9999, 120));
+        panel.setMinimumSize(new Dimension(0, 120));
 
-        Object[] c1 = buildCard("Tổng khách hàng",  "Đang tải...", Colors.PRIMARY);
-        Object[] c2 = buildCard("Khách hàng mới",   "Đang tải...", Colors.PRIMARY);
-        Object[] c3 = buildCard("Tỉ lệ giữ chân",   "Đang tải...", Colors.PRIMARY);
-        Object[] c4 = buildCard("Doanh thu từ KH",   "Đang tải...", Colors.PRIMARY);
+        Object[] c1 = buildCard("Tổng khách hàng", "Đang tải...", Colors.PRIMARY);
+        Object[] c2 = buildCard("Khách hàng mới", "Đang tải...", Colors.PRIMARY);
+        Object[] c3 = buildCard("Tỉ lệ giữ chân", "Đang tải...", Colors.PRIMARY);
+        Object[] c4 = buildCard("Doanh thu từ KH", "Đang tải...", Colors.PRIMARY);
 
-        lblTongKH      = (JLabel) c1[1];
-        lblKHMoi       = (JLabel) c2[1];
+        lblTongKH = (JLabel) c1[1];
+        lblKHMoi = (JLabel) c2[1];
         lblTiLeGiuChan = (JLabel) c3[1];
-        lblDoanhThuKH  = (JLabel) c4[1];
+        lblDoanhThuKH = (JLabel) c4[1];
 
         panel.add((JPanel) c1[0]);
         panel.add((JPanel) c2[0]);
@@ -410,26 +495,32 @@ public class ThongKeKhachHang_GUI extends JPanel {
         return panel;
     }
 
-    // Card bo góc tròn — kỹ thuật vẽ tay giống ThongKeDoanhThu_GUI
+    // Card KPI với nền trắng bo góc, thanh accent trên cùng
     private Object[] buildCard(String title, String value, Color accent) {
         JPanel card = new JPanel() {
+            @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                int w = getWidth();
+                int h = getHeight();
+                java.awt.geom.RoundRectangle2D shape
+                        = new java.awt.geom.RoundRectangle2D.Float(0, 0, w - 1, h - 1, 16, 16);
+                g2.setClip(shape);
                 g2.setColor(Colors.BACKGROUND);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
+                g2.fillRect(0, 0, w, h);
                 g2.setColor(accent);
-                g2.fillRoundRect(0, 0, getWidth(), 8, 14, 14);
-                g2.fillRect(0, 4, getWidth(), 8);
-                g2.setColor(Colors.BORDER);
-                g2.setStroke(new BasicStroke(1.2f));
-                g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, 14, 14);
+                g2.fillRect(0, 0, w, 8);
+                g2.setClip(null);
+                g2.setColor(Colors.BORDER_LIGHT);
+                g2.setStroke(new BasicStroke(1f));
+                g2.drawRoundRect(0, 0, w - 1, h - 1, 16, 16);
                 g2.dispose();
             }
         };
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setOpaque(false);
-        card.setBorder(BorderFactory.createEmptyBorder(16, 14, 10, 14));
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBorder(BorderFactory.createEmptyBorder(18, 16, 14, 16));
 
         JLabel lblTitle = new JLabel(title);
         lblTitle.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
@@ -437,13 +528,14 @@ public class ThongKeKhachHang_GUI extends JPanel {
         lblTitle.setAlignmentX(LEFT_ALIGNMENT);
 
         JLabel lblVal = new JLabel(value);
-        lblVal.setFont(FontStyle.font(FontStyle.XXL, FontStyle.BOLD));
+        lblVal.setFont(FontStyle.font(FontStyle.LG, FontStyle.BOLD));
         lblVal.setForeground(Colors.TEXT_PRIMARY);
         lblVal.setAlignmentX(LEFT_ALIGNMENT);
 
         card.add(lblTitle);
-        card.add(Box.createVerticalStrut(6));
+        card.add(Box.createVerticalStrut(8));
         card.add(lblVal);
+        card.add(Box.createVerticalGlue());
         return new Object[]{card, lblVal};
     }
 
@@ -451,22 +543,32 @@ public class ThongKeKhachHang_GUI extends JPanel {
     // CHARTS PANEL — Pie + Combined (Bar & Line)
     // ============================================================
     private JPanel createChartsPanel() {
-        JPanel panel = new JPanel(new GridLayout(1, 2, 10, 0));
-        panel.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
+        JPanel panel = new RoundedPanel(1200, 360, 16);
+        panel.setLayout(new BorderLayout(0, 8));
+        panel.setBorder(BorderFactory.createEmptyBorder(14, 14, 12, 14));
         panel.setBackground(Colors.BACKGROUND);
-        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+        panel.setAlignmentX(LEFT_ALIGNMENT);
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 380));
+
+        JLabel chartTitle = new JLabel("Biểu đồ phân tích khách hàng");
+        chartTitle.setFont(FontStyle.font(FontStyle.XL, FontStyle.BOLD));
+        chartTitle.setForeground(Colors.TEXT_PRIMARY);
+
+        JPanel chartContainer = new JPanel(new GridLayout(1, 2, 10, 0));
+        chartContainer.setOpaque(false);
 
         // --- Pie chart ---
-        pieDataset = new DefaultPieDataset();
+        pieDataset = new DefaultPieDataset<String>();
         JFreeChart pieChart = ChartFactory.createPieChart(
                 "Phân loại khách hàng", pieDataset, true, true, false);
         pieChart.setBackgroundPaint(Colors.BACKGROUND);
         pieChart.getTitle().setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
-        PiePlot piePlot = (PiePlot) pieChart.getPlot();
+        @SuppressWarnings("unchecked")
+        PiePlot<String> piePlot = (PiePlot<String>) pieChart.getPlot();
         piePlot.setBackgroundPaint(Colors.SECONDARY);
-        piePlot.setSectionPaint("Thường xuyên",  Colors.TEXT_LOGIN);
+        piePlot.setSectionPaint("Thường xuyên", Colors.TEXT_LOGIN);
         piePlot.setSectionPaint("Khách hàng mới", Colors.SUCCESS);
-        piePlot.setSectionPaint("Tiềm năng",      Colors.ACCENT);
+        piePlot.setSectionPaint("Tiềm năng", Colors.ACCENT);
         piePlot.setOutlineVisible(false);
         piePlot.setShadowPaint(null);
         ChartPanel piePanel = new ChartPanel(pieChart);
@@ -511,9 +613,9 @@ public class ThongKeKhachHang_GUI extends JPanel {
         combinedPlot.setDatasetRenderingOrder(DatasetRenderingOrder.FORWARD);
 
         JFreeChart combinedChart = new JFreeChart(
-                "Doanh thu & Xu hướng khách hàng", 
-                FontStyle.font(FontStyle.SM, FontStyle.BOLD), 
-                combinedPlot, 
+                "Doanh thu & Xu hướng khách hàng",
+                FontStyle.font(FontStyle.SM, FontStyle.BOLD),
+                combinedPlot,
                 true);
         combinedChart.setBackgroundPaint(Colors.BACKGROUND);
 
@@ -521,8 +623,10 @@ public class ThongKeKhachHang_GUI extends JPanel {
         combinedPanel.setPreferredSize(new Dimension(380, 280));
         combinedPanel.setBorder(BorderFactory.createLineBorder(Colors.BORDER_LIGHT));
 
-        panel.add(piePanel);
-        panel.add(combinedPanel);
+        chartContainer.add(piePanel);
+        chartContainer.add(combinedPanel);
+        panel.add(chartTitle, BorderLayout.NORTH);
+        panel.add(chartContainer, BorderLayout.CENTER);
         return panel;
     }
 
@@ -530,56 +634,78 @@ public class ThongKeKhachHang_GUI extends JPanel {
     // TABLE PANEL — cột cố định, không kéo, không resize
     // ============================================================
     private JPanel createTablePanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+        JPanel panel = new RoundedPanel(1200, 360, 16);
+        panel.setLayout(new BorderLayout(0, 10));
         panel.setBackground(Colors.BACKGROUND);
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createEmptyBorder(4, 10, 10, 10),
-                BorderFactory.createTitledBorder("Danh sách khách hàng")));
+        panel.setBorder(BorderFactory.createEmptyBorder(14, 14, 12, 14));
+        panel.setAlignmentX(LEFT_ALIGNMENT);
         panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+
+        JLabel title = new JLabel("Danh sách khách hàng");
+        title.setFont(FontStyle.font(FontStyle.XL, FontStyle.BOLD));
+        title.setForeground(Colors.TEXT_PRIMARY);
 
         String[] cols = {"Mã KH", "Tên khách hàng", "SĐT", "HĐ gần nhất", "Số đơn", "Tổng chi tiêu (đ)", "Phân loại"};
         tableModel = new DefaultTableModel(null, cols) {
-            public boolean isCellEditable(int r, int c) { return false; }
+            public boolean isCellEditable(int r, int c) {
+                return false;
+            }
         };
 
         tableKhachHang = new JTable(tableModel);
-        tableKhachHang.setRowHeight(26);
-        tableKhachHang.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
+        tableKhachHang.setRowHeight(36);
+        tableKhachHang.setFont(FontStyle.font(FontStyle.BASE, FontStyle.NORMAL));
         tableKhachHang.getTableHeader().setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
         tableKhachHang.getTableHeader().setBackground(Colors.SECONDARY);
-        tableKhachHang.setSelectionBackground(Colors.SUCCESS_LIGHT);
-
-        // Cố định: không cho kéo đổi thứ tự cột, không cho resize cột
+        tableKhachHang.getTableHeader().setForeground(Colors.TEXT_PRIMARY);
         tableKhachHang.getTableHeader().setReorderingAllowed(false);
         tableKhachHang.getTableHeader().setResizingAllowed(false);
+        tableKhachHang.getTableHeader().setPreferredSize(
+                new Dimension(tableKhachHang.getTableHeader().getPreferredSize().width, 40));
+        tableKhachHang.setSelectionBackground(Colors.SUCCESS_LIGHT);
+        tableKhachHang.setGridColor(Colors.BORDER_LIGHT);
+        tableKhachHang.setShowVerticalLines(false);
+        tableKhachHang.setShowHorizontalLines(true);
+        ((javax.swing.table.DefaultTableCellRenderer) tableKhachHang.getDefaultRenderer(Object.class))
+                .setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
 
         int[] widths = {90, 160, 100, 130, 55, 130, 110};
-        for (int i = 0; i < widths.length; i++)
+        for (int i = 0; i < widths.length; i++) {
             tableKhachHang.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
+        }
 
-        panel.add(new JScrollPane(tableKhachHang), BorderLayout.CENTER);
+        JScrollPane scrollPane = new JScrollPane(tableKhachHang);
+        scrollPane.setBorder(BorderFactory.createLineBorder(Colors.BORDER_LIGHT));
+        scrollPane.getViewport().setBackground(Colors.BACKGROUND);
+
+        panel.add(title, BorderLayout.NORTH);
+        panel.add(scrollPane, BorderLayout.CENTER);
         return panel;
     }
 
     private void updateViewMode() {
         if (isChartView) {
             btnViewChart.setBackground(Colors.TEXT_PRIMARY);
-            btnViewChart.setForeground(Colors.BACKGROUND);
-            btnViewTable.setBackground(Colors.BACKGROUND);
+            btnViewChart.setForeground(Colors.SECONDARY);
+            btnViewChart.setBorder(null);
+            btnViewTable.setBackground(Colors.SECONDARY);
             btnViewTable.setForeground(Colors.TEXT_PRIMARY);
-            
+            btnViewTable.setBorder(BorderFactory.createLineBorder(Colors.BORDER_LIGHT));
+
             chartsPanel.setVisible(true);
             tablePanel.setVisible(false);
         } else {
-            btnViewChart.setBackground(Colors.BACKGROUND);
+            btnViewChart.setBackground(Colors.SECONDARY);
             btnViewChart.setForeground(Colors.TEXT_PRIMARY);
+            btnViewChart.setBorder(BorderFactory.createLineBorder(Colors.BORDER_LIGHT));
             btnViewTable.setBackground(Colors.TEXT_PRIMARY);
             btnViewTable.setForeground(Colors.BACKGROUND);
-            
+            btnViewTable.setBorder(null);
+
             chartsPanel.setVisible(false);
             tablePanel.setVisible(true);
         }
-        
+
         this.revalidate();
         this.repaint();
     }
@@ -587,12 +713,47 @@ public class ThongKeKhachHang_GUI extends JPanel {
     // ============================================================
     // GETTERS (cho Controller)
     // ============================================================
-    public JTable getTableKhachHang() { return tableKhachHang; }
-    public JComboBox<String> getCbKieu()  { return cbKieu;  }
-    public JComboBox<String> getCbNgay()  { return cbNgay;  }
-    public JComboBox<String> getCbThang() { return cbThang; }
-    public JComboBox<String> getCbNam()   { return cbNam;   }
-    public JComboBox<String> getCbQuy()   { return cbQuy;   }
-    public JComboBox<String> getCbLoaiKH() { return cbLoaiKH; }
-    public JComboBox<String> getCbChiTieu() { return cbChiTieu; }
+    public JTable getTableKhachHang() {
+        return tableKhachHang;
+    }
+
+    public JComboBox<String> getCbKieu() {
+        return cbKieu;
+    }
+
+    public JComboBox<String> getCbNgay() {
+        return cbNgay;
+    }
+
+    public JComboBox<String> getCbThang() {
+        return cbThang;
+    }
+
+    public JComboBox<String> getCbNam() {
+        return cbNam;
+    }
+
+    public JComboBox<String> getCbQuy() {
+        return cbQuy;
+    }
+
+    public JComboBox<String> getCbLoaiKH() {
+        return cbLoaiKH;
+    }
+
+    public JComboBox<String> getCbChiTieu() {
+        return cbChiTieu;
+    }
+
+    private void styleControl(JComponent control, int width, int height) {
+        Dimension size = new Dimension(width, height);
+        control.setPreferredSize(size);
+        control.setMinimumSize(size);
+        control.setMaximumSize(size);
+        control.setFont(FontStyle.font(FontStyle.BASE, FontStyle.NORMAL));
+        control.setBackground(Colors.BACKGROUND);
+        control.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Colors.BORDER_LIGHT),
+                BorderFactory.createEmptyBorder(6, 10, 6, 10)));
+    }
 }

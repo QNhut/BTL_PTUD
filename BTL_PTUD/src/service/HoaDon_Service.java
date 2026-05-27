@@ -4,6 +4,7 @@ import ConnectDB.ConnectDB;
 import dao.HoaDon_DAO;
 import dao.KhachHang_DAO;
 import dao.PhuongThucThanhToan_DAO;
+import entity.ChiTietHoaDon;
 import entity.HoaDon;
 import entity.KhachHang;
 import entity.NhanVien;
@@ -11,8 +12,10 @@ import entity.PhuongThucThanhToan;
 import entity.SanPham;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,7 +28,7 @@ public class HoaDon_Service {
     // Tỉ lệ tích điểm: cứ 10.000đ thanh toán → 1 điểm.
     public static final int VND_PER_POINT_EARN = 10000;
     // Giá trị quy đổi mỗi điểm khi sử dụng: 1 điểm = 1.000đ.
-    public static final int VND_PER_POINT_USE = 1000;
+    public static final int VND_PER_POINT_USE = 10;   // 100 điểm = 1.000đ giảm
 
     private final HoaDon_DAO hoaDonDAO = new HoaDon_DAO();
     private final KhachHang_DAO khachHangDAO = new KhachHang_DAO();
@@ -286,10 +289,6 @@ public class HoaDon_Service {
         return "PTTT01";
     }
 
-    //===="Tính điểm tích lũy: cứ 10.000đ được 1 điểm"=====
-    private int tinhDiemTichLuy(double tongTien) {
-        return (int) (tongTien / VND_PER_POINT_EARN);
-    }
 
     // Cập nhật điểm khách hàng: trừ điểm đã sử dụng, sau đó cộng điểm tích lũy mới.
     private void capNhatDiemKhachHang(KhachHang kh, int diemThem, int diemDung) {
@@ -311,15 +310,265 @@ public class HoaDon_Service {
         khachHangDAO.updateKhachHang(khMoi);
     }
 
-    //===="Cộng điểm tích lũy vào tài khoản khách hàng và lưu DB (legacy)"=====
-    private void capNhatDiemKhachHang(KhachHang kh, int diemThem) {
-        capNhatDiemKhachHang(kh, diemThem, 0);
-    }
 
     //===="Lấy danh sách hóa đơn đã lưu"=====
     public ArrayList<HoaDon> getDSHoaDon() {
         return hoaDonDAO.getDSHoaDon();
     }
+
+    // ==================== ĐẶT TRƯỚC / CHỜ THANH TOÁN ====================
+    // Luồng đặt trước tái sử dụng bảng HoaDon với TrangThai = "Chờ thanh toán".
+    // - taoHoaDonChoThanhToan: tạo HoaDon ở trạng thái Chờ thanh toán; CHƯA trừ tồn kho
+    //   (tồn kho chỉ bị trừ khi khách xác nhận nhận hàng); CHƯA cộng điểm tích lũy mới.
+    //   → Cho phép đặt trước ngay cả khi tồn kho chưa đủ (hàng sẽ được nhập về sau).
+    // - xacNhanThanhToanCho: kiểm tra tồn kho hiện tại, trừ tồn kho, cập nhật NgayLap,
+    //   chuyển sang Đã thanh toán, cộng điểm tích lũy cho KH.
+    // - huyHoaDonCho: xoá HoaDon + ChiTietHoaDon, hoàn điểm đã dùng (tồn kho không cần hoàn).
+
+    public HoaDon taoHoaDonChoThanhToan(String maHD, String tenKhachHang, String soDienThoai,
+            NhanVien nhanVien, List<CartItem> items, String maPTTT, int diemSuDung) {
+        return taoHoaDonChoThanhToan(maHD, tenKhachHang, soDienThoai, nhanVien, items, maPTTT, diemSuDung, null);
+    }
+
+    // Overload chấp nhận ghi chú (dự kiến nhận hàng, tiền cọc, v.v.) để lưu vào GhiChu.
+    public HoaDon taoHoaDonChoThanhToan(String maHD, String tenKhachHang, String soDienThoai,
+            NhanVien nhanVien, List<CartItem> items, String maPTTT, int diemSuDung, String ghiChu) {
+        if (items == null || items.isEmpty()) {
+            throw new IllegalArgumentException("Giỏ hàng trống, không thể đặt trước.");
+        }
+        if (nhanVien == null) {
+            throw new IllegalArgumentException("Không xác định được nhân viên lập đặt trước.");
+        }
+        if (diemSuDung < 0) {
+            diemSuDung = 0;
+        }
+        KhachHang kh = timHoacTaoKhachHang(tenKhachHang, soDienThoai);
+        if (laKhachLe(kh)) {
+            diemSuDung = 0;
+        } else {
+            KhachHang khFresh = khachHangDAO.layKHTheoSDT(kh.getSoDienThoai());
+            if (khFresh != null && diemSuDung > khFresh.getDiemTichLuy()) {
+                throw new IllegalArgumentException("Số điểm sử dụng (" + diemSuDung
+                        + ") vượt quá điểm hiện có (" + khFresh.getDiemTichLuy() + ").");
+            }
+        }
+        String maPTTTFinal = (maPTTT != null && !maPTTT.isBlank()) ? maPTTT : layMaPTTTMacDinh();
+        HoaDonSummary sum = tinhTongKet(items, diemSuDung);
+
+        HoaDon hd = new HoaDon(maHD, LocalDateTime.now(), sum.tienHang, sum.diemTichLuyMoi, maPTTTFinal, nhanVien, kh);
+        hd.setTienHang(sum.tienHang);
+        hd.setTienThue(sum.tienThue);
+        hd.setTienGiamGia(sum.tienGiamGia);
+        hd.setDiemSuDung(sum.diemSuDung);
+        hd.setThanhTien(sum.thanhTien);
+        hd.setTrangThai(HoaDon.TRANG_THAI_CHO_THANH_TOAN);
+        hd.setGhiChu(ghiChu);
+
+        Connection con = ConnectDB.getInstance().getConnection();
+        if (con == null) {
+            throw new RuntimeException("Không thể kết nối CSDL để tạo phiếu đặt trước.");
+        }
+        boolean autoCu = true;
+        try {
+            autoCu = con.getAutoCommit();
+            con.setAutoCommit(false);
+
+            if (!hoaDonDAO.taoHoaDon(hd)) {
+                throw new RuntimeException("Không thể lưu phiếu đặt trước.");
+            }
+            // Lưu chi tiết HĐ — KHÔNG trừ tồn kho (tồn kho sẽ trừ khi xác nhận nhận hàng).
+            chiTietHoaDonService.luuChiTietOnly(hd, items);
+            // Trừ điểm KH đã dùng (nếu có), CHƯA cộng điểm mới — sẽ cộng khi xác nhận thanh toán.
+            if (!laKhachLe(kh) && sum.diemSuDung > 0) {
+                capNhatDiemKhachHang(kh, 0, sum.diemSuDung);
+            }
+            con.commit();
+        } catch (RuntimeException ex) {
+            try { con.rollback(); } catch (SQLException ignored) {}
+            throw ex;
+        } catch (SQLException ex) {
+            try { con.rollback(); } catch (SQLException ignored) {}
+            throw new RuntimeException("Lỗi giao dịch khi tạo phiếu đặt trước: " + ex.getMessage(), ex);
+        } finally {
+            try { con.setAutoCommit(autoCu); } catch (SQLException ignored) {}
+        }
+        return hd;
+    }
+
+    // Xác nhận thanh toán cho HoaDon đang ở trạng thái Chờ thanh toán.
+    public boolean xacNhanThanhToanCho(String maHD) {
+        return xacNhanThanhToanCho(maHD, null);
+    }
+
+    // Xác nhận thanh toán, đồng thời cập nhật phương thức thanh toán nếu maPTTTMoi != null.
+    public boolean xacNhanThanhToanCho(String maHD, String maPTTTMoi) {
+        return xacNhanThanhToanCho(maHD, maPTTTMoi, null);
+    }
+
+    // Xác nhận thanh toán: cập nhật NgayLap sang thời điểm thực tế, ghi nhận độ trễ vào GhiChu.
+    // ngayGioDuKien: thời gian dự kiến nhận hàng khi đặt trước (null = không ghi nhận).
+    public boolean xacNhanThanhToanCho(String maHD, String maPTTTMoi, LocalDateTime ngayGioDuKien) {
+        if (maHD == null || maHD.isBlank()) {
+            throw new IllegalArgumentException("Mã hóa đơn rỗng.");
+        }
+        HoaDon hd = hoaDonDAO.layHDTheoMa(maHD);
+        if (hd == null) {
+            throw new IllegalArgumentException("Không tìm thấy hóa đơn " + maHD);
+        }
+        if (!HoaDon.TRANG_THAI_CHO_THANH_TOAN.equals(hd.getTrangThai())) {
+            throw new IllegalStateException("Hóa đơn " + maHD + " không ở trạng thái Chờ thanh toán.");
+        }
+
+        // Kiểm tra tồn kho hiện tại trước khi xác nhận
+        // (tồn kho chưa bị trừ lúc đặt, chỉ trừ tại đây)
+        List<ChiTietHoaDon> dsCT = chiTietHoaDonService.getChiTietTheoHoaDon(maHD);
+        if (dsCT.isEmpty()) {
+            throw new IllegalStateException("Không tìm thấy chi tiết hàng hóa cho hóa đơn " + maHD + ". Không thể xác nhận thanh toán.");
+        }
+        String loiTonKho = kiemTraTonKhoTheoChiTiet(dsCT);
+        if (loiTonKho != null) {
+            throw new IllegalStateException("Chưa đủ tồn kho để xác nhận: " + loiTonKho);
+        }
+
+        LocalDateTime thoiGianThucTe = LocalDateTime.now();
+
+        // Xây GhiChu: ghi nhận độ trễ so với thời gian dự kiến
+        String ghiChu = null;
+        if (ngayGioDuKien != null) {
+            long phutDelay = Duration.between(ngayGioDuKien, thoiGianThucTe).toMinutes();
+            String duKien = ngayGioDuKien.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+            if (phutDelay > 0) {
+                long gio = phutDelay / 60;
+                long phut = phutDelay % 60;
+                if (gio > 0) {
+                    ghiChu = "Nhận trễ " + gio + " giờ " + phut + " phút so với dự kiến (" + duKien + ")";
+                } else {
+                    ghiChu = "Nhận trễ " + phut + " phút so với dự kiến (" + duKien + ")";
+                }
+            } else {
+                ghiChu = "Nhận đúng hẹn — dự kiến: " + duKien;
+            }
+        }
+
+        Connection con = ConnectDB.getInstance().getConnection();
+        boolean autoCu = true;
+        try {
+            autoCu = con.getAutoCommit();
+            con.setAutoCommit(false);
+            if (maPTTTMoi != null && !maPTTTMoi.isBlank()) {
+                hoaDonDAO.capNhatMaPTTT(con, maHD, maPTTTMoi);
+            }
+            // Cập nhật NgayLap (thời điểm thực tế khách đến thanh toán) và GhiChu
+            hoaDonDAO.capNhatNgayLapVaGhiChu(con, maHD, thoiGianThucTe, ghiChu);
+            // Trừ tồn kho FEFO (thực hiện tại đây, không phải lúc đặt)
+            chiTietHoaDonService.giamTonKhoTheoChiTiet(dsCT);
+            if (!hoaDonDAO.capNhatTrangThai(con, maHD, HoaDon.TRANG_THAI_DA_THANH_TOAN)) {
+                throw new RuntimeException("Không thể cập nhật trạng thái hóa đơn.");
+            }
+            // Cộng điểm tích lũy mới cho KH (nếu là thành viên)
+            KhachHang kh = hd.getKhachHang();
+            if (kh != null && !laKhachLe(kh)) {
+                int diemMoi = (int) (hd.getThanhTien() / VND_PER_POINT_EARN);
+                if (diemMoi > 0) {
+                    capNhatDiemKhachHang(kh, diemMoi, 0);
+                }
+            }
+            con.commit();
+            return true;
+        } catch (SQLException ex) {
+            try { con.rollback(); } catch (SQLException ignored) {}
+            throw new RuntimeException("Lỗi xác nhận thanh toán: " + ex.getMessage(), ex);
+        } catch (RuntimeException ex) {
+            try { con.rollback(); } catch (SQLException ignored) {}
+            throw ex;
+        } finally {
+            try { con.setAutoCommit(autoCu); } catch (SQLException ignored) {}
+        }
+    }
+
+    // Huỷ hóa đơn đang ở trạng thái Chờ thanh toán: xoá HĐ + hoàn điểm (tồn kho không cần hoàn).
+    // Tồn kho không bị ảnh hưởng vì khi đặt trước chưa trừ tồn kho.
+    public boolean huyHoaDonCho(String maHD) {
+        if (maHD == null || maHD.isBlank()) {
+            throw new IllegalArgumentException("Mã hóa đơn rỗng.");
+        }
+        HoaDon hd = hoaDonDAO.layHDTheoMa(maHD);
+        if (hd == null) {
+            throw new IllegalArgumentException("Không tìm thấy hóa đơn " + maHD);
+        }
+        if (!HoaDon.TRANG_THAI_CHO_THANH_TOAN.equals(hd.getTrangThai())) {
+            throw new IllegalStateException("Chỉ có thể huỷ hóa đơn đang chờ thanh toán.");
+        }
+
+        Connection con = ConnectDB.getInstance().getConnection();
+        boolean autoCu = true;
+        try {
+            autoCu = con.getAutoCommit();
+            con.setAutoCommit(false);
+
+            // 1. Xoá ChiTietHoaDon
+            try (java.sql.PreparedStatement ps = con.prepareStatement(
+                    "DELETE FROM ChiTietHoaDon WHERE MaHoaDon = ?")) {
+                ps.setString(1, maHD);
+                ps.executeUpdate();
+            }
+
+            // 2. Xoá HoaDon
+            try (java.sql.PreparedStatement ps = con.prepareStatement(
+                    "DELETE FROM HoaDon WHERE MaHoaDon = ?")) {
+                ps.setString(1, maHD);
+                ps.executeUpdate();
+            }
+
+            // 3. Hoàn điểm KH đã dùng (nếu có)
+            KhachHang kh = hd.getKhachHang();
+            if (kh != null && !laKhachLe(kh) && hd.getDiemSuDung() > 0) {
+                KhachHang khFresh = khachHangDAO.layKHTheoSDT(kh.getSoDienThoai());
+                if (khFresh != null) {
+                    khFresh.setDiemTichLuy(khFresh.getDiemTichLuy() + hd.getDiemSuDung());
+                    khachHangDAO.updateKhachHang(khFresh);
+                }
+            }
+            con.commit();
+            return true;
+        } catch (SQLException ex) {
+            try { con.rollback(); } catch (SQLException ignored) {}
+            throw new RuntimeException("Lỗi huỷ phiếu đặt trước: " + ex.getMessage(), ex);
+        } catch (RuntimeException ex) {
+            try { con.rollback(); } catch (SQLException ignored) {}
+            throw ex;
+        } finally {
+            try { con.setAutoCommit(autoCu); } catch (SQLException ignored) {}
+        }
+    }
+
+    // Danh sách hóa đơn đang Chờ thanh toán.
+    public ArrayList<HoaDon> layDSChoThanhToan() {
+        return hoaDonDAO.layDSHoaDonTheoTrangThai(HoaDon.TRANG_THAI_CHO_THANH_TOAN);
+    }
+
+    // Kiểm tra tồn kho cho danh sách ChiTietHoaDon đã lưu (dùng tại xác nhận nhận hàng).
+    // Trả về thông báo lỗi nếu không đủ tồn, null nếu tất cả đều đủ.
+    private String kiemTraTonKhoTheoChiTiet(List<ChiTietHoaDon> dsCT) {
+        if (dsCT == null || dsCT.isEmpty()) return null;
+        List<entity.SanPham> dsSP = new ArrayList<>();
+        for (ChiTietHoaDon ct : dsCT) dsSP.add(ct.getSanPham());
+        Map<String, SanPham_Service.TonKhoInfo> tonKhoMap = sanPhamService.tinhTonKhoTatCa(dsSP);
+        for (ChiTietHoaDon ct : dsCT) {
+            SanPham_Service.TonKhoInfo info = tonKhoMap.get(ct.getSanPham().getMaSanPham());
+            int ton = (info != null) ? info.tonKho : 0;
+            if (ton < ct.getSoLuong()) {
+                return "Sản phẩm \"" + ct.getSanPham().getTenSP()
+                        + "\" chưa đủ tồn kho (còn " + ton + ", cần " + ct.getSoLuong() + ")";
+            }
+        }
+        return null;
+    }
+
+    public ArrayList<HoaDon> layDSTheoTrangThai(String trangThai) {
+        return hoaDonDAO.layDSHoaDonTheoTrangThai(trangThai);
+    }
+
     // ==================== THỐNG KÊ DOANH THU ====================
 
     // DTO tổng hợp các chỉ số thống kê cho summary cards
@@ -345,7 +594,7 @@ public class HoaDon_Service {
             LocalDate tuNgay, LocalDate denNgay) {
         double dtKy = hoaDonDAO.tinhDoanhThuKy(nam, thang, ngay, tuNgay, denNgay);
         double tongDT = hoaDonDAO.tinhTongDoanhThu();
-        int soGD = 10;
+        int soGD = hoaDonDAO.demSoGiaoDich(nam, thang, ngay, tuNgay, denNgay);
         double dtTB = soGD > 0 ? dtKy / soGD : 0;
         return new ThongKeTongHop(dtKy, tongDT, soGD, dtTB);
     }
@@ -432,5 +681,11 @@ public class HoaDon_Service {
             }
         }
         return null; // null = tất cả đều đủ
+    }
+
+    /** Trừ điểm tích lũy khi khách hàng áp dụng điểm khi xác nhận thanh toán đặt trước. */
+    public void truDiemTichLuy(entity.KhachHang kh, int diemTru) {
+        if (kh == null || diemTru <= 0 || laKhachLe(kh)) return;
+        capNhatDiemKhachHang(kh, 0, diemTru);
     }
 }

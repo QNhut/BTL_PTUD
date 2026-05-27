@@ -3,6 +3,7 @@ package exception;
 import java.awt.*;
 import javax.swing.*;
 
+@SuppressWarnings("serial")
 public class RoundedPasswordField extends JPasswordField {
 
     private int radius;

@@ -11,6 +11,7 @@ import exception.RoundedButton;
 import exception.RoundedComboBox;
 import exception.RoundedTextField;
 import exception.StyledTable;
+
 import java.awt.*;
 import java.text.NumberFormat;
 import java.time.LocalDate;
@@ -20,11 +21,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import javax.swing.*;
+import com.toedter.calendar.JDateChooser;
 import service.NhaCungCap_Service;
 import service.NhanVien_Service;
 import service.PhieuNhap_Service;
 import service.SanPham_Service;
+import util.AsyncLoader;
 
+@SuppressWarnings("serial")
 public class TraCuuPhieuNhap_GUI extends JPanel {
 
     // ── Services / Data ────────────────────────────────────────
@@ -38,10 +42,8 @@ public class TraCuuPhieuNhap_GUI extends JPanel {
     // ── Filter controls ────────────────────────────────────────
     private RoundedComboBox<String> cboTimKiemTheo;
     private RoundedTextField txtKeyword;
-    private JSpinner spnTuNgay;
-    private JSpinner spnDenNgay;
-    private boolean tuNgayActive = false;
-    private boolean denNgayActive = false;
+    private JDateChooser dtcTuNgay;
+    private JDateChooser dtcDenNgay;
     private RoundedButton btnTimKiem;
     private RoundedButton btnXoaLoc;
 
@@ -55,8 +57,8 @@ public class TraCuuPhieuNhap_GUI extends JPanel {
     private SearchSuggestionPopup<NhanVien> nvSuggest;
 
     private static final String[] COLUMN_NAMES = {
-        "M\u00e3 phi\u1ebfu nh\u1eadp", "Nh\u00e0 cung c\u1ea5p", "Nh\u00e2n vi\u00ean l\u1eadp",
-        "Ng\u00e0y nh\u1eadp", "Ghi ch\u00fa", "Thao t\u00e1c"
+        "Mã phiếu nhập", "Nhà cung cấp", "Nhân viên lập",
+        "Ngày nhập", "Ghi chú", "Thao tác"
     };
 
     private static final DateTimeFormatter DATE_FMT
@@ -88,13 +90,13 @@ public class TraCuuPhieuNhap_GUI extends JPanel {
         header.setBorder(BorderFactory.createEmptyBorder(0, 0, 16, 0));
         header.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel lblTitle = new JLabel("Tra c\u1ee9u phi\u1ebfu nh\u1eadp");
-        lblTitle.setFont(FontStyle.font(FontStyle.XL, FontStyle.BOLD));
-        lblTitle.setForeground(Colors.TEXT_PRIMARY);
+        JLabel lblTitle = new JLabel("Tra cứu phiếu nhập");
+        lblTitle.setFont(FontStyle.font(FontStyle.XXL, FontStyle.BOLD));
+        lblTitle.setForeground(Colors.FOREGROUND);
 
-        JLabel lblNote = new JLabel("T\u00ecm ki\u1ebfm v\u00e0 xem chi ti\u1ebft phi\u1ebfu nh\u1eadp h\u00e0ng trong h\u1ec7 th\u1ed1ng");
+        JLabel lblNote = new JLabel("Tìm kiếm và xem chi tiết phiếu nhập hàng trong hệ thống");
         lblNote.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
-        lblNote.setForeground(Colors.TEXT_SECONDARY);
+        lblNote.setForeground(Colors.MUTED);
 
         header.add(lblTitle);
         header.add(Box.createVerticalStrut(4));
@@ -114,7 +116,7 @@ public class TraCuuPhieuNhap_GUI extends JPanel {
         card.setAlignmentX(Component.LEFT_ALIGNMENT);
         card.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        //===== NORTH – Ti\u00eau \u0111\u1ec1 =====
+        //===== NORTH – Tiêu đề =====
         JPanel pnlNorth = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 12));
         pnlNorth.setOpaque(false);
         pnlNorth.add(buildCardTitleRow());
@@ -130,16 +132,16 @@ public class TraCuuPhieuNhap_GUI extends JPanel {
         pairTimKiem.setLayout(new BoxLayout(pairTimKiem, BoxLayout.Y_AXIS));
         pairTimKiem.setOpaque(false);
         pairTimKiem.setAlignmentY(Component.TOP_ALIGNMENT);
-        JLabel lblTimKiemTheo = fieldLabel("T\u00ecm ki\u1ebfm theo");
+        JLabel lblTimKiemTheo = fieldLabel("Tìm kiếm theo");
         lblTimKiemTheo.setAlignmentX(Component.LEFT_ALIGNMENT);
         pairTimKiem.add(lblTimKiemTheo);
         pairTimKiem.add(Box.createVerticalStrut(4));
         cboTimKiemTheo = new RoundedComboBox<>(10);
-        cboTimKiemTheo.addItem("M\u00e3 phi\u1ebfu nh\u1eadp");
-        cboTimKiemTheo.addItem("Nh\u00e0 cung c\u1ea5p");
-        cboTimKiemTheo.addItem("Nh\u00e2n vi\u00ean l\u1eadp");
+        cboTimKiemTheo.addItem("Mã phiếu nhập");
+        cboTimKiemTheo.addItem("Nhà cung cấp");
+        cboTimKiemTheo.addItem("Nhân viên lập");
         cboTimKiemTheo.setAlignmentX(Component.LEFT_ALIGNMENT);
-        cboTimKiemTheo.setMaximumSize(new Dimension(200, 44));
+        cboTimKiemTheo.setMaximumSize(new Dimension(250, 44));
         pairTimKiem.add(cboTimKiemTheo);
         pnlFields.add(pairTimKiem);
         pnlFields.add(Box.createHorizontalStrut(10));
@@ -148,11 +150,11 @@ public class TraCuuPhieuNhap_GUI extends JPanel {
         pairTuKhoa.setLayout(new BoxLayout(pairTuKhoa, BoxLayout.Y_AXIS));
         pairTuKhoa.setOpaque(false);
         pairTuKhoa.setAlignmentY(Component.TOP_ALIGNMENT);
-        JLabel lblTuKhoa = fieldLabel("T\u1eeb kh\u00f3a");
+        JLabel lblTuKhoa = fieldLabel("Từ khóa");
         lblTuKhoa.setAlignmentX(Component.LEFT_ALIGNMENT);
         pairTuKhoa.add(lblTuKhoa);
         pairTuKhoa.add(Box.createVerticalStrut(4));
-        txtKeyword = new RoundedTextField(800, 44, 10, "Nh\u1eadp m\u00e3 phi\u1ebfu nh\u1eadp...");
+        txtKeyword = new RoundedTextField(650, 44, 10, "Nhập mã phiếu nhập...");
         txtKeyword.setAlignmentX(Component.LEFT_ALIGNMENT);
         txtKeyword.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
         pairTuKhoa.add(txtKeyword);
@@ -163,14 +165,17 @@ public class TraCuuPhieuNhap_GUI extends JPanel {
         pairTuNgay.setLayout(new BoxLayout(pairTuNgay, BoxLayout.Y_AXIS));
         pairTuNgay.setOpaque(false);
         pairTuNgay.setAlignmentY(Component.TOP_ALIGNMENT);
-        JLabel lblTuNgay = fieldLabel("T\u1eeb ng\u00e0y");
+        JLabel lblTuNgay = fieldLabel("Từ ngày");
         lblTuNgay.setAlignmentX(Component.LEFT_ALIGNMENT);
         pairTuNgay.add(lblTuNgay);
         pairTuNgay.add(Box.createVerticalStrut(4));
-        spnTuNgay = makeDateSpinner();
-        spnTuNgay.setAlignmentX(Component.LEFT_ALIGNMENT);
-        spnTuNgay.setMaximumSize(new Dimension(200, 44));
-        pairTuNgay.add(spnTuNgay);
+        dtcTuNgay = new JDateChooser();
+        dtcTuNgay.setDateFormatString("dd/MM/yyyy");
+        dtcTuNgay.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
+        dtcTuNgay.setDate(new java.util.Date());
+        dtcTuNgay.setAlignmentX(Component.LEFT_ALIGNMENT);
+        dtcTuNgay.setMaximumSize(new Dimension(250, 44));
+        pairTuNgay.add(dtcTuNgay);
         pnlFields.add(pairTuNgay);
         pnlFields.add(Box.createHorizontalStrut(10));
 
@@ -178,14 +183,17 @@ public class TraCuuPhieuNhap_GUI extends JPanel {
         pairDenNgay.setLayout(new BoxLayout(pairDenNgay, BoxLayout.Y_AXIS));
         pairDenNgay.setOpaque(false);
         pairDenNgay.setAlignmentY(Component.TOP_ALIGNMENT);
-        JLabel lblDenNgay = fieldLabel("\u0110\u1ebfn ng\u00e0y");
+        JLabel lblDenNgay = fieldLabel("Đến ngày");
         lblDenNgay.setAlignmentX(Component.LEFT_ALIGNMENT);
         pairDenNgay.add(lblDenNgay);
         pairDenNgay.add(Box.createVerticalStrut(4));
-        spnDenNgay = makeDateSpinner();
-        spnDenNgay.setAlignmentX(Component.LEFT_ALIGNMENT);
-        spnDenNgay.setMaximumSize(new Dimension(200, 44));
-        pairDenNgay.add(spnDenNgay);
+        dtcDenNgay = new JDateChooser();
+        dtcDenNgay.setDateFormatString("dd/MM/yyyy");
+        dtcDenNgay.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
+        dtcDenNgay.setDate(new java.util.Date());
+        dtcDenNgay.setAlignmentX(Component.LEFT_ALIGNMENT);
+        dtcDenNgay.setMaximumSize(new Dimension(250, 44));
+        pairDenNgay.add(dtcDenNgay);
         pnlFields.add(pairDenNgay);
 
         card.add(pnlFields, BorderLayout.CENTER);
@@ -194,10 +202,10 @@ public class TraCuuPhieuNhap_GUI extends JPanel {
         pairButton = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         pairButton.setOpaque(false);
         pairButton.setBorder(BorderFactory.createEmptyBorder(0, 12, 12, 12));
-        btnXoaLoc = new RoundedButton(130, 44, 10, "\u2715  X\u00f3a l\u1ecdc", Colors.SECONDARY);
+        btnXoaLoc = new RoundedButton(130, 44, 10, "Xóa lọc", Colors.SECONDARY);
         btnXoaLoc.setForeground(Colors.TEXT_PRIMARY);
         pairButton.add(btnXoaLoc);
-        btnTimKiem = new RoundedButton(150, 44, 10, "\uD83D\uDD0D  T\u00ecm ki\u1ebfm", Colors.PRIMARY);
+        btnTimKiem = new RoundedButton(150, 44, 10, "Tìm kiếm", Colors.PRIMARY);
         pairButton.add(btnTimKiem);
         card.add(pairButton, BorderLayout.SOUTH);
 
@@ -208,8 +216,6 @@ public class TraCuuPhieuNhap_GUI extends JPanel {
         txtKeyword.addActionListener(e -> search());
         btnTimKiem.addActionListener(e -> search());
         btnXoaLoc.addActionListener(e -> resetFilter());
-        spnTuNgay.addChangeListener(e -> tuNgayActive = true);
-        spnDenNgay.addChangeListener(e -> denNgayActive = true);
 
         initSuggestionPopups();
 
@@ -278,13 +284,9 @@ public class TraCuuPhieuNhap_GUI extends JPanel {
     private JPanel buildCardTitleRow() {
         JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         row.setOpaque(false);
-        JLabel icon = new JLabel("\uD83D\uDD0D");
-        icon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
-        icon.setForeground(Colors.PRIMARY);
-        JLabel title = new JLabel("B\u1ed9 l\u1ecdc t\u00ecm ki\u1ebfm");
+        JLabel title = new JLabel("Bộ lọc tìm kiếm");
         title.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
         title.setForeground(Colors.PRIMARY);
-        row.add(icon);
         row.add(title);
         return row;
     }
@@ -302,15 +304,12 @@ public class TraCuuPhieuNhap_GUI extends JPanel {
 
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         left.setOpaque(false);
-        JLabel iconDoc = new JLabel("\uD83D\uDCC4");
-        iconDoc.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
-        JLabel lblResultTitle = new JLabel("K\u1ebft qu\u1ea3 t\u00ecm ki\u1ebfm");
+        JLabel lblResultTitle = new JLabel("Kết quả tìm kiếm");
         lblResultTitle.setFont(FontStyle.font(FontStyle.BASE, FontStyle.BOLD));
         lblResultTitle.setForeground(Colors.TEXT_PRIMARY);
-        left.add(iconDoc);
         left.add(lblResultTitle);
 
-        lblSoLuong = new JLabel("T\u00ecm th\u1ea5y 0 phi\u1ebfu nh\u1eadp");
+        lblSoLuong = new JLabel("Tìm thấy 0 phiếu nhập");
         lblSoLuong.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
         lblSoLuong.setForeground(Colors.PRIMARY);
 
@@ -320,7 +319,7 @@ public class TraCuuPhieuNhap_GUI extends JPanel {
 
         tblPhieuNhap = new StyledTable(COLUMN_NAMES, filteredList);
 
-        //===== C\u1ed9t 0 – M\u00e3 phi\u1ebfu nh\u1eadp =====
+        //===== Cột 0 – Mã phiếu nhập =====
         tblPhieuNhap.setColumnRenderer(0, (tbl, val, sel, foc, row, col) -> {
             JLabel lbl = new JLabel();
             lbl.setOpaque(true);
@@ -333,31 +332,31 @@ public class TraCuuPhieuNhap_GUI extends JPanel {
         });
         tblPhieuNhap.setColumnWidth(0, 150);
 
-        //===== C\u1ed9t 1 – Nh\u00e0 cung c\u1ea5p: d\u00f2ng 1 = t\u00ean NCC, d\u00f2ng 2 = m\u00e3 NCC =====
+        //===== Cột 1 – Nhà cung cấp: dòng 1 = tên NCC, dòng 2 = mã NCC =====
         tblPhieuNhap.setTwoLineColumn(1, 210,
                 v -> safeNCCName((PhieuNhap) v),
                 v -> safeNCCMa((PhieuNhap) v));
 
-        //===== C\u1ed9t 2 – Nh\u00e2n vi\u00ean l\u1eadp: d\u00f2ng 1 = t\u00ean NV, d\u00f2ng 2 = m\u00e3 NV =====
+        //===== Cột 2 – Nhân viên lập: dòng 1 = tên NV, dòng 2 = mã NV =====
         tblPhieuNhap.setTwoLineColumn(2, 190,
                 v -> safeNVName((PhieuNhap) v),
                 v -> safeNVMa((PhieuNhap) v));
 
-        //===== C\u1ed9t 3 – Ng\u00e0y nh\u1eadp =====
+        //===== Cột 3 – Ngày nhập =====
         tblPhieuNhap.setSingleTextColumn(3, 130,
                 v -> {
                     LocalDate d = ((PhieuNhap) v).getNgayNhap();
                     return d != null ? d.format(DATE_FMT) : "";
                 });
 
-        //===== C\u1ed9t 4 – Ghi ch\u00fa =====
+        //===== Cột 4 – Ghi chú =====
         tblPhieuNhap.setSingleTextColumn(4, 200,
                 v -> {
                     String gc = ((PhieuNhap) v).getGhiChu();
                     return gc != null ? gc : "";
                 });
 
-        //===== C\u1ed9t 5 – Thao t\u00e1c =====
+        //===== Cột 5 – Thao tác =====
         tblPhieuNhap.setActionColumn(5, 100);
         tblPhieuNhap.setActionColumnListener((row, obj) -> moChiTietPhieuNhap((PhieuNhap) obj));
 
@@ -405,6 +404,7 @@ public class TraCuuPhieuNhap_GUI extends JPanel {
             filteredList.addAll(fullList);
             tblPhieuNhap.refresh();
             updateCountLabel();
+            search();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -413,9 +413,17 @@ public class TraCuuPhieuNhap_GUI extends JPanel {
     private void search() {
         String loai = (String) cboTimKiemTheo.getSelectedItem();
         String kw = txtKeyword.getText().trim().toLowerCase();
-        LocalDate tuNgay = tuNgayActive ? spinnerToDate(spnTuNgay) : null;
-        LocalDate denNgay = denNgayActive ? spinnerToDate(spnDenNgay) : null;
+        LocalDate tuNgay = dtcTuNgay.getDate() != null
+                ? dtcTuNgay.getDate().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate() : null;
+        LocalDate denNgay = dtcDenNgay.getDate() != null
+                ? dtcDenNgay.getDate().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate() : null;
 
+        if (tuNgay != null && denNgay != null && tuNgay.isAfter(denNgay)) {
+            dtcTuNgay.setDate(null);
+            dtcDenNgay.setDate(null);
+            tuNgay = null;
+            denNgay = null;
+        }
         filteredList.clear();
         for (PhieuNhap pn : fullList) {
             if (!kw.isEmpty() && !matchKeyword(pn, loai, kw)) {
@@ -441,12 +449,12 @@ public class TraCuuPhieuNhap_GUI extends JPanel {
             return true;
         }
         switch (loai) {
-            case "M\u00e3 phi\u1ebfu nh\u1eadp":
+            case "Mã phiếu nhập":
                 return pn.getMaPhieuNhap() != null && pn.getMaPhieuNhap().toLowerCase().contains(kw);
-            case "Nh\u00e0 cung c\u1ea5p":
+            case "Nhà cung cấp":
                 return safeNCCName(pn).toLowerCase().contains(kw)
                         || safeNCCMa(pn).toLowerCase().contains(kw);
-            case "Nh\u00e2n vi\u00ean l\u1eadp":
+            case "Nhân viên lập":
                 return safeNVName(pn).toLowerCase().contains(kw)
                         || safeNVMa(pn).toLowerCase().contains(kw);
             default:
@@ -457,10 +465,8 @@ public class TraCuuPhieuNhap_GUI extends JPanel {
     private void resetFilter() {
         txtKeyword.setText("");
         cboTimKiemTheo.setSelectedIndex(0);
-        spnTuNgay.setValue(new java.util.Date());
-        spnDenNgay.setValue(new java.util.Date());
-        tuNgayActive = false;
-        denNgayActive = false;
+        dtcTuNgay.setDate(new java.util.Date());
+        dtcDenNgay.setDate(new java.util.Date());
         filteredList.clear();
         filteredList.addAll(fullList);
         tblPhieuNhap.refresh();
@@ -530,10 +536,10 @@ public class TraCuuPhieuNhap_GUI extends JPanel {
 
         new ChiTietDialog(
                 SwingUtilities.getWindowAncestor(this),
-                "\uD83D\uDCE6",
+                "PN",
                 "Chi tiết phiếu nhập: " + pn.getMaPhieuNhap(),
-                "\uD83C\uDFEC", "Thông tin nhà cung cấp", leftInfo,
-                "\uD83D\uDCC4", "Thông tin phiếu nhập", rightInfo,
+                "NCC", "Thông tin nhà cung cấp", leftInfo,
+                "PN", "Thông tin phiếu nhập", rightInfo,
                 "Danh sách sản phẩm",
                 cols, rows, new int[]{0, 4, 5, 6},
                 summary
@@ -576,44 +582,26 @@ public class TraCuuPhieuNhap_GUI extends JPanel {
         return l;
     }
 
-    private JSpinner makeDateSpinner() {
-        JSpinner sp = new JSpinner(new SpinnerDateModel());
-        JSpinner.DateEditor ed = new JSpinner.DateEditor(sp, "dd/MM/yyyy");
-        sp.setEditor(ed);
-        sp.setPreferredSize(new Dimension(160, 42));
-        sp.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
-        return sp;
-    }
-
     private void updatePlaceholder() {
         String s = (String) cboTimKiemTheo.getSelectedItem();
         if (s == null) {
             return;
         }
         switch (s) {
-            case "M\u00e3 phi\u1ebfu nh\u1eadp":
-                txtKeyword.setPlaceholder("Nh\u1eadp m\u00e3 phi\u1ebfu nh\u1eadp...");
+            case "Mã phiếu nhập":
+                txtKeyword.setPlaceholder("Nhập mã phiếu nhập...");
                 break;
-            case "Nh\u00e0 cung c\u1ea5p":
-                txtKeyword.setPlaceholder("Nh\u1eadp t\u00ean ho\u1eb7c m\u00e3 nh\u00e0 cung c\u1ea5p...");
+            case "Nhà cung cấp":
+                txtKeyword.setPlaceholder("Nhập tên hoặc mã nhà cung cấp...");
                 break;
-            case "Nh\u00e2n vi\u00ean l\u1eadp":
-                txtKeyword.setPlaceholder("Nh\u1eadp t\u00ean ho\u1eb7c m\u00e3 nh\u00e2n vi\u00ean...");
+            case "Nhân viên lập":
+                txtKeyword.setPlaceholder("Nhập tên hoặc mã nhân viên...");
                 break;
         }
     }
 
     private void updateCountLabel() {
-        lblSoLuong.setText("T\u00ecm th\u1ea5y " + filteredList.size() + " phi\u1ebfu nh\u1eadp");
-    }
-
-    private LocalDate spinnerToDate(JSpinner sp) {
-        try {
-            java.util.Date d = (java.util.Date) sp.getValue();
-            return d.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
-        } catch (Exception e) {
-            return null;
-        }
+        lblSoLuong.setText("Tìm thấy " + filteredList.size() + " phiếu nhập");
     }
 
     private String safeNCCName(PhieuNhap pn) {

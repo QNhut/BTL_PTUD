@@ -13,21 +13,21 @@ import java.awt.event.FocusEvent;
 import javax.swing.*;
 import service.TaiKhoan_Service;
 
+@SuppressWarnings("serial")
 public class DangNhap_GUI extends JFrame implements ActionListener {
 
     private JLabel lblNen, lblTitle1, lblTitle2, lblUser, lblPWD, lblTitle3, lblYC;
-    private JPanel pWest, pCenter, pInput;
-    private Font fo, fo1;
+    private JPanel pWest, pCenter;
+    private Font fo;
     private JTextField txtUser;
     private JPasswordField pwdUser;
     private JButton btnDangNhap;
-    private Box bUser, bPWD, bDN, bCheck, bButton, bYC;
+    private Box bUser, bPWD, bCheck, bButton, bYC;
     private JCheckBox chkShowPWD;
 
     private TaiKhoan_Service tkService;
 
     {
-        ConnectDB.getInstance().connect();
         tkService = new TaiKhoan_Service();
     }
     private String currentToken;
@@ -141,7 +141,13 @@ public class DangNhap_GUI extends JFrame implements ActionListener {
 
         loginCard.add(bUser = new Box(BoxLayout.X_AXIS));
         bUser.setAlignmentX(Component.LEFT_ALIGNMENT);
-        bUser.add(lblUser = new JLabel("👤 "));
+        bUser.add(lblUser = new JLabel());
+        ImageIcon userIcon = loadUiIcon("people.png", 14, 14);
+        if (userIcon != null) {
+            lblUser.setIcon(userIcon);
+        } else {
+            lblUser.setText("TK");
+        }
         lblUser.setFont(FontStyle.font(FontStyle.BASE, FontStyle.NORMAL));
         lblUser.setPreferredSize(new Dimension(30, 0));
         bUser.add(txtUser = new JTextField(24));
@@ -156,7 +162,13 @@ public class DangNhap_GUI extends JFrame implements ActionListener {
 
         loginCard.add(bPWD = new Box(BoxLayout.X_AXIS));
         bPWD.setAlignmentX(Component.LEFT_ALIGNMENT);
-        bPWD.add(lblPWD = new JLabel("🔒 "));
+        bPWD.add(lblPWD = new JLabel());
+        ImageIcon pwdIcon = loadUiIcon("gear.png", 14, 14);
+        if (pwdIcon != null) {
+            lblPWD.setIcon(pwdIcon);
+        } else {
+            lblPWD.setText("MK");
+        }
         lblPWD.setFont(FontStyle.font(FontStyle.BASE, FontStyle.NORMAL));
         lblPWD.setPreferredSize(new Dimension(30, 0));
         bPWD.add(pwdUser = new JPasswordField(24));
@@ -204,10 +216,19 @@ public class DangNhap_GUI extends JFrame implements ActionListener {
         setSize(720, 460);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-        ConnectDB.getInstance().connect();
+        // ConnectDB đã được gọi trong main()
         btnDangNhap.addActionListener(this);
         chkShowPWD.addActionListener(this);
         defaultEchoChar = pwdUser.getEchoChar();
+    }
+
+    private ImageIcon loadUiIcon(String iconFile, int w, int h) {
+        ImageIcon raw = new ImageIcon("data/img/icons/" + iconFile);
+        if (raw.getIconWidth() <= 0 || raw.getIconHeight() <= 0) {
+            return null;
+        }
+        Image scaled = raw.getImage().getScaledInstance(w, h, Image.SCALE_SMOOTH);
+        return new ImageIcon(scaled);
     }
 
     public static void main(String[] args) {
@@ -261,27 +282,25 @@ public class DangNhap_GUI extends JFrame implements ActionListener {
                 return;
             }
 
-			String token = tkService.dangNhap(user, pass);
-			if (token != null) {
-				TaiKhoan taiKhoan = tkService.layTaiKhoanTheoToken(token);
-				if (taiKhoan == null) {
-					lblYC.setText("Phiên đăng nhập không hợp lệ!");
-					return;
-				}
-				currentToken = token;
-				JOptionPane.showMessageDialog(this, "Xin chào " + taiKhoan.getNhanVien().getTenNhanVien());
-				Main_GUI mainFram = new Main_GUI(tkService, currentToken);
-				mainFram.setVisible(true);
-				this.dispose();
-			} else {
-				lblYC.setText("Sai tài khoản hoặc mật khẩu!");
-				txtUser.requestFocus();
-				return;
-			}
-		}
-	}
-
-
+            String token = tkService.dangNhap(user, pass);
+            if (token != null) {
+                TaiKhoan taiKhoan = tkService.layTaiKhoanTheoToken(token);
+                if (taiKhoan == null) {
+                    lblYC.setText("Phiên đăng nhập không hợp lệ!");
+                    return;
+                }
+                currentToken = token;
+                JOptionPane.showMessageDialog(this, "Xin chào " + taiKhoan.getNhanVien().getTenNhanVien());
+                Main_GUI mainFram = new Main_GUI(tkService, currentToken);
+                mainFram.setVisible(true);
+                this.dispose();
+            } else {
+                lblYC.setText("Sai tài khoản hoặc mật khẩu!");
+                txtUser.requestFocus();
+                return;
+            }
+        }
+    }
 
     public String getCurrentToken() {
         return currentToken;

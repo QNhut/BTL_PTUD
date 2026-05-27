@@ -6,22 +6,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import dao.KhuyenMai_DAO;
+import util.DonViTinhConverter;
+
 import dao.LoSanPham_DAO;
 import dao.SanPham_DAO;
-import dao.Thue_DAO;
-import entity.KhuyenMai;
 import entity.LoSanPham;
 import entity.SanPham;
-import entity.Thue;
 
 public class SanPham_Service {
 	public static final int NGUONG_SAP_HET = 50;
 
 	private final SanPham_DAO sanPhamDAO = new SanPham_DAO();
 	private final LoSanPham_DAO loSanPhamDAO = new LoSanPham_DAO();
-	private final KhuyenMai_DAO khuyenMaiDAO = new KhuyenMai_DAO();
-	private final Thue_DAO thueDAO = new Thue_DAO();
 	private final DonViTinhConverter converter = new DonViTinhConverter();
 
 	// ==================== DTO tồn kho ====================
@@ -173,16 +169,6 @@ public class SanPham_Service {
 	// nếu sp không có để tránh NPE trong DAO.
 	public boolean themSanPham(SanPham sp) {
 		return sanPhamDAO.themSanPham(sp);
-	}
-
-	private KhuyenMai layKhuyenMaiMacDinh() {
-		java.util.ArrayList<KhuyenMai> ds = khuyenMaiDAO.getDSKhuyenMai();
-		return ds.isEmpty() ? null : ds.get(0);
-	}
-
-	private Thue layThueMacDinh() {
-		java.util.ArrayList<Thue> ds = thueDAO.getDSThue();
-		return ds.isEmpty() ? null : ds.get(0);
 	}
 
 	public boolean updateSanPham(SanPham sp) { return sanPhamDAO.updateSanPham(sp); }

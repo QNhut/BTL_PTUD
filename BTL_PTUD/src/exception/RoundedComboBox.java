@@ -4,7 +4,6 @@ import constants.Colors;
 import constants.FontStyle;
 
 import javax.swing.*;
-import javax.swing.border.*;
 import javax.swing.plaf.basic.BasicComboBoxUI;
 import javax.swing.plaf.basic.BasicComboPopup;
 import javax.swing.plaf.basic.ComboPopup;
@@ -12,6 +11,7 @@ import javax.swing.plaf.basic.ComboPopup;
 import java.awt.*;
 
 // ComboBox bo tròn, đồng bộ với RoundedTextField.
+@SuppressWarnings("serial")
 public class RoundedComboBox<E> extends JComboBox<E> {
 
 	private final int radius;

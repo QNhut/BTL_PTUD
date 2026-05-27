@@ -5,6 +5,7 @@ import java.awt.*;
 import java.util.ArrayList;
 import javax.swing.*;
 
+@SuppressWarnings("serial")
 public class MenuBarPanel extends JPanel {
 
     private ArrayList<MenuButton> menuButtons = new ArrayList<>();
@@ -31,14 +32,14 @@ public class MenuBarPanel extends JPanel {
         xuLy.addSubMenu("Tạo phiếu nhập", "data/img/icons/open-box.png", "NhapHang");
         xuLy.addSubMenu("Đổi hàng", "data/img/icons/commercial.png", "DoiHang");
         xuLy.addSubMenu("Trả hàng", "data/img/icons/exchange.png", "TraHang");
-        xuLy.addSubMenu("Đặt Thuốc", "", "DatTruoc");
+        xuLy.addSubMenu("Đặt Thuốc", "data/img/icons/schedule.png", "DatTruoc");
 
         MenuButton traCuu = createMenu("TRA CỨU");
         traCuu.addSubMenu("Hoá đơn", "data/img/icons/invoice.png", "TraCuuHoaDon");
         traCuu.addSubMenu("Phiếu nhập", "data/img/icons/invoice_1.png", "TraCuuPhieuNhap");
         traCuu.addSubMenu("Đổi hàng", "data/img/icons/commercial.png", "TraCuuDoiHang");
         traCuu.addSubMenu("Trả hàng", "data/img/icons/exchange.png", "TraCuuTraHang");
-        traCuu.addSubMenu("Đặc thuốc", "", "TraCuuDatThuoc");
+        traCuu.addSubMenu("Đặt thuốc", "data/img/icons/task.png", "TraCuuDatThuoc");
 
         MenuButton thongKe = createMenu("THỐNG KÊ");
         thongKe.addSubMenu("Doanh thu", "data/img/icons/up.png", "ThongKeDoanhThu");
@@ -47,8 +48,8 @@ public class MenuBarPanel extends JPanel {
 
         // ===== CÀI ĐẶT (KHÔNG SUB) =====
         MenuButton heThong = createSingleMenu("HỆ THỐNG", "HeThong");
-        heThong.addSubMenu("Tài khoản", "data/img/icons/gear.png", "TaiKhoan");
         heThong.addSubMenu("Trang chủ", "data/img/icons/home.png", "TrangChu");
+        heThong.addSubMenu("Tài khoản", "data/img/icons/gear.png", "TaiKhoan");
         heThong.addSubMenu("Trợ giúp", "data/img/icons/question.png", "TroGiup");
         heThong.addSubMenu("Thoát", "data/img/icons/logout.png", "Thoat");
 

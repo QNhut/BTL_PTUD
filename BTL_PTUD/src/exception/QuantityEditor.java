@@ -11,6 +11,7 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.table.TableCellEditor;
 
+@SuppressWarnings("serial")
 public class QuantityEditor extends AbstractCellEditor implements TableCellEditor {
     private JPanel panel = new JPanel();
     private JButton btnMinus = new JButton("-");
