@@ -578,6 +578,10 @@ public class ThongKeDoanhThu_GUI extends JPanel implements ActionListener {
 
         tableModel.setRowCount(0);
         for (Object[] row : rows) {
+            if (row[1] instanceof java.time.LocalDate) {
+                row[1] = ((java.time.LocalDate) row[1])
+                        .format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            }
             if (row[5] instanceof Number) {
                 row[5] = VND.format(((Number) row[5]).longValue()) + "đ";
             }
@@ -667,6 +671,10 @@ public class ThongKeDoanhThu_GUI extends JPanel implements ActionListener {
         tableModel.setRowCount(0);
         ArrayList<Object[]> rows = hoaDonService.layDanhSachTheoKy(nam, thang, ngay, tuNgay, denNgay);
         for (Object[] row : rows) {
+            if (row[1] instanceof java.time.LocalDate) {
+                row[1] = ((java.time.LocalDate) row[1])
+                        .format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            }
             if (row[5] instanceof Number) {
                 row[5] = VND.format(((Number) row[5]).longValue()) + "đ";
             }

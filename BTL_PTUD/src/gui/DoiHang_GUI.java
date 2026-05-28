@@ -825,6 +825,50 @@ public class DoiHang_GUI extends JPanel {
             maPTTT = selectedPT.getMaPTTT();
         }
 
+        // ── Hộp thoại xác nhận trước khi đẩy vào hóa đơn ──────────────────
+        StringBuilder sb = new StringBuilder("<html><b>Xác nhận đổi hàng?</b><br><br>");
+        sb.append("<b>Mã hóa đơn:</b> ").append(txtSearchMaHD.getText().trim()).append("<br>");
+        sb.append("<b>Lý do:</b> ").append(lyDo).append("<br><br>");
+
+        sb.append("<b>Hàng trả lại:</b><br>");
+        for (ReturnItem i : currentInvoiceItems) {
+            if (i.returnQty > 0) {
+                sb.append("&nbsp;&nbsp;• ").append(i.product.getTenSP())
+                  .append(" &times; ").append(i.returnQty)
+                  .append(" &nbsp;(").append(df.format(i.price)).append(" đ/cái)<br>");
+            }
+        }
+
+        sb.append("<br><b>Hàng đổi mới:</b><br>");
+        for (OrderItem i : newOrderItems) {
+            sb.append("&nbsp;&nbsp;• ").append(i.product.getTenSP())
+              .append(" &times; ").append(i.quantity)
+              .append(" &nbsp;(").append(df.format(i.product.getGiaBan())).append(" đ/cái)<br>");
+        }
+
+        double diff = newOrderTotal - oldOrderTotal;
+        sb.append("<br>");
+        if (diff > 0) {
+            sb.append("<b>Khách thanh toán thêm: <font color='#F44725'>")
+              .append(df.format(diff)).append(" đ</font></b>");
+        } else if (diff < 0) {
+            sb.append("<b>Cửa hàng hoàn lại: <font color='#16A34A'>")
+              .append(df.format(Math.abs(diff))).append(" đ</font></b>");
+        } else {
+            sb.append("<b>Không phát sinh chênh lệch tiền.</b>");
+        }
+        sb.append("</html>");
+
+        int confirm = JOptionPane.showConfirmDialog(
+                this, sb.toString(),
+                "Xác nhận đổi hàng",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
+        if (confirm != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+
         try {
             List<ChiTietHoaDon> returns = buildReturnList();
             List<ChiTietHoaDon> news = buildNewList();

@@ -32,31 +32,26 @@ import java.util.List;
 @SuppressWarnings("serial")
 public class ChiTietSanPham_GUI extends JDialog {
 
-	// ── Services ──────────────────────────────────────────────
 	private final SanPham_Service spService = new SanPham_Service();
 	private final LoSanPham_Service loService = new LoSanPham_Service();
 	private final LoaiSanPham_Service lspService = new LoaiSanPham_Service();
 	private final ImageUpload_Service imgUpload = ImageUpload_Service.getInstance();
 	private final ImageCache imgCache = ImageCache.getInstance();
 
-	// ── Data ──────────────────────────────────────────────────
 	private SanPham sanPham;
 	private TonKhoInfo tonKhoInfo;
 	private List<LoSanPham> dsLo;
 	private boolean cheDoXem;
 	private Runnable onSaved;
 
-	// ── Tab control ──────────────────────────────────────────
 	private JLabel[] tabLabels;
 	private JPanel contentHolder;
 	private int currentTab = 0;
 	private JScrollPane scrLoHang;
 
-	// ── Upload state ──────────────────────────────────────────
 	private String tenFileTam = null;
 	private String maSinhSan = null;
 
-	// ── Form fields ───────────────────────────────────────────
 	private JLabel lblAnhPreview;
 	private RoundedTextField txtTen, txtGia;
 	private RoundedComboBox<String> cboDonVi;
@@ -67,8 +62,6 @@ public class ChiTietSanPham_GUI extends JDialog {
 
 	private static final DecimalFormat PRICE_FMT = new DecimalFormat("#,###");
 	private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("d/M/yyyy");
-
-	// ── Entry points ──────────────────────────────────────────
 
 	public static void moChiTiet(Window parent, SanPham sp, TonKhoInfo info) {
 		new ChiTietSanPham_GUI(parent, sp, info, true, null).setVisible(true);
@@ -82,7 +75,6 @@ public class ChiTietSanPham_GUI extends JDialog {
 		new ChiTietSanPham_GUI(parent, null, null, false, onSaved).setVisible(true);
 	}
 
-	// ── Constructor ───────────────────────────────────────────
 	private ChiTietSanPham_GUI(Window parent, SanPham sp, TonKhoInfo info, boolean cheDoXem, Runnable onSaved) {
 		super(parent, cheDoXem ? "Chi tiết sản phẩm" : (sp == null ? "Thêm sản phẩm thuốc" : "Chỉnh sửa sản phẩm"),
 				ModalityType.APPLICATION_MODAL);
@@ -117,9 +109,7 @@ public class ChiTietSanPham_GUI extends JDialog {
 		});
 	}
 
-	// ══════════════════════════════════════════════════════════
-	// HEADER
-	// ══════════════════════════════════════════════════════════
+//	Phần header chung cho cả 3 chế độ xem / thêm / chỉnh sửa, có icon + thông tin cơ bản + nút đóng
 	private JPanel taoHeader() {
 		JPanel p = new JPanel(new BorderLayout(12, 0));
 		p.setBackground(Colors.BACKGROUND);
@@ -174,7 +164,6 @@ public class ChiTietSanPham_GUI extends JDialog {
 		if (cheDoXem && sanPham != null) {
 			info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));
 
-			// ── META ─────────────────────────
 			String meta = sanPham.getMaSanPham()
 					+ (sanPham.getLoaiSanPham() != null ? "  •  " + sanPham.getLoaiSanPham().getTenLoaiSanPham() : "");
 
@@ -186,14 +175,12 @@ public class ChiTietSanPham_GUI extends JDialog {
 
 			info.add(Box.createVerticalStrut(4));
 
-			// ── TÊN SẢN PHẨM ─────────────────
 			JLabel lblTen = new JLabel(sanPham.getTenSanPham());
 			lblTen.setFont(FontStyle.font(FontStyle.LG, FontStyle.BOLD));
 			lblTen.setForeground(Colors.TEXT_PRIMARY);
 			lblTen.setAlignmentX(Component.LEFT_ALIGNMENT);
 			info.add(lblTen);
 
-			// ── CÔNG DỤNG ────────────────────
 			String cd = sanPham.getCongDung();
 			if (cd != null && !cd.isBlank()) {
 				if (cd.length() > 60)
@@ -210,7 +197,6 @@ public class ChiTietSanPham_GUI extends JDialog {
 
 			info.add(Box.createVerticalStrut(6));
 
-			// ── PRICE ROW (BOXLAYOUT X) ──────
 			JPanel priceRow = new JPanel();
 			priceRow.setLayout(new BoxLayout(priceRow, BoxLayout.X_AXIS));
 			priceRow.setOpaque(false);
@@ -219,8 +205,7 @@ public class ChiTietSanPham_GUI extends JDialog {
 			// Giá (có gạch ngang giá gốc khi có KM)
 			String giaHtml;
 			if (sanPham.coKhuyenMai()) {
-				giaHtml = "<html><span style='color:#ED5A2D;'>"
-						+ PRICE_FMT.format(sanPham.getGiaSauKM()) + "đ</span> "
+				giaHtml = "<html><span style='color:#ED5A2D;'>" + PRICE_FMT.format(sanPham.getGiaSauKM()) + "đ</span> "
 						+ "<span style='color:#9CA3AF; text-decoration:line-through; font-size:smaller;'>"
 						+ PRICE_FMT.format(sanPham.getGiaThanh()) + "đ</span></html>";
 			} else {
@@ -251,7 +236,6 @@ public class ChiTietSanPham_GUI extends JDialog {
 
 			info.add(priceRow);
 		} else {
-			// ── TIÊU ĐỀ ─────────────────────
 			String tieuDe = sanPham == null ? "Thêm sản phẩm thuốc" : "Chỉnh sửa sản phẩm";
 
 			JLabel lbl = new JLabel(tieuDe);
@@ -260,7 +244,6 @@ public class ChiTietSanPham_GUI extends JDialog {
 			lbl.setAlignmentX(Component.LEFT_ALIGNMENT);
 			info.add(lbl);
 
-			// ── SUB TEXT ────────────────────
 			info.add(Box.createVerticalStrut(4));
 
 			JLabel sub = new JLabel("Nhập đầy đủ thông tin sản phẩm");
@@ -269,7 +252,6 @@ public class ChiTietSanPham_GUI extends JDialog {
 			sub.setAlignmentX(Component.LEFT_ALIGNMENT);
 			info.add(sub);
 
-			// ── MÃ SẢN PHẨM (BADGE) ─────────
 			String maHT = sanPham != null ? sanPham.getMaSanPham() : maSinhSan;
 
 			if (maHT != null) {
@@ -317,9 +299,7 @@ public class ChiTietSanPham_GUI extends JDialog {
 		return p;
 	}
 
-	// ══════════════════════════════════════════════════════════
-	// TAB PANEL
-	// ══════════════════════════════════════════════════════════
+// Phần tab chung cho cả 3 chế độ, có 2 tab: Thông tin (xem) / Thông tin cơ bản + Chi tiết (thêm/sửa) và Lô hàng (chỉ xem)
 	private JPanel taoTabPanel() {
 		JPanel container = new JPanel(new BorderLayout());
 		container.setBackground(Colors.BACKGROUND);
@@ -397,9 +377,7 @@ public class ChiTietSanPham_GUI extends JDialog {
 		return container;
 	}
 
-	// ══════════════════════════════════════════════════════════
-	// TAB XEM – Thong tin thuoc
-	// ══════════════════════════════════════════════════════════
+//	Phần nội dung tab xem thông tin sản phẩm, gồm các card thông tin chính (thành phần, công dụng, cách dùng, chống chỉ định)
 	private JPanel taoTabThongTinXem() {
 		JPanel p = new JPanel();
 		p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
@@ -443,9 +421,7 @@ public class ChiTietSanPham_GUI extends JDialog {
 		return card;
 	}
 
-	// ══════════════════════════════════════════════════════════
-	// TAB XEM – Lo hang
-	// ══════════════════════════════════════════════════════════
+//	Phần nội dung tab xem lô hàng, gồm danh sách các lô hàng theo dạng card, có badge trạng thái và nút chuyển kệ (nếu có dữ liệu kệ)
 	private JPanel taoTabLoHang() {
 		JPanel p = new JPanel();
 		p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
@@ -544,7 +520,7 @@ public class ChiTietSanPham_GUI extends JDialog {
 		card.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
 		card.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-		// ── Header: Mã lô (nổi bật) + Badge trạng thái ──────────
+		// Header: Mã lô + badge trạng thái
 		JPanel headerRow = new JPanel(new BorderLayout(0, 0));
 		headerRow.setOpaque(false);
 		headerRow.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -559,14 +535,17 @@ public class ChiTietSanPham_GUI extends JDialog {
 		card.add(headerRow);
 		card.add(Box.createVerticalStrut(8));
 
-		// ── Đường kẻ ngang ───────────────────────────────────────
+		// Đường phân cách – dùng JSeparator cho chuẩn, set max width để nó kéo dài hết
+		// card, set alignment để nó dính về bên trái
 		JSeparator sep = new JSeparator(SwingConstants.HORIZONTAL);
 		sep.setAlignmentX(Component.LEFT_ALIGNMENT);
 		sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
 		card.add(sep);
 		card.add(Box.createVerticalStrut(8));
 
-		// ── Thông tin: 2 cột, mỗi hàng 2 cặp label–giá trị ──────
+		// Thông tin chi tiết – dùng BoxLayout Y_AXIS để xếp các hàng thông tin, mỗi
+		// hàng là một panel con với BoxLayout X_AXIS để chia 2 cột label - value, set
+		// max width để nó kéo dài hết card, set alignment để nó dính về bên trái
 		JPanel infoBox = new JPanel();
 		infoBox.setLayout(new BoxLayout(infoBox, BoxLayout.Y_AXIS));
 		infoBox.setOpaque(false);
@@ -621,7 +600,10 @@ public class ChiTietSanPham_GUI extends JDialog {
 
 		card.add(infoBox);
 
-		// ── Chuyển kệ ─────────────────────────────────────────────
+		// Chuyển kệ (nếu có dữ liệu kệ) – phần này chỉ hiển thị khi có dữ liệu kệ, gồm
+		// 1 nút toggle để hiện form chuyển kệ inline ngay dưới, form này cũng dùng
+		// BoxLayout X_AXIS để tự điều chỉnh kích thước theo card, bên trong form là
+		// combobox chọn kệ mới + nút lưu/hủy
 		if (dsKe != null && !dsKe.isEmpty()) {
 			card.add(Box.createVerticalStrut(8));
 			JSeparator sep2 = new JSeparator(SwingConstants.HORIZONTAL);
@@ -936,9 +918,9 @@ public class ChiTietSanPham_GUI extends JDialog {
 		return p;
 	}
 
-	// ══════════════════════════════════════════════════════════
-	// TAB THEM/SUA – Chi tiet thuoc
-	// ══════════════════════════════════════════════════════════
+	// Phần nội dung tab thêm/sửa chi tiết thuốc, gồm các trường thông tin chi tiết
+	// về thuốc (thành phần, công dụng, cách dùng, chống chỉ định) với textarea có
+	// placeholder và hiển thị dữ liệu cũ (nếu có)
 	private JPanel taoTabChiTietThuoc() {
 		JPanel p = new JPanel();
 		p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
@@ -988,9 +970,8 @@ public class ChiTietSanPham_GUI extends JDialog {
 		capNhatFooter();
 	}
 
-	// ══════════════════════════════════════════════════════════
-	// FOOTER
-	// ══════════════════════════════════════════════════════════
+	// Phần footer có các nút hành động (Thêm mới, Lưu, Chỉnh sửa, Đóng, Hủy), thay
+	// đổi linh hoạt theo chế độ xem/sửa và tab đang chọn
 	private JPanel pnlFooter;
 
 	private JPanel taoFooter() {
@@ -1033,22 +1014,40 @@ public class ChiTietSanPham_GUI extends JDialog {
 					String ten = txtTen != null ? txtTen.getText().trim() : "";
 					String errMsgTen = Validators.required(ten);
 					if (errMsgTen != null) {
-						if (errTen != null) { errTen.setText(errMsgTen); errTen.setVisible(true); }
-						if (txtTen != null) { txtTen.setInvalid(true); txtTen.requestFocusInWindow(); txtTen.selectAll(); }
+						if (errTen != null) {
+							errTen.setText(errMsgTen);
+							errTen.setVisible(true);
+						}
+						if (txtTen != null) {
+							txtTen.setInvalid(true);
+							txtTen.requestFocusInWindow();
+							txtTen.selectAll();
+						}
 						return;
 					}
-					if (errTen != null) errTen.setVisible(false);
-					if (txtTen != null) txtTen.setInvalid(false);
+					if (errTen != null)
+						errTen.setVisible(false);
+					if (txtTen != null)
+						txtTen.setInvalid(false);
 
 					String giaStr = txtGia != null ? txtGia.getText().trim().replace(",", "") : "";
 					String errMsgGia = Validators.soThucDuong(giaStr);
 					if (errMsgGia != null) {
-						if (errGia != null) { errGia.setText(errMsgGia); errGia.setVisible(true); }
-						if (txtGia != null) { txtGia.setInvalid(true); txtGia.requestFocusInWindow(); txtGia.selectAll(); }
+						if (errGia != null) {
+							errGia.setText(errMsgGia);
+							errGia.setVisible(true);
+						}
+						if (txtGia != null) {
+							txtGia.setInvalid(true);
+							txtGia.requestFocusInWindow();
+							txtGia.selectAll();
+						}
 						return;
 					}
-					if (errGia != null) errGia.setVisible(false);
-					if (txtGia != null) txtGia.setInvalid(false);
+					if (errGia != null)
+						errGia.setVisible(false);
+					if (txtGia != null)
+						txtGia.setInvalid(false);
 
 					chuyenTab(1);
 				});
@@ -1065,9 +1064,8 @@ public class ChiTietSanPham_GUI extends JDialog {
 		pnlFooter.repaint();
 	}
 
-	// ══════════════════════════════════════════════════════════
-	// ACTIONS
-	// ══════════════════════════════════════════════════════════
+	// Phan xu ly chon anh san pham, bao gom mo file chooser, loc file anh, luu tam
+	// anh duoc chon de preview va xac nhan khi luu san pham
 	private void chonAnh() {
 		JFileChooser chooser = new JFileChooser();
 		chooser.setFileFilter(new FileNameExtensionFilter("Ảnh (PNG, JPG, JPEG, GIF)", "png", "jpg", "jpeg", "gif"));
@@ -1092,23 +1090,41 @@ public class ChiTietSanPham_GUI extends JDialog {
 		String ten = txtTen != null ? txtTen.getText().trim() : "";
 		String errMsgTen = Validators.required(ten);
 		if (errMsgTen != null) {
-			if (errTen != null) { errTen.setText(errMsgTen); errTen.setVisible(true); }
-			if (txtTen != null) { txtTen.setInvalid(true); txtTen.requestFocusInWindow(); txtTen.selectAll(); }
+			if (errTen != null) {
+				errTen.setText(errMsgTen);
+				errTen.setVisible(true);
+			}
+			if (txtTen != null) {
+				txtTen.setInvalid(true);
+				txtTen.requestFocusInWindow();
+				txtTen.selectAll();
+			}
 			return;
 		}
-		if (errTen != null) errTen.setVisible(false);
-		if (txtTen != null) txtTen.setInvalid(false);
+		if (errTen != null)
+			errTen.setVisible(false);
+		if (txtTen != null)
+			txtTen.setInvalid(false);
 
 		String giaStr = txtGia != null ? txtGia.getText().trim().replace(",", "") : "";
 		String errMsgGia = Validators.soThucDuong(giaStr);
 		if (errMsgGia != null) {
-			if (errGia != null) { errGia.setText(errMsgGia); errGia.setVisible(true); }
-			if (txtGia != null) { txtGia.setInvalid(true); txtGia.requestFocusInWindow(); txtGia.selectAll(); }
+			if (errGia != null) {
+				errGia.setText(errMsgGia);
+				errGia.setVisible(true);
+			}
+			if (txtGia != null) {
+				txtGia.setInvalid(true);
+				txtGia.requestFocusInWindow();
+				txtGia.selectAll();
+			}
 			return;
 		}
 		double gia = Double.parseDouble(giaStr);
-		if (errGia != null) errGia.setVisible(false);
-		if (txtGia != null) txtGia.setInvalid(false);
+		if (errGia != null)
+			errGia.setVisible(false);
+		if (txtGia != null)
+			txtGia.setInvalid(false);
 
 		// Xác nhận lưu ảnh tạm
 		String tenAnh = sanPham != null ? sanPham.getHinhAnh() : null;
@@ -1173,9 +1189,6 @@ public class ChiTietSanPham_GUI extends JDialog {
 		}
 	}
 
-	// ══════════════════════════════════════════════════════════
-	// UI HELPERS
-	// ══════════════════════════════════════════════════════════
 	private JLabel errLabelSP() {
 		JLabel l = new JLabel();
 		l.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));

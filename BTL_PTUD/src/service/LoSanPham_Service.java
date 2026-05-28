@@ -35,7 +35,7 @@ public class LoSanPham_Service {
 		return loDAO.getDSLoSanPham();
 	}
 
-	// ==================== NHẬP HÀNG ====================
+	// Phần lớn logic nằm ở đây: tạo lô sản phẩm từ chi tiết phiếu nhập.
 
 	// Tạo lô sản phẩm từ chi tiết phiếu nhập.
 	// - Quy đổi số lượng từ đơn vị file (Hộp/Vỉ/Thùng) → đơn vị chuẩn SP
@@ -71,7 +71,7 @@ public class LoSanPham_Service {
 		return loDAO.them(lo);
 	}
 
-	// ==================== BÁN HÀNG (TRỪ KHO) ====================
+	// Phương thức trừ kho khi bán hàng.
 
 	// Trừ kho theo FIFO (lô cũ nhất trước, sắp hết hạn trước).
 	// Ví dụ: Bán 20 Viên Paracetamol
@@ -97,7 +97,6 @@ public class LoSanPham_Service {
 		return true;
 	}
 
-	// ==================== HELPERS ====================
 
 	private int quyDoi(int soLuong, String donViGoc, String donViDich) {
 		if (donViGoc == null || donViDich == null) return soLuong;

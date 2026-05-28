@@ -72,7 +72,7 @@ public class RoundedTextField extends JTextField {
         return invalid;
     }
 
-    // 👉 Cho layout biết size
+    // Cho layout biết size
     @Override
     public Dimension getPreferredSize() {
         return new Dimension(width, height);
@@ -89,13 +89,13 @@ public class RoundedTextField extends JTextField {
         int w = getWidth() - 2 * inset;
         int h = getHeight() - 2 * inset;
 
-        // 🎨 Background
+        // Background
         g2.setColor(backgroundColor);
         g2.fillRoundRect(inset, inset, w, h, radius, radius);
 
         super.paintComponent(g);
 
-        // 🎯 Placeholder (canh giữa chuẩn)
+        // Placeholder (canh giữa chuẩn)
         if (getText().isEmpty() && !isFocusOwner()) {
             g2.setColor(placeholderColor);
 
@@ -116,7 +116,7 @@ public class RoundedTextField extends JTextField {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                 RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // 🎨 Border khi focus
+        // Border khi focus
         if (hasFocus()) {
             g2.setColor(focusBorderColor);
         } else {

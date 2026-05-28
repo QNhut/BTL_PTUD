@@ -144,9 +144,7 @@ public class DatTruoc_GUI extends JPanel {
 		loadDataBackground();
 	}
 
-	// =========================================================================
-	// HEADER PANEL
-	// =========================================================================
+	// Phần header với title + subtitle
 	private JPanel buildHeaderPanel() {
 		JPanel hdr = new JPanel();
 		hdr.setLayout(new BoxLayout(hdr, BoxLayout.Y_AXIS));
@@ -169,9 +167,7 @@ public class DatTruoc_GUI extends JPanel {
 		return hdr;
 	}
 
-	// =========================================================================
-	// PRODUCT PANEL (left column)
-	// =========================================================================
+	// Phần tìm kiếm + filter + table sản phẩm
 	private JPanel buildProductPanel() {
 		JPanel p = new JPanel(new BorderLayout(0, 8));
 		p.setOpaque(false);
@@ -184,8 +180,7 @@ public class DatTruoc_GUI extends JPanel {
 			}
 		});
 
-		// ── Category filter popup ──────────────────────────────────────────
-		java.util.List<LoaiSanPham> dsLoai = loaiSPService.layDanhSachLoaiSanPham();
+		List<LoaiSanPham> dsLoai = loaiSPService.layDanhSachLoaiSanPham();
 		JPopupMenu popupLoai = new JPopupMenu();
 		popupLoai.setBackground(Colors.BACKGROUND);
 		popupLoai.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Colors.BORDER_LIGHT, 1),
@@ -264,6 +259,7 @@ public class DatTruoc_GUI extends JPanel {
 		return p;
 	}
 
+//	Phần form bên phải với các trường thông tin + chọn ngày giờ + đặt cọc + ghi chú
 
 	private JPanel buildFormPanel() {
 		JPanel outer = new JPanel(new BorderLayout());
@@ -301,21 +297,19 @@ public class DatTruoc_GUI extends JPanel {
 		content.add(lblHint);
 		content.add(vgap(8));
 		content.add(Box.createVerticalGlue());
-	
+
 		outer.add(content);
 		outer.add(Box.createVerticalStrut(270));
 		return outer;
 	}
 
-	// =========================================================================
-	// BOTTOM PANEL (full-width cart table + confirm)
-	// =========================================================================
+	// Phần bên dưới của bên trái, chứa table giỏ hàng + summary tổng tiền
 	private JPanel buildBottomPanel() {
 		JPanel outer = new RoundedPanel(0, 0, 12);
 		outer.setLayout(new BorderLayout());
 		outer.setBackground(Colors.BACKGROUND);
 		outer.setMinimumSize(new Dimension(0, 300));
-		outer.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE)); // fills remaining height
+		outer.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
 
 		JPanel cartSection = buildSectionCart();
 		outer.add(cartSection, BorderLayout.CENTER);
@@ -330,7 +324,7 @@ public class DatTruoc_GUI extends JPanel {
 		Box row = Box.createHorizontalBox();
 		row.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-		// ================= NGÀY NHẬN =================
+		// Ngày nhận hàng
 		JPanel colNgay = labeledCol("Ngày nhận *");
 		colNgay.setLayout(new BoxLayout(colNgay, BoxLayout.Y_AXIS));
 		colNgay.setOpaque(false);
@@ -362,7 +356,7 @@ public class DatTruoc_GUI extends JPanel {
 
 		colNgay.add(dtcNgayNhan);
 
-		// ================= GIỜ NHẬN =================
+		// Giờ nhận hàng
 		JPanel colGio = labeledCol("Giờ nhận");
 		colGio.setLayout(new BoxLayout(colGio, BoxLayout.Y_AXIS));
 		colGio.setOpaque(false);
@@ -378,9 +372,8 @@ public class DatTruoc_GUI extends JPanel {
 
 		colGio.add(cboGioNhan);
 
-		// ================= ADD =================
 		row.add(colNgay);
-		row.add(Box.createHorizontalStrut(16)); // khoảng cách
+		row.add(Box.createHorizontalStrut(16));
 		row.add(colGio);
 
 		p.add(row);
@@ -389,7 +382,8 @@ public class DatTruoc_GUI extends JPanel {
 		return p;
 	}
 
-	// ── Thông tin khách hàng ─────────────────────────────────────────────────
+	// Phần thông tin khách hàng, có toggle giữa khách cũ (tìm theo SDT) và khách
+	// mới (nhập tên + SDT)
 	private JPanel buildSectionKhachHang() {
 		JPanel p = sectionPanel("THÔNG TIN KHÁCH HÀNG");
 
@@ -420,7 +414,7 @@ public class DatTruoc_GUI extends JPanel {
 		p.add(pnlToggle);
 		p.add(vgap(8));
 
-		// ── Khách cũ: tìm theo số điện thoại ──────────────────────────────
+		// Khách cũ: nhập SDT để tìm kiếm, hiện thông tin nếu có, ẩn nếu không hoặc lỗi
 		pnlKhachCu = new JPanel();
 		pnlKhachCu.setLayout(new BoxLayout(pnlKhachCu, BoxLayout.Y_AXIS));
 		pnlKhachCu.setOpaque(false);
@@ -453,7 +447,7 @@ public class DatTruoc_GUI extends JPanel {
 		pnlKhachCu.add(vgap(3));
 		pnlKhachCu.add(lblKhachCuStatus);
 
-		// ── Khách mới: nhập tên + SDT ─────────────────────────────────────
+		// Khách mới: nhập tên + SDT, không tìm kiếm, chỉ validate khi xác nhận
 		pnlKhachMoi = new JPanel();
 		pnlKhachMoi.setLayout(new BoxLayout(pnlKhachMoi, BoxLayout.Y_AXIS));
 		pnlKhachMoi.setOpaque(false);
@@ -483,7 +477,8 @@ public class DatTruoc_GUI extends JPanel {
 		repaint();
 	}
 
-	// ── Đặt cọc ──────────────────────────────────────────────────────────────
+	// Đặc cọc: 5 lựa chọn 0%, 20%, 30%, 50%, 100%, lưu vào biến depositPct, mặc
+	// định 0% (không đặt cọc)
 	private JPanel buildSectionDatCoc() {
 		JPanel p = sectionPanel("ĐẶT CỌC");
 
@@ -515,7 +510,8 @@ public class DatTruoc_GUI extends JPanel {
 		return p;
 	}
 
-	// ── Ghi chú chung ────────────────────────────────────────────────────────
+	// Ghi chú chung cho đơn hàng, có placeholder, lưu vào txtGhiChu, không bắt buộc
+	// nhập
 	private JPanel buildSectionGhiChu() {
 		JPanel p = sectionPanel("GHI CHÚ CHUNG");
 
@@ -555,7 +551,9 @@ public class DatTruoc_GUI extends JPanel {
 		return p;
 	}
 
-	// ── Chi tiết thuốc đặt — JTable ──────────────────────────────────────────
+	// Phần giỏ hàng bên dưới, chứa JTable liệt kê sản phẩm đã chọn, số lượng, thành
+	// tiền, có nút xóa từng dòng, bên dưới là summary tổng số sản phẩm, tổng đơn
+	// vị, tổng tiền
 	private JPanel buildSectionCart() {
 		JPanel p = new JPanel(new BorderLayout(0, 8));
 		p.setBackground(Colors.BACKGROUND);
@@ -668,9 +666,9 @@ public class DatTruoc_GUI extends JPanel {
 		h.setPreferredSize(new Dimension(0, 30));
 	}
 
-	// =========================================================================
-	// CART MANAGEMENT
-	// =========================================================================
+	// Các phương thức xử lý logic thêm/xóa sản phẩm trong giỏ hàng, cập nhật
+	// summary, kiểm tra điều kiện để enable nút xác nhận, cập nhật khung giờ nhận
+	// dựa trên ngày đã chọn
 	private void addToCart(SanPham sp) {
 		for (CartItem ci : cartItems) {
 			if (ci.maSP.equals(sp.getMaSanPham())) {
@@ -717,7 +715,8 @@ public class DatTruoc_GUI extends JPanel {
 	}
 
 	private void updateConfirmButton() {
-		if (btnXacNhan == null) return;
+		if (btnXacNhan == null)
+			return;
 		boolean hasDate = dtcNgayNhan != null && dtcNgayNhan.getDate() != null;
 		boolean hasItems = !cartItems.isEmpty();
 		boolean ok = hasDate && hasItems;
@@ -732,7 +731,8 @@ public class DatTruoc_GUI extends JPanel {
 	}
 
 	private void capNhatKhungGioNhan() {
-		if (cboGioNhan == null) return;
+		if (cboGioNhan == null)
+			return;
 		LocalDate ngayNhan = dtcNgayNhan != null && dtcNgayNhan.getDate() != null
 				? dtcNgayNhan.getDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
 				: LocalDate.now();
@@ -763,7 +763,8 @@ public class DatTruoc_GUI extends JPanel {
 				: "Chỉ nhận từ 08:00 đến 22:00 từ Thứ 2 đến Thứ 7");
 	}
 
-	/** Trả về slot 30 phút gần nhất >= giờ hiện tại, nằm trong [gioMoCua, gioDongCua]. */
+	// Hàm tìm giờ gần nhất hợp lệ (làm tròn lên 30 phút, đảm bảo không trước giờ mở
+	// cửa và không sau giờ đóng cửa)
 	private static String gioGanNhatHopLe(LocalTime gioMoCua, LocalTime gioDongCua) {
 		LocalTime now = LocalTime.now();
 		// Làm tròn lên 30 phút gần nhất
@@ -775,8 +776,10 @@ public class DatTruoc_GUI extends JPanel {
 		} else {
 			candidate = LocalTime.of(now.getHour(), roundedMinute);
 		}
-		if (candidate.isBefore(gioMoCua)) candidate = gioMoCua;
-		if (candidate.isAfter(gioDongCua)) candidate = gioMoCua;
+		if (candidate.isBefore(gioMoCua))
+			candidate = gioMoCua;
+		if (candidate.isAfter(gioDongCua))
+			candidate = gioMoCua;
 		return candidate.format(DateTimeFormatter.ofPattern("HH:mm"));
 	}
 
@@ -797,10 +800,8 @@ public class DatTruoc_GUI extends JPanel {
 		return !gioNhan.isBefore(gioMoCua) && !gioNhan.isAfter(gioDongCua);
 	}
 
-	// =========================================================================
-	// DATA LOADING
-	// =========================================================================
-	// Được gọi từ Main_GUI khi chuyển sang tab Đặt trước — tải lại danh sách sản phẩm.
+	// Load data sản phẩm và tồn kho trong background để tránh block UI, sau khi
+	// load xong thì render table
 	public void refresh() {
 		loadDataBackground();
 	}
@@ -896,9 +897,9 @@ public class DatTruoc_GUI extends JPanel {
 				sp.getMaSanPham() };
 	}
 
-	// =========================================================================
-	// XÁC NHẬN
-	// =========================================================================
+	// Xử lý khi nhấn nút xác nhận đặt trước: validate dữ liệu, kiểm tra tồn kho,
+	// tạo hóa đơn tạm với trạng thái "Đặt trước", hiển thị thông báo thành công
+	// hoặc lỗi
 	private void xuLyXacNhan() {
 		if (nhanVien == null) {
 			JOptionPane.showMessageDialog(this, "Không xác định được nhân viên lập phiếu đặt trước.", "Lỗi",
@@ -982,8 +983,8 @@ public class DatTruoc_GUI extends JPanel {
 
 		// Chuẩn bị dữ liệu trước khi tạo phiếu
 		String ngay = new SimpleDateFormat("dd/MM/yyyy").format(ngayNhan);
-		String gio = cboGioNhan != null && cboGioNhan.getSelectedItem() != null
-				? (String) cboGioNhan.getSelectedItem() : "--:--";
+		String gio = cboGioNhan != null && cboGioNhan.getSelectedItem() != null ? (String) cboGioNhan.getSelectedItem()
+				: "--:--";
 		double total = cartItems.stream().mapToDouble(CartItem::thanhTien).sum();
 		double coc = total * depositPct / 100.0;
 		String sCoc = depositPct == 0 ? "Không cọc" : PRICE_FMT.format(coc) + "đ (" + depositPct + "%)";
@@ -1047,12 +1048,8 @@ public class DatTruoc_GUI extends JPanel {
 		capNhatKhungGioNhan(); // tự chọn giờ gần nhất khi reset
 	}
 
-	// =========================================================================
-	// INNER — PRODUCT TABLE COLUMN RENDERERS
-	// =========================================================================
-	/**
-	 * Col 0: Tên + mã SP (no image)
-	 */
+	// Col 0: Mã + tên sản phẩm (tên có thể dài, nếu > 2 dòng thì cắt bớt và thêm
+	// "…")
 	@SuppressWarnings("serial")
 	private class ProductNameRdr extends JPanel implements TableCellRenderer {
 
@@ -1090,9 +1087,8 @@ public class DatTruoc_GUI extends JPanel {
 		}
 	}
 
-	/**
-	 * Col 1: Giá bán (́+ gạch nếu có KM)
-	 */
+	// Col 1: Giá bán (nếu có KM thì hiển thị giá sau KM, giá gốc gạch ngang nhỏ hơn
+	// bên dưới)
 	@SuppressWarnings("serial")
 	private class PriceRdr extends JPanel implements TableCellRenderer {
 
@@ -1129,9 +1125,7 @@ public class DatTruoc_GUI extends JPanel {
 		}
 	}
 
-	/**
-	 * Col 2: Tồn kho
-	 */
+	// Col 2: Tồn kho (nếu >0 thì màu xanh, nếu =0 thì màu đỏ)
 	@SuppressWarnings("serial")
 	private class StockRdr extends JPanel implements TableCellRenderer {
 
@@ -1157,9 +1151,8 @@ public class DatTruoc_GUI extends JPanel {
 		}
 	}
 
-	/**
-	 * Col 3: Trạng thái badge
-	 */
+	// Col 3: Trạng thái badge (CON_HANG: xanh lá "Còn hàng", SAP_HET: cam "Sắp
+	// hết", HET_HANG: đỏ "Hết hàng")
 	@SuppressWarnings("serial")
 	private class StatusRdr extends JPanel implements TableCellRenderer {
 
@@ -1201,9 +1194,8 @@ public class DatTruoc_GUI extends JPanel {
 		}
 	}
 
-	// =========================================================================
-	// INNER — PRODUCT TABLE ACTION COLUMN
-	// =========================================================================
+	// Col 4: Nút thêm/bỏ chọn (nếu đã có trong giỏ thì hiện "Bỏ chọn", nếu chưa thì
+	// hiện "+ Thêm")
 	@SuppressWarnings("serial")
 	private class ProductActionRenderer extends JPanel implements TableCellRenderer {
 
@@ -1270,12 +1262,8 @@ public class DatTruoc_GUI extends JPanel {
 		}
 	}
 
-	// =========================================================================
-	// INNER — CART TABLE RENDERERS
-	// =========================================================================
-	/**
-	 * Col 0: Tên sản phẩm + đơn giá
-	 */
+	// Col 0: Tên sản phẩm + đơn vị tính (render only, tên có thể dài, nếu >2 dòng
+	// thì cắt bớt và thêm "…")
 	@SuppressWarnings("serial")
 	private class CartProductRdr extends JPanel implements TableCellRenderer {
 
@@ -1308,9 +1296,7 @@ public class DatTruoc_GUI extends JPanel {
 		}
 	}
 
-	/**
-	 * Col 1: Số lượng (render only)
-	 */
+	// Col 1: Số lượng (render only)
 	@SuppressWarnings("serial")
 	private class CartQtyRdr extends JPanel implements TableCellRenderer {
 
@@ -1350,9 +1336,6 @@ public class DatTruoc_GUI extends JPanel {
 		}
 	}
 
-	/**
-	 * Col 2: Thành tiền
-	 */
 	@SuppressWarnings("serial")
 	private class CartTotalRdr extends JPanel implements TableCellRenderer {
 
@@ -1379,9 +1362,7 @@ public class DatTruoc_GUI extends JPanel {
 		}
 	}
 
-	/**
-	 * Col 3: Xóa
-	 */
+	// Col 3: Xóa
 	@SuppressWarnings("serial")
 	private class CartDelRdr extends JPanel implements TableCellRenderer {
 
@@ -1404,12 +1385,7 @@ public class DatTruoc_GUI extends JPanel {
 		}
 	}
 
-	// =========================================================================
-	// INNER — CART TABLE EDITORS
-	// =========================================================================
-	/**
-	 * Col 1: +/- quantity editor
-	 */
+	// Col 1: Số lượng (có nút +/− để chỉnh sửa)
 	@SuppressWarnings("serial")
 	private class CartQtyEditor extends AbstractCellEditor implements TableCellEditor {
 
@@ -1465,9 +1441,6 @@ public class DatTruoc_GUI extends JPanel {
 		}
 	}
 
-	/**
-	 * Col 3: Delete editor
-	 */
 	@SuppressWarnings("serial")
 	private class CartDelEditor extends AbstractCellEditor implements TableCellEditor {
 
@@ -1503,13 +1476,8 @@ public class DatTruoc_GUI extends JPanel {
 		}
 	}
 
-	// =========================================================================
-	// UTILITIES
-	// =========================================================================
-	/**
-	 * Refresh summary labels without rebuilding table rows (used by quantity
-	 * editor).
-	 */
+	// Phần cập nhật lại thông tin tóm tắt giỏ hàng (tổng số sản phẩm, tổng đơn vị,
+	// tổng tiền) sau khi có thay đổi
 	private void refreshSummary() {
 		int totalQty = cartItems.stream().mapToInt(ci -> ci.qty).sum();
 		double total = cartItems.stream().mapToDouble(CartItem::thanhTien).sum();
@@ -1625,14 +1593,14 @@ public class DatTruoc_GUI extends JPanel {
 		});
 	}
 
-	// =========================================================================
-	// INNER — SuccessDialog: hiển thị xác nhận đặt trước thành công
-	// =========================================================================
+	// Phần dialog hiện sau khi đặt trước thành công, hiển thị thông tin tóm tắt về
+	// phiếu đặt và khách hàng, có nút "OK" để đóng dialog. Dialog này chỉ mang tính
+	// chất thông báo, không có hành động gì thêm.
 	@SuppressWarnings("serial")
 	private static final class SuccessDialog extends JDialog {
 
-		SuccessDialog(Window parent, String maHD, String tenKH, String sdt,
-				String ngay, String gio, double total, String sCoc) {
+		SuccessDialog(Window parent, String maHD, String tenKH, String sdt, String ngay, String gio, double total,
+				String sCoc) {
 			super(parent, "Đặt trước thành công", ModalityType.APPLICATION_MODAL);
 			setLayout(new BorderLayout());
 			getContentPane().setBackground(Color.WHITE);
@@ -1667,25 +1635,18 @@ public class DatTruoc_GUI extends JPanel {
 			return p;
 		}
 
-		private JPanel buildBody(String maHD, String tenKH, String sdt,
-				String ngay, String gio, String sCoc) {
+		private JPanel buildBody(String maHD, String tenKH, String sdt, String ngay, String gio, String sCoc) {
 			JPanel body = new JPanel(new BorderLayout());
 			body.setBackground(Color.WHITE);
 			body.setBorder(BorderFactory.createEmptyBorder(16, 20, 8, 20));
 
 			JPanel cardsRow = new JPanel(new GridLayout(1, 2, 12, 0));
 			cardsRow.setOpaque(false);
-			cardsRow.add(infoCard("Khách hàng", new String[][]{
-					{"Tên khách", tenKH != null && !tenKH.isBlank() ? tenKH : "Khách lẻ"},
-					{"Số điện thoại", sdt != null && !sdt.isBlank() ? sdt : "—"}
-			}));
-			cardsRow.add(infoCard("Phiếu đặt", new String[][]{
-					{"Mã phiếu", maHD},
-					{"Ngày nhận", ngay},
-					{"Giờ nhận", gio},
-					{"Đặt cọc", sCoc},
-					{"Trạng thái", HoaDon.TRANG_THAI_CHO_THANH_TOAN}
-			}));
+			cardsRow.add(infoCard("Khách hàng",
+					new String[][] { { "Tên khách", tenKH != null && !tenKH.isBlank() ? tenKH : "Khách lẻ" },
+							{ "Số điện thoại", sdt != null && !sdt.isBlank() ? sdt : "—" } }));
+			cardsRow.add(infoCard("Phiếu đặt", new String[][] { { "Mã phiếu", maHD }, { "Ngày nhận", ngay },
+					{ "Giờ nhận", gio }, { "Đặt cọc", sCoc }, { "Trạng thái", HoaDon.TRANG_THAI_CHO_THANH_TOAN } }));
 			body.add(cardsRow, BorderLayout.CENTER);
 			return body;
 		}

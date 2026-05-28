@@ -62,7 +62,7 @@ public class ProductTableRenderer extends JPanel implements TableCellRenderer {
 	public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
 			int row, int column) {
 
-		parentTable = table; // cập nhật để callback repaint sử dụng
+		parentTable = table; 
 		removeAll();
 		setBackground(isSelected ? Colors.PRIMARY_LIGHT : (row % 2 == 0 ? Colors.BACKGROUND : new Color(0xFAFAFA)));
 		setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Colors.BORDER_LIGHT));
@@ -87,7 +87,7 @@ public class ProductTableRenderer extends JPanel implements TableCellRenderer {
 		}
 	}
 
-	// ==================== COL 0: SẢN PHẨM ====================
+	// Col 0: SẢN PHẨM (ảnh + mã + tên)
 	private JPanel renderSanPham(Object value, boolean isSelected, int row) {
 		JPanel p = basePanel(isSelected, row);
 		p.setLayout(new BorderLayout(10, 0));
@@ -161,7 +161,7 @@ public class ProductTableRenderer extends JPanel implements TableCellRenderer {
 		return p;
 	}
 
-	// ==================== COL 1: DANH MỤC ====================
+	// Col 1: DANH MỤC (chỉ text)
 	private JPanel renderDanhMuc(Object value, boolean isSelected, int row) {
 		JPanel p = cellPanel(isSelected, row);
 		String text = value != null ? value.toString() : "";
@@ -172,7 +172,7 @@ public class ProductTableRenderer extends JPanel implements TableCellRenderer {
 		return p;
 	}
 
-	// ==================== COL 2: GIÁ BÁN ====================
+	// Col 2: GIÁ BÁN (giá gốc gạch ngang + giá sale nổi bật nếu có KM)
 	private JPanel renderGia(Object value, boolean isSelected, int row) {
 		JPanel p = cellPanel(isSelected, row);
 		p.setLayout(new javax.swing.BoxLayout(p, javax.swing.BoxLayout.Y_AXIS));
@@ -206,7 +206,7 @@ public class ProductTableRenderer extends JPanel implements TableCellRenderer {
 		return p;
 	}
 
-	// ==================== COL 3: TỒN KHO ====================
+	// Col 3: TỒN KHO (số lượng, nếu <=5 thì màu đỏ)
 	private JPanel renderTonKho(Object value, boolean isSelected, int row) {
 		JPanel p = cellPanel(isSelected, row);
 		int ton = 0;
@@ -219,7 +219,7 @@ public class ProductTableRenderer extends JPanel implements TableCellRenderer {
 		return p;
 	}
 
-	// ==================== COL 4: LÔ HÀNG ====================
+	// Col 4: LÔ HÀNG (số lô + cảnh báo hết hạn/sắp hết + ngày gần nhất)
 	private JPanel renderLoHang(Object value, boolean isSelected, int row) {
 		JPanel p = basePanel(isSelected, row);
 		p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
@@ -274,7 +274,7 @@ public class ProductTableRenderer extends JPanel implements TableCellRenderer {
 		return p;
 	}
 
-	// ==================== COL 5: TRẠNG THÁI ====================
+	// Col 5: TRẠNG THÁI (CON_HANG/SAP_HET/HET_HANG) với badge màu sắc khác nhau
 	private JPanel renderTrangThai(Object value, boolean isSelected, int row) {
 		JPanel p = cellPanel(isSelected, row);
 
@@ -305,7 +305,7 @@ public class ProductTableRenderer extends JPanel implements TableCellRenderer {
 		return p;
 	}
 
-	// ==================== COL 6: THAO TÁC ====================
+	// Col 6: THAO TÁC (3 nút text: "Chi tiết", "Sửa", "Xoá" với màu sắc khác nhau)
 	private JPanel renderThaoTac(boolean isSelected, int row) {
 		JPanel p = basePanel(isSelected, row);
 		p.setLayout(new FlowLayout(FlowLayout.CENTER, 4, (ROW_HEIGHT - 30) / 2));
@@ -318,8 +318,7 @@ public class ProductTableRenderer extends JPanel implements TableCellRenderer {
 		return p;
 	}
 
-	// ==================== HELPERS ====================
-
+	// Hàm tiện ích để tạo panel cơ bản với màu nền theo trạng thái chọn và số chẵn/lẻ của dòng
 	private JPanel basePanel(boolean isSelected, int row) {
 		JPanel p = new JPanel();
 		p.setOpaque(true);
@@ -345,7 +344,7 @@ public class ProductTableRenderer extends JPanel implements TableCellRenderer {
 		return lbl;
 	}
 
-	// ==================== HEADER RENDERER ====================
+	// Renderer cho header của bảng, với nền màu khác và font chữ đậm hơn
 	private static class HeaderRenderer extends JLabel implements TableCellRenderer {
 		HeaderRenderer() {
 			setOpaque(true);

@@ -340,7 +340,7 @@ public class HoaDon_GUI extends JPanel {
         lblNhanVienValue.setMaximumSize(new Dimension(Integer.MAX_VALUE, 18));
         pnlForm.add(lblNhanVienValue);
 
-        lblThoiGianValue = new JLabel("🕒 " + thoiGianTao);
+        lblThoiGianValue = new JLabel("\u23F0 " + thoiGianTao);
         lblThoiGianValue.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
         lblThoiGianValue.setForeground(Colors.TEXT_SECONDARY);
         lblThoiGianValue.setAlignmentX(Component.LEFT_ALIGNMENT);

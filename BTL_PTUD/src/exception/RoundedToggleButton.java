@@ -84,7 +84,7 @@ public class RoundedToggleButton extends JToggleButton {
             setForeground(foreground);
         }
 
-        // 🎨 Vẽ nền
+        // Vẽ nền
         g2.fillRoundRect(0, 0, getWidth(), getHeight(), radius, radius);
 
         g2.dispose();
@@ -96,8 +96,6 @@ public class RoundedToggleButton extends JToggleButton {
     protected void paintBorder(Graphics g) {
         // không vẽ border
     }
-
-    // ================== SETTER ==================
 
     public void setRadius(int radius) {
         this.radius = radius;

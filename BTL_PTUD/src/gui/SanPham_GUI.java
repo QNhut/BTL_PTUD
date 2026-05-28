@@ -129,7 +129,7 @@ public class SanPham_GUI extends JPanel {
 		parent.add(section);
 	}
 
-	//  TOGGLE VIEW
+//	Chuyển đổi giữa 2 chế độ xem card/table
 	private void toggleView() {
 		cheDoCard = !cheDoCard;
 		capNhatNutToggle();
@@ -212,7 +212,7 @@ public class SanPham_GUI extends JPanel {
 		return c;
 	}
 
-	// TÌM KIẾM
+	//	Tim kiếm + lọc
 	private JPanel taoTimKiem() {
 		JPanel w = new JPanel(new BorderLayout(0, 8));
 		w.setOpaque(false);
@@ -279,7 +279,7 @@ public class SanPham_GUI extends JPanel {
 			right.add(btn);
 		}
 
-		// NÚT TOGGLE VIEW (cuối cùng thanh tìm kiếm)
+		// Nút chuyển đổi chế độ xem
 		btnToggleView = new JButton();
 		btnToggleView.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
 		btnToggleView.setPreferredSize(new Dimension(70, 34));
@@ -313,12 +313,11 @@ public class SanPham_GUI extends JPanel {
 		return w;
 	}
 
-	// CHẾ ĐỘ 1: CARD GRID
+	// Chế độ 1: Card Grid
 	private JPanel taoGridView() {
 		pnlCards = new JPanel(new GridLayout(0, 4, 14, 14));
 		pnlCards.setBackground(Colors.BACKGROUND);
 
-		// Pagination bar
 		pnlPagination = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 8));
 		pnlPagination.setOpaque(false);
 		pnlPagination.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
@@ -521,7 +520,7 @@ public class SanPham_GUI extends JPanel {
 		return p;
 	}
 
-	// CHẾ ĐỘ 2: TABLE LIST
+	//	Chế độ 2: Table List
 	private JPanel taoTableView() {
 		tableModel = new DefaultTableModel(TABLE_COLUMNS, 0) {
 			@Override
@@ -533,7 +532,7 @@ public class SanPham_GUI extends JPanel {
 		tblSanPham = new JTable(tableModel);
 		ProductTableRenderer.apply(tblSanPham);
 
-		// Action editor cho cột THAO TÁC
+		// Action editor cho cột thao tác
 		tblSanPham.getColumnModel().getColumn(6).setCellEditor(new ProductActionEditor(tblSanPham, (action, row) -> {
 			if (row < 0 || row >= dsHienThi.size())
 				return;
@@ -610,21 +609,20 @@ public class SanPham_GUI extends JPanel {
 		}
 	}
 
-	// ==================== DATA ====================
 	private void xuLyXoa(SanPham sp) {
 		int confirm = JOptionPane.showConfirmDialog(this,
-			"Ban co chac muon xoa san pham:\n" + sp.getTenSanPham() + " (" + sp.getMaSanPham() + ") ?",
-			"Xac nhan xoa", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+			"Bạn có muốn xoá sản phẩm không:\n" + sp.getTenSanPham() + " (" + sp.getMaSanPham() + ") ?",
+			"Xác nhận xoá", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 		if (confirm != JOptionPane.YES_OPTION) return;
 
 		boolean ok = spService.xoaSanPham(sp.getMaSanPham());
 		if (ok) {
-			JOptionPane.showMessageDialog(this, "Da xoa san pham thanh cong", "Thanh cong",
+			JOptionPane.showMessageDialog(this, "Đã xoá sản phẩm thành công", "Thành công",
 				JOptionPane.INFORMATION_MESSAGE);
 			taiDuLieu();
 		} else {
-			JOptionPane.showMessageDialog(this, "Khong the xoa san pham nay\n(co the da co lo hang hoac hoa don lien quan)",
-				"Loi", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(this, "Xoá sản phẩm thất bại. Vui lòng thử lại sau.",
+				"Lỗi", JOptionPane.ERROR_MESSAGE);
 		}
 	}
 
@@ -731,7 +729,7 @@ public class SanPham_GUI extends JPanel {
 		}
 	}
 
-	// UI HELPERS
+	//	UI nhỏ
 	private JLabel badge(TonKhoInfo info) {
 		Color bg, fg;
 		if ("CON_HANG".equals(info.trangThai)) {

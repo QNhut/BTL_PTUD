@@ -25,12 +25,11 @@ public class TroGiup_GUI extends JPanel {
 	private static final Color TAG_PURPLE = new Color(139, 92, 246, 30);
 	private static final Color TAG_PURPLE_TEXT = new Color(139, 92, 246);
 
-	// ---- Chat state ----
 	private JPanel messagesPanel;
 	private JScrollPane msgScroll;
 	private JTextField chatInput;
 	private RoundedButton sendBtn;
-	private RoundedButton toggleBtn;   // giữ tham chiếu để nút × có thể reset lại text
+	private RoundedButton toggleBtn;
 	private JLabel typingLabel;
 	private final GeminiChatService geminiService = new GeminiChatService();
 
@@ -56,18 +55,18 @@ public class TroGiup_GUI extends JPanel {
 		JPanel chatPanel = buildChatPanel();
 		chatPanel.setVisible(false);
 
-		toggleBtn = new RoundedButton(148, 38, 19, "💬  Trợ lý AI", Colors.PRIMARY);
+		toggleBtn = new RoundedButton(148, 38, 19, "\u2764  Tr\u1ee3 l\u00fd AI", Colors.PRIMARY);
 		toggleBtn.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
 		toggleBtn.setForeground(Color.WHITE);
 		toggleBtn.addActionListener(e -> {
 			boolean show = !chatPanel.isVisible();
 			chatPanel.setVisible(show);
-			toggleBtn.setText(show ? "\u2715  Đóng chat" : "💬  Trợ lý AI");
+			toggleBtn.setText(show ? "\u2715  \u0110\u00f3ng chat" : "\u2764  Tr\u1ee3 l\u00fd AI");
 			revalidate();
 			repaint();
 		});
 
-		// Header row: tiêu đề bên trái, toggle button bên phải
+		// Panel tiêu đề với toggle button ở bên phải
 		JPanel titleRow = new JPanel(new BorderLayout());
 		titleRow.setOpaque(false);
 		titleRow.setAlignmentX(LEFT_ALIGNMENT);
@@ -107,9 +106,7 @@ public class TroGiup_GUI extends JPanel {
 		add(chatPanel, BorderLayout.EAST);
 	}
 
-	// ============================================================
-	// 1. CONTACT ROW
-	// ============================================================
+	// Phần xây dựng 3 thẻ liên hệ nhanh ở đầu trang
 	private JPanel buildContactRow() {
 		JPanel row = new JPanel(new GridLayout(1, 3, Spacings.S4, 0));
 		row.setOpaque(false);
@@ -162,11 +159,8 @@ public class TroGiup_GUI extends JPanel {
 		return card;
 	}
 
-
-
-	// ============================================================
-	// 3. FAQ SECTION
-	// ============================================================
+	// Phần xây dựng mục FAQ với các câu hỏi thường gặp, mỗi câu hỏi có thể click để
+	// mở rộng xem câu trả lời
 	private JPanel buildFaqSection() {
 		JPanel main = new JPanel();
 		main.setLayout(new BoxLayout(main, BoxLayout.Y_AXIS));
@@ -179,25 +173,19 @@ public class TroGiup_GUI extends JPanel {
 		main.add(lblT);
 		main.add(Box.createVerticalStrut(Spacings.S4));
 
-		String[] questions = {
-			"Làm thế nào để thêm sản phẩm mới?",
-			"Cách tạo hóa đơn bán hàng?",
-			"Làm sao xem báo cáo doanh thu?",
-			"Cách quản lý khách hàng?",
-			"Làm thế nào để nhập hàng từ nhà cung cấp?"
-		};
+		String[] questions = { "Làm thế nào để thêm sản phẩm mới?", "Cách tạo hóa đơn bán hàng?",
+				"Làm sao xem báo cáo doanh thu?", "Cách quản lý khách hàng?",
+				"Làm thế nào để nhập hàng từ nhà cung cấp?" };
 
-		String[] tags = {"Sản phẩm", "Hóa đơn", "Báo cáo", "Khách hàng", "Kho hàng"};
-		Color[] tagColors = {TAG_BLUE_TEXT, TAG_GREEN_TEXT, TAG_ORANGE_TEXT, TAG_PURPLE_TEXT, TAG_BLUE_TEXT};
-		Color[] tagBgs = {TAG_BLUE, TAG_GREEN, TAG_ORANGE, TAG_PURPLE, TAG_BLUE};
+		String[] tags = { "Sản phẩm", "Hóa đơn", "Báo cáo", "Khách hàng", "Kho hàng" };
+		Color[] tagColors = { TAG_BLUE_TEXT, TAG_GREEN_TEXT, TAG_ORANGE_TEXT, TAG_PURPLE_TEXT, TAG_BLUE_TEXT };
+		Color[] tagBgs = { TAG_BLUE, TAG_GREEN, TAG_ORANGE, TAG_PURPLE, TAG_BLUE };
 
-		String[] answers = {
-			"Vào Danh mục → Sản phẩm → Thêm mới. Điền tên, giá, tồn kho rồi nhấn Lưu.",
-			"Vào mục Xử lý → Bán hàng. Chọn sản phẩm, khách hàng và nhấn Thanh toán.",
-			"Vào Thống kê → Doanh thu. Chọn khoảng thời gian để xem biểu đồ và số liệu.",
-			"Vào Tra cứu → Khách hàng để xem, sửa hoặc thêm mới thông tin khách hàng.",
-			"Vào Xử lý → Nhập hàng. Chọn nhà cung cấp và lập phiếu nhập kho."
-		};
+		String[] answers = { "Vào Danh mục → Sản phẩm → Thêm mới. Điền tên, giá, tồn kho rồi nhấn Lưu.",
+				"Vào mục Xử lý → Bán hàng. Chọn sản phẩm, khách hàng và nhấn Thanh toán.",
+				"Vào Thống kê → Doanh thu. Chọn khoảng thời gian để xem biểu đồ và số liệu.",
+				"Vào Tra cứu → Khách hàng để xem, sửa hoặc thêm mới thông tin khách hàng.",
+				"Vào Xử lý → Nhập hàng. Chọn nhà cung cấp và lập phiếu nhập kho." };
 
 		for (int i = 0; i < questions.length; i++) {
 			main.add(faqItem(questions[i], answers[i], tags[i], tagColors[i], tagBgs[i], false));
@@ -271,9 +259,8 @@ public class TroGiup_GUI extends JPanel {
 		return container;
 	}
 
-	// ============================================================
-	// 4. FOOTER
-	// ============================================================
+	// Phần xây dựng footer với lời nhắn và nút chat hỗ trợ trực tiếp
+
 	private JPanel buildFooter() {
 		RoundedPanel foot = new RoundedPanel(1000, 80, 14);
 		foot.setBackground(new Color(243, 244, 246)); // Gray-100
@@ -297,9 +284,8 @@ public class TroGiup_GUI extends JPanel {
 		return foot;
 	}
 
-	// ============================================================
-	// 5. CHAT PANEL (Gemini AI)
-	// ============================================================
+	// Phần xây dựng panel chat bên phải, bao gồm header, khu vực hiển thị tin nhắn,
+	// chỉ báo đang gõ và ô nhập tin nhắn
 	private JPanel buildChatPanel() {
 		JPanel chatPanel = new JPanel(new BorderLayout());
 		chatPanel.setBackground(Colors.BACKGROUND);
@@ -320,8 +306,7 @@ public class TroGiup_GUI extends JPanel {
 		lblTitle.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
 		lblTitle.setForeground(Color.WHITE);
 
-		String providerLabel = "GROQ".equals(ApiConfig.PROVIDER)
-				? "● Groq / " + ApiConfig.GROQ_MODEL
+		String providerLabel = "GROQ".equals(ApiConfig.PROVIDER) ? "● Groq / " + ApiConfig.GROQ_MODEL
 				: "● Gemini / " + ApiConfig.GEMINI_MODEL;
 		JLabel lblStatus = new JLabel(providerLabel);
 		lblStatus.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
@@ -352,7 +337,8 @@ public class TroGiup_GUI extends JPanel {
 		closeBtn.setToolTipText("Đóng chat");
 		closeBtn.addActionListener(e -> {
 			chatPanel.setVisible(false);
-			if (toggleBtn != null) toggleBtn.setText("💬  Trợ lý AI");
+			if (toggleBtn != null)
+				toggleBtn.setText("\u2764  Tr\u1ee3 l\u00fd AI");
 			revalidate();
 			repaint();
 		});
@@ -366,7 +352,7 @@ public class TroGiup_GUI extends JPanel {
 		header.add(headerLeft, BorderLayout.WEST);
 		header.add(rightBtns, BorderLayout.EAST);
 
-		// ---- Messages area ----
+		// Panel hiển thị tin nhắn với scroll
 		messagesPanel = new JPanel();
 		messagesPanel.setLayout(new BoxLayout(messagesPanel, BoxLayout.Y_AXIS));
 		messagesPanel.setBackground(new Color(249, 250, 251));
@@ -378,24 +364,22 @@ public class TroGiup_GUI extends JPanel {
 		msgScroll.getVerticalScrollBar().setUnitIncrement(16);
 		msgScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 
-		// ---- Typing indicator ----
+		// Phần chỉ báo "AI đang trả lời..." sẽ hiển thị khi đang chờ phản hồi từ API
 		typingLabel = new JLabel("   AI đang trả lời...");
 		typingLabel.setFont(FontStyle.font(FontStyle.SM, FontStyle.NORMAL));
 		typingLabel.setForeground(Colors.MUTED);
 		typingLabel.setVisible(false);
 		typingLabel.setBorder(new EmptyBorder(4, 16, 4, 8));
 
-		// ---- Input area ----
+		// Panel nhập tin nhắn với ô text và nút gửi
 		JPanel inputPanel = new JPanel(new BorderLayout(8, 0));
 		inputPanel.setBackground(Colors.BACKGROUND);
 		inputPanel.setBorder(BorderFactory.createCompoundBorder(
-				BorderFactory.createMatteBorder(1, 0, 0, 0, Colors.BORDER),
-				new EmptyBorder(8, 10, 8, 10)));
+				BorderFactory.createMatteBorder(1, 0, 0, 0, Colors.BORDER), new EmptyBorder(8, 10, 8, 10)));
 
 		chatInput = new JTextField();
 		chatInput.setFont(FontStyle.font(FontStyle.BASE, FontStyle.NORMAL));
-		chatInput.setBorder(BorderFactory.createCompoundBorder(
-				BorderFactory.createLineBorder(Colors.BORDER),
+		chatInput.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Colors.BORDER),
 				new EmptyBorder(7, 10, 7, 10)));
 		chatInput.setBackground(new Color(249, 250, 251));
 		chatInput.putClientProperty("JTextField.placeholderText", "Nhập câu hỏi...");
@@ -407,7 +391,8 @@ public class TroGiup_GUI extends JPanel {
 		inputPanel.add(chatInput, BorderLayout.CENTER);
 		inputPanel.add(sendBtn, BorderLayout.EAST);
 
-		// ---- API key warning (nếu chưa cấu hình) ----
+		// Phản khởi tạo: nếu chưa có API key thì hiển thị cảnh báo, ngược lại chào hỏi
+		// người dùng
 		if (ApiConfig.GEMINI_API_KEY.equals("YOUR_API_KEY_HERE")) {
 			addApiKeyWarning();
 		} else {
@@ -415,7 +400,8 @@ public class TroGiup_GUI extends JPanel {
 					+ "Hãy hỏi tôi bất kỳ điều gì về cách sử dụng phần mềm nhé!");
 		}
 
-		// ---- Action listeners ----
+		// Phần xử lý sự kiện: gửi tin nhắn khi nhấn nút hoặc Enter, xóa lịch sử khi
+		// nhấn nút clear
 		ActionListener sendAction = e -> sendMessage();
 		sendBtn.addActionListener(sendAction);
 		chatInput.addActionListener(sendAction);
@@ -428,7 +414,7 @@ public class TroGiup_GUI extends JPanel {
 			messagesPanel.repaint();
 		});
 
-		// ---- Assemble ----
+		// Panel chứa chỉ báo đang gõ và ô nhập tin nhắn, đặt ở dưới cùng của chatPanel
 		JPanel south = new JPanel(new BorderLayout());
 		south.setBackground(Colors.BACKGROUND);
 		south.add(typingLabel, BorderLayout.NORTH);
@@ -441,7 +427,8 @@ public class TroGiup_GUI extends JPanel {
 		return chatPanel;
 	}
 
-	/** Hiển thị cảnh báo chưa cấu hình API key. */
+	// Hiển thị cảnh báo nếu người dùng chưa cấu hình API key, hướng dẫn cách thêm
+	// key vào file ApiConfig.java để sử dụng tính năng chat AI
 	private void addApiKeyWarning() {
 		JPanel warn = new JPanel(new BorderLayout(0, 6));
 		warn.setBackground(new Color(254, 243, 199));
@@ -453,9 +440,7 @@ public class TroGiup_GUI extends JPanel {
 		icon.setFont(FontStyle.font(FontStyle.SM, FontStyle.BOLD));
 		icon.setForeground(new Color(146, 64, 14));
 
-		JLabel desc = new JLabel(
-				"<html>Mở <b>constants/ApiConfig.java</b><br>"
-				+ "và dán Gemini API key vào<br>"
+		JLabel desc = new JLabel("<html>Mở <b>constants/ApiConfig.java</b><br>" + "và dán Gemini API key vào<br>"
 				+ "hằng <b>GEMINI_API_KEY</b>.</html>");
 		desc.setFont(FontStyle.font(FontStyle.XS, FontStyle.NORMAL));
 		desc.setForeground(new Color(120, 53, 15));
@@ -467,28 +452,25 @@ public class TroGiup_GUI extends JPanel {
 		messagesPanel.add(Box.createVerticalStrut(8));
 	}
 
-	/** Thêm bong bóng tin nhắn của AI (bên trái). */
+	// Thêm bong bóng tin nhắn của AI (bên trái).
 	private void addAIMessage(String text) {
 		addMessageBubble(text, false);
 	}
 
-	/** Thêm bong bóng tin nhắn của người dùng (bên phải). */
+	// Thêm bong bóng tin nhắn của người dùng (bên phải).
 	private void addUserMessage(String text) {
 		addMessageBubble(text, true);
 	}
 
 	private void addMessageBubble(String text, boolean isUser) {
-		// Escape HTML đặc biệt rồi chuyển \n → <br>
-		String safe = text
-				.replace("&", "&amp;")
-				.replace("<", "&lt;")
-				.replace(">", "&gt;")
-				.replace("\n", "<br>");
+		// Chuyển đổi ký tự đặc biệt thành HTML entities để tránh lỗi hiển thị và hỗ trợ
+		// xuống dòng
+		String safe = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>");
 
-		// HTML style width=330px → Swing tính đúng chiều cao khi wrap
+		// Sử dụng JLabel với HTML để tạo bong bóng tin nhắn có nền, viền và hỗ trợ
+		// xuống dòng tự động
 		JLabel bubble = new JLabel(
-				"<html><body style='width:330px;font-family:Arial;font-size:13pt;'>"
-				+ safe + "</body></html>");
+				"<html><body style='width:330px;font-family:Arial;font-size:13pt;'>" + safe + "</body></html>");
 		bubble.setOpaque(true);
 
 		if (isUser) {
@@ -498,12 +480,12 @@ public class TroGiup_GUI extends JPanel {
 		} else {
 			bubble.setBackground(Color.WHITE);
 			bubble.setForeground(Colors.FOREGROUND);
-			bubble.setBorder(BorderFactory.createCompoundBorder(
-					BorderFactory.createLineBorder(Colors.BORDER_LIGHT),
+			bubble.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Colors.BORDER_LIGHT),
 					new EmptyBorder(8, 12, 8, 12)));
 		}
 
-		// BorderLayout: bubble gắn EAST (user) hoặc WEST (AI) → không overlap
+		// Panel chứa bong bóng, căn trái cho AI và căn phải cho người dùng. Giới hạn
+		// chiều cao để tránh giãn quá mức khi có nhiều dòng.
 		JPanel row = new JPanel(new BorderLayout());
 		row.setOpaque(false);
 		row.setAlignmentX(LEFT_ALIGNMENT);
@@ -520,7 +502,8 @@ public class TroGiup_GUI extends JPanel {
 		scrollToBottom();
 	}
 
-	/** Chuyển lỗi kỹ thuật thành thông báo thân thiện. */
+	// Chuyển đổi thông điệp lỗi từ API thành các thông báo thân thiện hơn cho người
+	// dùng, giúp họ hiểu nguyên nhân lỗi và cách khắc phục (nếu có thể).
 	private static String friendlyError(String msg) {
 		if (msg.contains("API_KEY_NOT_SET"))
 			return "⚠ Chưa cấu hình API key.\nMở constants/ApiConfig.java và cập nhật key.";
@@ -532,7 +515,8 @@ public class TroGiup_GUI extends JPanel {
 					String raw = msg.substring(msg.indexOf("RETRY_AFTER=") + 12);
 					double sec = Double.parseDouble(raw.replace("s", "").trim());
 					wait = " (~" + (int) Math.ceil(sec) + "s)";
-				} catch (Exception ignored) {}
+				} catch (Exception ignored) {
+				}
 			}
 			return "⚠ Đã vượt giới hạn API miễn phí.\nVui lòng thử lại sau vài giây" + wait + ".";
 		}
@@ -556,20 +540,20 @@ public class TroGiup_GUI extends JPanel {
 		});
 	}
 
-	/** Gửi tin nhắn đến AI và hiển thị phản hồi. */
+	// Phần xử lý gửi tin nhắn: kiểm tra API key, thêm tin nhắn người dùng vào giao
+	// diện, gọi API trên luồng nền và hiển thị phản hồi hoặc lỗi từ AI.
 	private void sendMessage() {
 		String text = chatInput.getText().trim();
-		if (text.isEmpty()) return;
+		if (text.isEmpty())
+			return;
 
 		// Kiểm tra API key theo provider hiện tại
-		boolean keyMissing = "GROQ".equals(ApiConfig.PROVIDER)
-				? ApiConfig.GROQ_API_KEY.equals("YOUR_GROQ_KEY_HERE")
+		boolean keyMissing = "GROQ".equals(ApiConfig.PROVIDER) ? ApiConfig.GROQ_API_KEY.equals("YOUR_GROQ_KEY_HERE")
 				: ApiConfig.GEMINI_API_KEY.equals("YOUR_API_KEY_HERE");
 		if (keyMissing) {
 			String provider = "GROQ".equals(ApiConfig.PROVIDER) ? "Groq" : "Gemini";
 			JOptionPane.showMessageDialog(this,
-					"Bạn chưa nhập " + provider + " API key.\n"
-					+ "Mở file constants/ApiConfig.java và cập nhật key.",
+					"Bạn chưa nhập " + provider + " API key.\n" + "Mở file constants/ApiConfig.java và cập nhật key.",
 					"Thiếu API Key", JOptionPane.WARNING_MESSAGE);
 			return;
 		}
@@ -592,8 +576,7 @@ public class TroGiup_GUI extends JPanel {
 				if (dataCtx.isEmpty()) {
 					fullMsg = text;
 				} else {
-					fullMsg = "[DỮ LIỆU HỆ THỐNG - dùng để trả lời, không cần đề cập nguồn gốc]\n"
-							+ dataCtx.trim()
+					fullMsg = "[DỮ LIỆU HỆ THỐNG - dùng để trả lời, không cần đề cập nguồn gốc]\n" + dataCtx.trim()
 							+ "\n[HẾT DỮ LIỆU]\n\nCâu hỏi: " + text;
 				}
 				return geminiService.chat(fullMsg);
@@ -619,4 +602,3 @@ public class TroGiup_GUI extends JPanel {
 	}
 
 }
-

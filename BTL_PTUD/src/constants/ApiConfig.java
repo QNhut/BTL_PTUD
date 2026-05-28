@@ -29,12 +29,12 @@ public final class ApiConfig {
     public static final String PROVIDER = "GROQ";
 
     // ===== GOOGLE GEMINI =====
-    public static final String GEMINI_API_KEY = "";
+    public static final String GEMINI_API_KEY = ""; // TODO: dán Gemini API key vào đây
     public static final String GEMINI_MODEL   = "gemini-2.0-flash";
 
     // ===== GROQ (https://console.groq.com/) =====
     /** Dán Groq API key vào đây. */
-    public static final String GROQ_API_KEY = "";
+    public static final String GROQ_API_KEY = ""; // TODO: dán Groq API key vào đây
     /** Model đề xuất: llama-3.3-70b-versatile (nhanh, miễn phí). */
     public static final String GROQ_MODEL   = "llama-3.3-70b-versatile";
 }

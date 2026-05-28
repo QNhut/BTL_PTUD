@@ -20,7 +20,7 @@ public class SanPham_Service {
 	private final LoSanPham_DAO loSanPhamDAO = new LoSanPham_DAO();
 	private final DonViTinhConverter converter = new DonViTinhConverter();
 
-	// ==================== DTO tồn kho ====================
+	// Phân loại tình trạng tồn kho dựa trên số lượng còn lại:
 	public static class TonKhoInfo {
 		public final int tonKho;
 		public final int soLo;
@@ -37,7 +37,7 @@ public class SanPham_Service {
 		}
 	}
 
-	// ==================== CRUD ====================
+	// Phân loại tình trạng tồn kho dựa trên số lượng còn lại:
 	public List<SanPham> layDanhSachSanPham() { return sanPhamDAO.getDSSanPham(); }
 	public SanPham laySanPhamTheoMa(String ma) { return sanPhamDAO.laySanPhamTheoMa(ma); }
 
@@ -78,7 +78,7 @@ public class SanPham_Service {
 		return kq;
 	}
 
-	// ==================== TỒN KHO (1 lần query) ====================
+	// Phân loại tình trạng tồn kho dựa trên số lượng còn lại:
 	// Tính tồn kho cho TẤT CẢ sản phẩm trong 1 lần query.
 	// Trả về Map: maSP → TonKhoInfo
 	public Map<String, TonKhoInfo> tinhTonKhoTatCa(List<SanPham> dsSanPham) {
@@ -124,7 +124,7 @@ public class SanPham_Service {
 		return result;
 	}
 
-	// ==================== QUY ĐỔI ĐƠN VỊ ====================
+	// Phương thức quy đổi số lượng giữa các đơn vị tính. Nếu không thể quy đổi, trả về số lượng gốc.
 	public int quyDoi(int soLuong, String donViGoc, String donViDich) {
 		if (donViGoc == null || donViDich == null
 				|| donViGoc.trim().isEmpty() || donViDich.trim().isEmpty()) {
@@ -137,7 +137,7 @@ public class SanPham_Service {
 		}
 	}
 
-	// ==================== ĐẾM THỐNG KÊ ====================
+	// Phân loại tình trạng tồn kho dựa trên số lượng còn lại:
 	public static class ThongKe {
 		public final int tong, conHang, sapHet, hetHang;
 		public ThongKe(int tong, int conHang, int sapHet, int hetHang) {
@@ -157,13 +157,12 @@ public class SanPham_Service {
 		return new ThongKe(ds.size(), con, sap, het);
 	}
 
-	// ==================== TỒN KHO (1 SP) ====================
+	// Phương thức lấy tổng số lượng tồn kho của 1 sản phẩm (đã quy đổi về đơn vị chuẩn) để sử dụng trong Hóa Đơn GUI.
 	// Trả về tổng số lượng còn tồn (chưa hết hạn) của 1 sản phẩm — dùng cho HoaDon_GUI
 	public int layTonKho(String maSP) {
 		return loSanPhamDAO.layTongSoLuongTonTheoMaSanPham(maSP);
 	}
 
-	// ── CRUD ─────────────────────────────────────────────────
 
 	// Thêm sản phẩm mới. Tự động gán KhuyenMai/Thue mặc định (record đầu tiên từ DB)
 	// nếu sp không có để tránh NPE trong DAO.
@@ -177,7 +176,7 @@ public class SanPham_Service {
 
 	public String sinhMaSanPhamMoi() { return sanPhamDAO.sinhMaTuDong(); }
 
-    // ==================== THỐNG KÊ (Cho Dashboard) ====================
+    // Phân tích doanh số bán hàng theo sản phẩm trong khoảng thời gian:
     public static class ThongKeSPTongHop {
         public int tongSP;
         public String spBanChay;
